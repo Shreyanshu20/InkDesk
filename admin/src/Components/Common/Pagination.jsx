@@ -8,15 +8,33 @@ function Pagination({
   handleRowsPerPageChange,
   entityName = "items",
 }) {
+  console.log('📄 Pagination render:', {
+    page,
+    rowsPerPage,
+    totalItems,
+    entityName
+  });
+
   const totalPages = Math.ceil(totalItems / rowsPerPage);
   const startItem = page * rowsPerPage + 1;
   const endItem = Math.min((page + 1) * rowsPerPage, totalItems);
+
+  // Add validation to prevent NaN
+  const validStartItem = isNaN(startItem) ? 0 : startItem;
+  const validEndItem = isNaN(endItem) ? 0 : endItem;
+  const validTotalItems = isNaN(totalItems) ? 0 : totalItems;
+
+  console.log('📊 Pagination calculations:', {
+    validStartItem,
+    validEndItem,
+    validTotalItems,
+    totalPages
+  });
 
   // Generate page numbers to display
   const getPageNumbers = () => {
     const delta = 2; // Number of pages to show on each side of current page
     const range = [];
-    const rangeWithDots = [];
 
     // Calculate range around current page
     const start = Math.max(0, page - delta);
@@ -52,24 +70,44 @@ function Pagination({
     return null; // Don't show pagination if only one page
   }
 
+  // Handle rows per page change with better error handling
+  const handleRowsChange = (e) => {
+    const newValue = e.target.value;
+    console.log('📄 Pagination: Rows per page changed to:', newValue);
+    
+    if (handleRowsPerPageChange) {
+      // Check if the handler expects an event or a value
+      if (typeof handleRowsPerPageChange === 'function') {
+        try {
+          // Try passing the value directly first
+          handleRowsPerPageChange(parseInt(newValue, 10));
+        } catch (error) {
+          console.warn('📄 Falling back to event-based handler');
+          // Fallback to event if that fails
+          handleRowsPerPageChange(e);
+        }
+      }
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Results info */}
         <div className="flex-1 flex justify-between sm:hidden">
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            Showing <span className="font-medium">{startItem}</span> to{" "}
-            <span className="font-medium">{endItem}</span> of{" "}
-            <span className="font-medium">{totalItems}</span> {entityName}
+            Showing <span className="font-medium">{validStartItem}</span> to{" "}
+            <span className="font-medium">{validEndItem}</span> of{" "}
+            <span className="font-medium">{validTotalItems}</span> {entityName}
           </p>
         </div>
 
         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Showing <span className="font-medium">{startItem}</span> to{" "}
-              <span className="font-medium">{endItem}</span> of{" "}
-              <span className="font-medium">{totalItems}</span> {entityName}
+              Showing <span className="font-medium">{validStartItem}</span> to{" "}
+              <span className="font-medium">{validEndItem}</span> of{" "}
+              <span className="font-medium">{validTotalItems}</span> {entityName}
             </p>
           </div>
 
@@ -186,7 +224,7 @@ function Pagination({
           <select
             id="rows-per-page"
             value={rowsPerPage}
-            onChange={handleRowsPerPageChange}
+            onChange={handleRowsChange} // ✅ Use the improved handler
             className="block w-auto px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
           >
             <option value={5}>5</option>

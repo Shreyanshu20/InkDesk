@@ -22,6 +22,19 @@ function Users() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
+  
+  // ADD: Separate state for user stats
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    suspended: 0,
+    admins: 0,
+    users: 0,
+    verifiedUsers: 0,
+    recentUsers: 0
+  });
+  
   const [sortConfig, setSortConfig] = useState({
     key: "createdAt",
     direction: "descending",
@@ -31,6 +44,33 @@ function Users() {
 
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // ADD: Fetch user statistics (separate from paginated users)
+  const fetchUserStats = async () => {
+    try {
+      console.log("📊 Fetching user statistics...");
+      
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/users/stats`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.data.success) {
+        setUserStats(response.data.stats);
+        console.log("📊 User stats loaded:", response.data.stats);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching user stats:", error);
+      // Keep default empty stats on error
+    }
+  };
+
+  // MODIFY: Load both stats and users on mount
+  useEffect(() => {
+    fetchUserStats(); // Load stats once
+  }, []); // Only run once on mount
 
   // Fetch users from backend
   const fetchUsers = async () => {
@@ -136,27 +176,7 @@ function Users() {
     }
   };
 
-  // Update user status
-  const updateUserStatus = async (userId, newStatus) => {
-    try {
-      const response = await axios.put(
-        `${API_BASE_URL}/admin/users/${userId}/status`,
-        { status: newStatus },
-        { withCredentials: true }
-      );
-
-      if (response.data.success) {
-        toast.success("User status updated successfully");
-        return true;
-      }
-    } catch (error) {
-      console.error("❌ Error updating user status:", error);
-      toast.error("Failed to update user status");
-      return false;
-    }
-  };
-
-  // Delete user
+  // MODIFY: Delete user function to refresh stats after deletion
   const deleteUser = async (userId) => {
     try {
       const response = await axios.delete(
@@ -168,11 +188,41 @@ function Users() {
 
       if (response.data.success) {
         toast.success("User deleted successfully");
+        
+        // Refresh both users and stats
+        fetchUsers();
+        fetchUserStats();
+        
         return true;
       }
     } catch (error) {
       console.error("❌ Error deleting user:", error);
       toast.error("Failed to delete user");
+      return false;
+    }
+  };
+
+  // MODIFY: Update user status function to refresh stats
+  const updateUserStatus = async (userId, newStatus) => {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/admin/users/${userId}/status`,
+        { status: newStatus },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("User status updated successfully");
+        
+        // Refresh both users and stats
+        fetchUsers();
+        fetchUserStats();
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("❌ Error updating user status:", error);
+      toast.error("Failed to update user status");
       return false;
     }
   };
@@ -277,13 +327,18 @@ function Users() {
     });
   }, [users, sortConfig]);
 
+  // UseEffect to log sorted users
+  useEffect(() => {
+    console.log('📊 Sorted users:', sortedUsers);
+  }, [sortedUsers]);
+
   // User count by status
   const userCounts = useMemo(() => ({
-    all: users.length,
-    active: users.filter((u) => u.status === "active").length,
-    inactive: users.filter((u) => u.status === "inactive").length,
-    suspended: users.filter((u) => u.status === "suspended").length,
-  }), [users]);
+    all: userStats.total,
+    active: userStats.active,
+    inactive: userStats.inactive,
+    suspended: userStats.suspended,
+  }), [userStats]);
 
   // Add debugging to select all handler
   const handleSelectAllUsers = (selected) => {
@@ -346,16 +401,24 @@ function Users() {
           User Management
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Manage and monitor user accounts ({totalUsers} total users)
+          Manage and monitor user accounts ({userStats.total} total users)
+          {userStats.verifiedUsers > 0 && (
+            <> • {userStats.verifiedUsers} verified</>
+          )}
+          {userStats.recentUsers > 0 && (
+            <> • {userStats.recentUsers} new this week</>
+          )}
         </p>
       </div>
 
-      {/* User Stats Cards */}
+      {/* User Stats Cards - Now using real stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {Object.entries(userCounts).map(([status, count]) => (
           <div
             key={status}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow"
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
+              statusFilter === status ? 'ring-2 ring-primary' : ''
+            }`}
             onClick={() => setStatusFilter(status)}
           >
             <div className="flex items-center justify-between">
@@ -385,6 +448,7 @@ function Users() {
         ))}
       </div>
 
+      {/* ADD: Refresh button to update stats */}
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -407,12 +471,23 @@ function Users() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
+              <option value="all">All Status ({userCounts.all})</option>
+              <option value="active">Active ({userCounts.active})</option>
+              <option value="inactive">Inactive ({userCounts.inactive})</option>
+              <option value="suspended">Suspended ({userCounts.suspended})</option>
             </select>
           </div>
+
+          <button
+            onClick={() => {
+              fetchUsers();
+              fetchUserStats();
+            }}
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <i className="fas fa-refresh"></i>
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -467,7 +542,8 @@ function Users() {
           totalItems={totalUsers}
           handlePageChange={setPage}
           handleRowsPerPageChange={(newRowsPerPage) => {
-            setRowsPerPage(newRowsPerPage);
+            console.log('👥 Users: Changing rows per page to:', newRowsPerPage);
+            setRowsPerPage(parseInt(newRowsPerPage, 10)); // ✅ Convert to number
             setPage(0);
           }}
           entityName="users"

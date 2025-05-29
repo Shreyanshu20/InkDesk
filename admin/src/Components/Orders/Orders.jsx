@@ -155,44 +155,47 @@ function Orders() {
     }
   }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig, navigate]);
 
-  // Fetch order statistics
+  // Update the fetchOrderStats function to use the new endpoint
   const fetchOrderStats = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/admin/orders/stats`, { // Removed /api prefix
+      console.log('📊 Fetching order statistics...');
+      
+      const response = await axios.get(`${API_BASE_URL}/admin/orders/stats`, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.success) {
         setStats(response.data.stats);
+        console.log('📊 Order stats loaded:', response.data.stats);
       }
     } catch (error) {
-      console.error("Error fetching order stats:", error);
-      // Calculate stats from current orders if API call fails
-      const statusCounts = orders.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {});
-
+      console.error("❌ Error fetching order stats:", error);
+      // Keep default empty stats on error
       setStats({
-        total: orders.length,
-        pending: statusCounts.pending || 0,
-        processing: statusCounts.processing || 0,
-        shipped: statusCounts.shipped || 0,
-        delivered: statusCounts.delivered || 0,
-        cancelled: statusCounts.cancelled || 0,
+        total: 0,
+        pending: 0,
+        processing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        todaysOrders: 0,
+        thisWeekOrders: 0
       });
     }
-  }, [orders]);
+  }, []); // Remove orders dependency
 
   // Initial data load
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
+  // MODIFY: Load stats once on mount, not dependent on orders
   useEffect(() => {
-    fetchOrderStats();
-  }, [fetchOrderStats]);
+    fetchOrderStats(); // Load stats once
+  }, []); // Only run once on mount
 
   // Event handlers
   const handleSearchChange = useCallback((e) => {
@@ -209,8 +212,10 @@ function Orders() {
     setPage(newPage);
   }, []);
 
-  const handleRowsPerPageChange = useCallback((e) => {
-    setRowsPerPage(parseInt(e.target.value, 10));
+  // MODIFY: Update the handleRowsPerPageChange function
+  const handleRowsPerPageChange = useCallback((newRowsPerPage) => {
+    console.log('📦 Orders: Changing rows per page to:', newRowsPerPage);
+    setRowsPerPage(parseInt(newRowsPerPage, 10));
     setPage(0);
   }, []);
 
@@ -249,7 +254,7 @@ function Orders() {
 
       try {
         const response = await axios.put(
-          `${API_BASE_URL}/admin/orders/${selectedOrderForStatus.id}/status`, // No /api
+          `${API_BASE_URL}/admin/orders/${selectedOrderForStatus.id}/status`,
           { status: newStatus },
           {
             withCredentials: true,
@@ -288,7 +293,7 @@ function Orders() {
       if (window.confirm("Are you sure you want to delete this order?")) {
         try {
           const response = await axios.delete(
-            `${API_BASE_URL}/admin/orders/${orderId}`, // No /api
+            `${API_BASE_URL}/admin/orders/${orderId}`,
             {
               withCredentials: true,
               headers: { "Content-Type": "application/json" },
@@ -300,6 +305,8 @@ function Orders() {
               prevOrders.filter((order) => order.id !== orderId)
             );
             toast.success("Order deleted successfully");
+            
+            // Refresh stats
             fetchOrderStats();
           }
         } catch (error) {
@@ -341,6 +348,7 @@ function Orders() {
             toast.warning(`Deleted ${successful} of ${ids.length} orders`);
           }
 
+          // Refresh stats
           fetchOrderStats();
         } catch (error) {
           console.error("Error bulk deleting orders:", error);
@@ -380,6 +388,7 @@ function Orders() {
     [handleViewOrder, handleDeleteOrder, openStatusModal]
   );
 
+  // UPDATE: Enhanced header with more meaningful stats
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header with Stats */}
@@ -390,11 +399,20 @@ function Orders() {
               Orders Management
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Manage and track all customer orders
+              Manage and track all customer orders ({stats.total} total orders)
+              {stats.totalRevenue > 0 && (
+                <> • ₹{stats.totalRevenue.toLocaleString('en-IN')} total revenue</>
+              )}
+              {stats.todaysOrders > 0 && (
+                <> • {stats.todaysOrders} orders today</>
+              )}
             </p>
           </div>
           <button
-            onClick={fetchOrders}
+            onClick={() => {
+              fetchOrders();
+              fetchOrderStats();
+            }}
             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium transition-colors"
           >
             <i className="fas fa-refresh"></i>
@@ -402,8 +420,9 @@ function Orders() {
           </button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards with more details */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          {/* Total Orders */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -416,10 +435,16 @@ function Orders() {
                 <p className="text-xl font-semibold text-gray-900 dark:text-white">
                   {stats.total}
                 </p>
+                {stats.thisWeekOrders > 0 && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    +{stats.thisWeekOrders} this week
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
+          {/* Rest of the stats cards remain the same but will now show correct totals */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
@@ -580,7 +605,7 @@ function Orders() {
               rowsPerPage={rowsPerPage}
               totalItems={totalOrders}
               handlePageChange={handlePageChange}
-              handleRowsPerPageChange={handleRowsPerPageChange}
+              handleRowsPerPageChange={handleRowsPerPageChange} // ✅ Now passes value directly
               entityName="orders"
             />
           </>

@@ -469,8 +469,9 @@ export const getReviewsTableConfig = (handlers) => ({
       key: "id",
       label: "ID",
       sortable: false,
+      width: "w-20",
       customRenderer: (review) => (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
           RW-{review.id.slice(-6).toUpperCase()}
         </div>
       ),
@@ -479,8 +480,10 @@ export const getReviewsTableConfig = (handlers) => ({
       key: "customer_review",
       label: "CUSTOMER REVIEW",
       sortable: false,
+      maxWidth: "xs",
+      truncate: true,
       customRenderer: (review) => (
-        <div className="flex items-center">
+        <div className="flex items-start space-x-3">
           <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
             {review.customer.avatar ? (
               <img
@@ -496,11 +499,11 @@ export const getReviewsTableConfig = (handlers) => ({
               </div>
             )}
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              By {review.customer.name}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {review.customer.name}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 max-w-md">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
               {review.content}
             </p>
           </div>
@@ -510,7 +513,8 @@ export const getReviewsTableConfig = (handlers) => ({
     {
       key: "rating",
       label: "RATING",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
+      width: "w-24",
       customRenderer: (review) => (
         <div className="flex items-center">
           <span className="text-lg font-medium mr-2">{review.rating}</span>
@@ -533,8 +537,10 @@ export const getReviewsTableConfig = (handlers) => ({
       key: "product",
       label: "PRODUCT",
       sortable: false,
+      maxWidth: "sm",
+      truncate: true,
       customRenderer: (review) => (
-        <div className="flex items-center">
+        <div className="flex items-center space-x-3">
           <div className="h-10 w-10 flex-shrink-0">
             {review.product.image ? (
               <img
@@ -548,11 +554,11 @@ export const getReviewsTableConfig = (handlers) => ({
               </div>
             )}
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {review.product.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {review.product.category}
             </div>
           </div>
@@ -562,11 +568,12 @@ export const getReviewsTableConfig = (handlers) => ({
     {
       key: "date",
       label: "CREATED",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
+      width: "w-32",
       customRenderer: (review) => {
         const date = new Date(review.date);
         const formattedDate = date.toLocaleDateString("en-US", {
-          month: "long",
+          month: "short",
           day: "numeric",
           year: "numeric",
         });
@@ -592,6 +599,7 @@ export const getReviewsTableConfig = (handlers) => ({
       key: "actions",
       label: "ACTIONS",
       sortable: false,
+      width: "w-20",
       customRenderer: (review) => (
         <div className="flex items-center space-x-2">
           <button
