@@ -128,22 +128,33 @@ function AuthForm() {
             role: userType === "seller" ? "admin" : "user",
           };
 
-          // Make sure to use the exact endpoint from your backend
           const response = await axios.post(
-            `${backendUrl}/auth/register/`,
+            `${backendUrl}/auth/register`,
             backendData,
             { withCredentials: true }
           );
 
           if (response.data.success) {
-            toast.success("Registration successful! Redirecting to login...");
+            toast.success("Registration successful! Please verify your email.");
+
+            // Set user data from registration
+            setIsLoggedIn(true);
+            setUserData({
+              email: formData.email,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              role: userType === "seller" ? "admin" : "user",
+              isAccountVerified: false,
+            });
+
+            // Redirect to email verification with auto-send OTP
             setTimeout(() => {
               navigate(
-                `/login?type=${
-                  userType === "seller" ? "seller" : "customer"
-                }&registered=true`
+                `/verify-email?email=${encodeURIComponent(
+                  formData.email
+                )}&autoSend=true`
               );
-            }, 2000);
+            }, 1500);
           } else {
             toast.error(response.data.message || "Registration failed");
           }
@@ -163,18 +174,30 @@ function AuthForm() {
           if (response.data.success) {
             toast.success("Login successful!");
 
-            // Get user data from the response directly
+            // Set user data from login response
             setIsLoggedIn(true);
             setUserData(response.data.user);
 
-            // Redirect based on user role using environment variables
+            // Check if user needs email verification
+            if (!response.data.user.isAccountVerified) {
+              toast.info("Please verify your email to access all features.");
+              setTimeout(() => {
+                navigate(
+                  `/verify-email?email=${encodeURIComponent(
+                    response.data.user.email
+                  )}`
+                );
+              }, 1500);
+              return;
+            }
+
+            // Redirect based on user role
             setTimeout(() => {
               if (response.data.user.role === "admin") {
                 // Use environment variable for admin panel URL
                 const adminUrl =
                   import.meta.env.VITE_ADMIN_URL ||
                   import.meta.env.VITE_ADMIN_PANEL_URL ||
-                  process.env.REACT_APP_ADMIN_URL ||
                   "http://localhost:5174"; // fallback for development
 
                 // Redirect to admin panel
@@ -188,6 +211,7 @@ function AuthForm() {
           }
         }
       } catch (error) {
+        console.error("Auth error:", error);
         const errorMessage =
           error.response?.data?.message ||
           `${isSignup ? "Registration" : "Login"} failed. Please try again.`;
@@ -204,7 +228,6 @@ function AuthForm() {
     }
   };
 
-  // ...existing JSX code remains the same...
   return (
     <div className="bg-background flex flex-col justify-center px-4 py-5 md:py-12">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -316,7 +339,7 @@ function AuthForm() {
               </div>
             )}
 
-            {/* Common fields - email and password */}
+            {/* Email field */}
             <div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -344,6 +367,7 @@ function AuthForm() {
               )}
             </div>
 
+            {/* Password field */}
             <div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

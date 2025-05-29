@@ -4,6 +4,7 @@ const User = require('../models/User.model.js');
 const Address = require('../models/address.model.js');
 const { transporter } = require('../config/nodemailer');
 const { profileChangeEmailTemplate } = require('../config/profileEmailTemplates');
+const { authEmailTemplates } = require('../config/authEmailTemplates');
 
 module.exports.register = async (req, res) => {
     const { first_name, last_name, email, password, role } = req.body;
@@ -46,14 +47,22 @@ module.exports.register = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: email,
-            subject: 'Welcome to InkDesk',
-            text: `Hello ${first_name},\n\nThank you for registering with InkDesk. Your account has been created successfully.\n\nBest regards,\nInkDesk Team`
-        };
+        // Send welcome email with beautiful template
+        try {
+            const welcomeTemplate = authEmailTemplates.welcomeEmail(newUser);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: email,
+                subject: welcomeTemplate.subject,
+                html: welcomeTemplate.html,
+                text: welcomeTemplate.text
+            };
 
-        transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.log('Welcome email error:', emailError);
+            // Don't fail registration if email fails
+        }
 
         return res.json({
             success: true,
@@ -177,14 +186,25 @@ module.exports.sendVerificationEmail = async (req, res) => {
         user.verify_Otp_expiry = expiry;
         await user.save();
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: user.email,
-            subject: 'Verify your account',
-            text: `Hello ${user.first_name},\n\nYour verification OTP is ${otp}. It is valid for 10 minutes.\n\nBest regards,\nInkDesk Team`
-        };
+        // Send OTP with beautiful template
+        try {
+            const otpTemplate = authEmailTemplates.verificationOtp(user, otp);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: otpTemplate.subject,
+                html: otpTemplate.html,
+                text: otpTemplate.text
+            };
 
-        await transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.log('OTP email error:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send OTP email"
+            });
+        }
 
         return res.json({
             success: true,
@@ -241,14 +261,22 @@ module.exports.verifyAccount = async (req, res) => {
 
         await user.save();
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: user.email,
-            subject: 'Account verified successfully',
-            text: `Hello ${user.first_name},\n\nYour account has been verified successfully.\n\nBest regards,\nInkDesk Team`
-        };
+        // Send verification success email with beautiful template
+        try {
+            const successTemplate = authEmailTemplates.verificationSuccess(user);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: successTemplate.subject,
+                html: successTemplate.html,
+                text: successTemplate.text
+            };
 
-        await transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.log('Verification success email error:', emailError);
+            // Don't fail verification if email fails
+        }
 
         return res.json({
             success: true,
@@ -289,14 +317,25 @@ module.exports.sendResetPasswordEmail = async (req, res) => {
         user.forget_password_otp_expiry = expiry;
         await user.save();
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: user.email,
-            subject: 'Reset Password',
-            text: `Hello ${user.first_name},\n\nYour password reset OTP is ${otp}. It is valid for 10 minutes.\n\nBest regards,\nInkDesk Team`
-        };
+        // Send forgot password email with beautiful template
+        try {
+            const forgotTemplate = authEmailTemplates.forgotPassword(user, otp);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: forgotTemplate.subject,
+                html: forgotTemplate.html,
+                text: forgotTemplate.text
+            };
 
-        await transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.log('Forgot password email error:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send reset password email"
+            });
+        }
 
         return res.json({
             success: true,

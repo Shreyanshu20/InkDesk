@@ -14,14 +14,72 @@ function EmailVerify() {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState("");
-  const otpSentRef = useRef(false);
+  
+  // Simple ref to prevent duplicate sends
+  const hasSentOTP = useRef(false);
 
-  const inputRefs = Array(6)
-    .fill(0)
-    .map(() => React.createRef());
+  // Create refs for inputs
+  const inputRefs = useRef(
+    Array(6).fill(0).map(() => React.createRef())
+  );
 
+  // Simple function to send OTP
+  const sendOTP = async () => {
+    if (hasSentOTP.current) return;
+    
+    hasSentOTP.current = true;
+    setResendDisabled(true);
+    setCountdown(60);
+
+    try {
+      const response = await axios.post(
+        `${backendUrl}/auth/send-otp`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("Verification code sent to your email");
+      } else {
+        toast.error(response.data.message || "Failed to send verification code");
+        hasSentOTP.current = false;
+        setResendDisabled(false);
+        setCountdown(0);
+      }
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      toast.error("Failed to send verification code");
+      hasSentOTP.current = false;
+      setResendDisabled(false);
+      setCountdown(0);
+    }
+  };
+
+  // Get email and send OTP on page load
   useEffect(() => {
-    // Handle countdown for resending OTP
+    const params = new URLSearchParams(location.search);
+    const emailParam = params.get("email");
+
+    let emailToUse = "";
+    
+    if (emailParam) {
+      emailToUse = emailParam;
+    } else if (userData?.email) {
+      emailToUse = userData.email;
+    } else {
+      toast.error("No email provided for verification");
+      navigate("/login");
+      return;
+    }
+
+    setEmail(emailToUse);
+    
+    // Send OTP immediately
+    sendOTP();
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
@@ -30,32 +88,14 @@ function EmailVerify() {
     }
   }, [countdown]);
 
-  // Get email from URL params or userData
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const emailParam = params.get("email");
-    const autoSend = params.get("autoSend") === "true";
+  // Resend OTP
+  const handleResend = () => {
+    hasSentOTP.current = false;
+    sendOTP();
+  };
 
-    if (emailParam) {
-      setEmail(emailParam);
-    } else if (userData?.email) {
-      setEmail(userData.email);
-    } else {
-      toast.error("No email provided for verification");
-      navigate("/login");
-      return;
-    }
-
-    // Only send OTP automatically if requested AND not already sent
-    if (autoSend && !otpSentRef.current) {
-      handleResendOTP();
-      otpSentRef.current = true;
-    }
-  }, [location.search, userData, navigate]);
-
-  // Handle OTP input change
+  // Handle OTP input
   const handleChange = (index, value) => {
-    // Only allow numbers
     if (value && !/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -64,34 +104,29 @@ function EmailVerify() {
 
     // Auto-focus next input
     if (value && index < 5) {
-      inputRefs[index + 1].current.focus();
+      inputRefs.current[index + 1].current?.focus();
     }
   };
 
-  // Handle key press for backspace
+  // Handle backspace
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
-      // Move to previous input on backspace if current input is empty
-      inputRefs[index - 1].current.focus();
+      inputRefs.current[index - 1].current?.focus();
     }
   };
 
-  // Paste OTP from clipboard
+  // Handle paste
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text");
 
-    // Check if pasted content is a 6-digit number
     if (/^\d{6}$/.test(pastedData)) {
-      const digits = pastedData.split("");
-      setOtp(digits);
-
-      // Focus the last input
-      inputRefs[5].current.focus();
+      setOtp(pastedData.split(""));
+      inputRefs.current[5].current?.focus();
     }
   };
 
-  // Submit OTP for verification
+  // Submit verification
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -113,7 +148,6 @@ function EmailVerify() {
       if (response.data.success) {
         toast.success("Email verified successfully!");
 
-        // Update user data if available
         if (userData) {
           setUserData({
             ...userData,
@@ -121,9 +155,8 @@ function EmailVerify() {
           });
         }
 
-        // Redirect to my-account page
         setTimeout(() => {
-          navigate("/account");
+          navigate("/");
         }, 1500);
       } else {
         toast.error(response.data.message || "Verification failed");
@@ -138,35 +171,8 @@ function EmailVerify() {
     }
   };
 
-  // Request a new OTP
-  const handleResendOTP = async () => {
-    setResendDisabled(true);
-    setCountdown(60); // 60 seconds cooldown
-
-    try {
-      const response = await axios.post(
-        `${backendUrl}/auth/send-otp`,
-        {},
-        { withCredentials: true }
-      );
-
-      if (response.data.success) {
-        toast.success("New verification code sent to your email");
-      } else {
-        toast.error(response.data.message || "Failed to send verification code");
-        setResendDisabled(false);
-        setCountdown(0);
-      }
-    } catch (error) {
-      console.error("Resend OTP error:", error);
-      toast.error(error.response?.data?.message || "Failed to send verification code");
-      setResendDisabled(false);
-      setCountdown(0);
-    }
-  };
-
   return (
-    <div className="flex flex-col justify-center py-15 bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col justify-center min-h-screen py-12 bg-gray-50 dark:bg-gray-900">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
@@ -176,7 +182,7 @@ function EmailVerify() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
           Verify your email
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400 max-w">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
           We've sent a verification code to{" "}
           <span className="font-medium text-primary">{email}</span>
         </p>
@@ -186,17 +192,14 @@ function EmailVerify() {
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label
-                htmlFor="otp"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Verification Code
               </label>
               <div className="mt-2 flex justify-center gap-2">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={inputRefs[index]}
+                    ref={inputRefs.current[index]}
                     type="text"
                     maxLength={1}
                     value={digit}
@@ -213,22 +216,20 @@ function EmailVerify() {
               </p>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin mr-2"></i>
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify Email"
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                  Verifying...
+                </>
+              ) : (
+                "Verify Email"
+              )}
+            </button>
           </form>
 
           <div className="mt-6">
@@ -245,7 +246,7 @@ function EmailVerify() {
 
             <div className="mt-6 text-center">
               <button
-                onClick={handleResendOTP}
+                onClick={handleResend}
                 disabled={resendDisabled}
                 className="text-sm font-medium text-primary hover:text-primary/80 disabled:text-gray-500 disabled:cursor-not-allowed"
               >
