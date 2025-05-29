@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300..700&display=swap');
+
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-text: var(--text);
+  --color-background: var(--background);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+
+  --font: "Red Rose", serif;
+}
+
+:root {
+  --text: #090708;
+  --background: #f8f3f3;
+  --primary: #be4857;
+  --secondary: #e9919c;
+  --accent: #f15265;
+}
+
+.dark {
+  --text: #f8f6f7;
+  --background: #0d0808;
+  --primary: #b94151;
+  --secondary: #6f1620;
+  --accent: #af0e21;
+}
+
+/* Modern animations */
+.fade-in {
+  animation: quickFadeIn 0.15s ease-out forwards;
+}
+
+@keyframes quickFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
