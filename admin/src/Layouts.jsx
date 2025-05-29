@@ -22,7 +22,7 @@ function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-text">
+    <div className="font-['Red_Rose'] flex min-h-screen bg-gray-50 text-text">
       <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${

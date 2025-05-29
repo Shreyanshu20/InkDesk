@@ -1,217 +1,191 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
+import Loader from "./Loader";
 
 const Table = ({
   data = [],
   columns = [],
   selectedItems = [],
-  onSelect,
+  onSelect, // Legacy prop name (Users component)
+  onSelectItem, // New prop name (Orders, Categories, Products)
   onSelectAll,
-  onAction,
-  itemKey = "id",
-  tableType = "generic", // "orders", "products", "users", or "generic"
-  customRenderers = {}, // For custom cell rendering
-  enableSelection = true,
-  enableSorting = true,
-  sortConfig = { key: null, direction: "ascending" },
+  sortConfig,
   onSortChange,
-  emptyMessage = "No items found",
   isLoading = false,
+  emptyMessage = "No data available",
+  enableSelection = false,
+  enableSorting = false,
+  itemKey = "id",
 }) => {
-  // Internal sort state if no external control is provided
-  const [internalSortConfig, setInternalSortConfig] = useState({
-    key: null,
-    direction: "ascending",
+  console.log('🔄 Table render with:', {
+    dataLength: data.length,
+    selectedItemsLength: selectedItems.length,
+    enableSelection,
+    hasOnSelect: !!onSelect,
+    hasOnSelectItem: !!onSelectItem,
+    hasOnSelectAll: !!onSelectAll
   });
 
-  // Use provided sort config or internal one
-  const currentSortConfig = onSortChange ? sortConfig : internalSortConfig;
+  // Use either onSelect or onSelectItem (backward compatibility)
+  const handleSelectItem = onSelect || onSelectItem;
 
-  // Request sort function
-  const requestSort = (key) => {
-    let direction = "ascending";
-    if (currentSortConfig.key === key && currentSortConfig.direction === "ascending") {
-      direction = "descending";
-    }
+  // Calculate if all items are selected
+  const allSelected = useMemo(() => {
+    if (data.length === 0) return false;
+    return data.every((item) => selectedItems.includes(item[itemKey]));
+  }, [data, selectedItems, itemKey]);
+
+  // Calculate if some items are selected (for indeterminate state)
+  const someSelected = useMemo(() => {
+    if (selectedItems.length === 0) return false;
+    return data.some((item) => selectedItems.includes(item[itemKey]));
+  }, [data, selectedItems, itemKey]);
+
+  const handleSelect = (itemId, selected) => {
+    console.log('🔄 Table handleSelect called:', { itemId, selected });
+    console.log('📋 Current selectedItems:', selectedItems);
     
-    if (onSortChange) {
-      onSortChange({ key, direction });
+    if (handleSelectItem) {
+      handleSelectItem(itemId, selected);
     } else {
-      setInternalSortConfig({ key, direction });
+      console.log('⚠️ No selection handler provided (onSelect or onSelectItem)');
     }
   };
 
-  // Helper for sort indicator icon
-  const getSortDirectionIcon = (name) => {
-    if (currentSortConfig.key !== name) {
-      return <i className="fas fa-sort text-gray-300 ml-1"></i>;
-    }
-    return currentSortConfig.direction === "ascending" ? (
-      <i className="fas fa-sort-up text-primary ml-1"></i>
-    ) : (
-      <i className="fas fa-sort-down text-primary ml-1"></i>
-    );
-  };
-
-  // Improved check for "all selected" state
-  const allSelected = 
-    data.length > 0 && 
-    selectedItems.length >= data.length && 
-    data.every(item => selectedItems.includes(item[itemKey]));
-
-  // Handle selection of all items with better logging
   const handleSelectAll = () => {
+    console.log('🔄 Table handleSelectAll called, current state:', { allSelected, dataLength: data.length });
+    console.log('📋 Current selectedItems:', selectedItems);
+    
     if (onSelectAll) {
       console.log("Select all checkbox clicked, current state:", allSelected);
       console.log("Will change to:", !allSelected);
       onSelectAll(!allSelected);
+    } else {
+      console.log('⚠️ No onSelectAll handler provided');
     }
   };
 
-  // Handle selection of a single item
-  const handleSelect = (itemId, selected) => {
-    if (onSelect) {
-      onSelect(itemId, selected);
+  const handleSort = (columnKey) => {
+    if (!enableSorting || !onSortChange) return;
+
+    let direction = "ascending";
+    if (sortConfig && sortConfig.key === columnKey && sortConfig.direction === "ascending") {
+      direction = "descending";
     }
+
+    onSortChange({ key: columnKey, direction });
   };
 
-  // Format cell content based on column type and data
-  const formatCellContent = (item, column) => {
-    // 🔥 Check for custom renderer first
-    if (column.customRenderer) {
-      return column.customRenderer(item);
+  const getSortIcon = (columnKey) => {
+    if (!sortConfig || sortConfig.key !== columnKey) {
+      return "fas fa-sort text-gray-400";
     }
-
-    // 🔥 Check for customRenderers prop (legacy support)
-    if (customRenderers[column.key]) {
-      return customRenderers[column.key](item);
-    }
-
-    const value = item[column.key];
-
-    switch (column.type) {
-      case "currency":
-        return value ? `₹${parseFloat(value).toLocaleString('en-IN')}` : '₹0';
-      
-      case "date":
-        return value ? new Date(value).toLocaleDateString('en-IN') : '-';
-      
-      case "status":
-        const statusColor = column.getStatusColor ? column.getStatusColor(value) : '';
-        return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}>
-            {value}
-          </span>
-        );
-      
-      case "actions":
-        return (
-          <div className="flex items-center space-x-2">
-            {column.actions?.map((action, index) => (
-              <button
-                key={index}
-                onClick={() => action.onClick(item.id)}
-                className={`${action.className} hover:scale-110 transition-transform`}
-                title={action.title}
-              >
-                <i className={action.icon}></i>
-              </button>
-            ))}
-          </div>
-        );
-      
-      default:
-        // 🔥 FIX: Return the actual value, not value || '-'
-        return value !== undefined && value !== null ? value : '-';
-    }
+    return sortConfig.direction === "ascending"
+      ? "fas fa-sort-up text-primary"
+      : "fas fa-sort-down text-primary";
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-gray-500 dark:text-gray-400">
+          <i className="fas fa-inbox text-4xl mb-4"></i>
+          <p className="text-lg">{emptyMessage}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
+            {/* Selection Header */}
             {enableSelection && (
-              <th className="px-6 py-3 text-left">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 <input
                   type="checkbox"
                   checked={allSelected}
+                  ref={(input) => {
+                    if (input) {
+                      input.indeterminate = someSelected && !allSelected;
+                    }
+                  }}
                   onChange={handleSelectAll}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded"
                 />
               </th>
             )}
-            
+
+            {/* Column Headers */}
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase ${
-                  enableSorting && column.sortable ? "cursor-pointer" : ""
+                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
+                  column.sortable && enableSorting ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" : ""
                 }`}
-                onClick={() => {
-                  if (enableSorting && column.sortable) {
-                    requestSort(column.key);
-                  }
-                }}
+                onClick={() => column.sortable && handleSort(column.key)}
               >
-                <div className="flex items-center">
-                  {column.label}
-                  {enableSorting && column.sortable && getSortDirectionIcon(column.key)}
+                <div className="flex items-center space-x-1">
+                  <span>{column.label}</span>
+                  {column.sortable && enableSorting && (
+                    <i className={getSortIcon(column.key)}></i>
+                  )}
                 </div>
               </th>
             ))}
           </tr>
         </thead>
-        
+
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {isLoading ? (
-            <tr>
-              <td 
-                colSpan={enableSelection ? columns.length + 1 : columns.length} 
-                className="px-6 py-8 text-center"
-              >
-                <div className="flex justify-center items-center">
-                  <i className="fas fa-spinner fa-spin text-primary mr-2"></i>
-                  <span>Loading...</span>
-                </div>
-              </td>
-            </tr>
-          ) : data.length > 0 ? (
-            data.map((item) => (
+          {data.map((item, index) => {
+            const itemId = item[itemKey];
+            const isSelected = selectedItems.includes(itemId);
+
+            return (
               <tr
-                key={item[itemKey]}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                key={itemId || index}
+                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                  isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                }`}
               >
+                {/* Selection Cell */}
                 {enableSelection && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
-                      checked={selectedItems.includes(item[itemKey])}
-                      onChange={(e) => handleSelect(item[itemKey], e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        console.log('📋 Checkbox clicked:', { itemId, checked: e.target.checked });
+                        handleSelect(itemId, e.target.checked);
+                      }}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded"
                     />
                   </td>
                 )}
-                
+
+                {/* Data Cells */}
                 {columns.map((column) => (
-                  <td 
-                    key={`${item[itemKey]}-${column.key}`} 
-                    className={`px-6 py-4 ${column.className || ""}`}
+                  <td
+                    key={column.key}
+                    className={column.className || "px-6 py-4 whitespace-nowrap"}
                   >
-                    {formatCellContent(item, column)}
+                    {column.customRenderer
+                      ? column.customRenderer(item, index)
+                      : item[column.key]}
                   </td>
                 ))}
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td 
-                colSpan={enableSelection ? columns.length + 1 : columns.length} 
-                className="px-6 py-8 text-center text-gray-500"
-              >
-                {emptyMessage}
-              </td>
-            </tr>
-          )}
+            );
+          })}
         </tbody>
       </table>
     </div>

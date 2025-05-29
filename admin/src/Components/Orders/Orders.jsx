@@ -590,18 +590,19 @@ function Orders() {
       {/* Bulk Actions */}
       {selectedOrders.length > 0 && (
         <BulkActions
-          selectedItems={selectedOrders}
-          entityName="orders"
+          selectedItems={selectedOrders} // ✅ Change from selectedCount
           actions={[
             {
-              label: "Delete",
-              onClick: handleBulkDelete,
+              label: "Delete Selected",
+              icon: "fas fa-trash",
+              onClick: (selectedIds) => handleBulkDelete(selectedIds),
               className:
                 "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
-              icon: "fas fa-trash",
               title: "Delete selected orders",
             },
           ]}
+          entityName="orders"
+          position="bottom-right"
         />
       )}
 

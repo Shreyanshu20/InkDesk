@@ -9,8 +9,7 @@ import UserDetails from "./components/UserDetails";
 import UserEditModal from "./components/UserEditModal";
 import { getUserTableConfig } from "../Common/tableConfig";
 
-const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -24,8 +23,8 @@ function Users() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "ascending",
+    key: "createdAt",
+    direction: "descending",
   });
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState(null);
@@ -50,6 +49,13 @@ function Users() {
         params.append("status", statusFilter);
       }
 
+      if (sortConfig.key) {
+        params.append("sortBy", sortConfig.key);
+        params.append("sortOrder", sortConfig.direction === "ascending" ? "asc" : "desc");
+      }
+
+      console.log('🔍 Fetching users with params:', params.toString());
+
       const response = await axios.get(
         `${API_BASE_URL}/admin/users?${params.toString()}`,
         {
@@ -58,9 +64,11 @@ function Users() {
       );
 
       if (response.data.success) {
+        console.log('👥 Users response:', response.data);
+
         const transformedUsers = response.data.users.map((user) => ({
           id: user._id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
           email: user.email,
           role: user.role || "customer",
           status: user.status || "active",
@@ -68,17 +76,19 @@ function Users() {
           phone: user.phone || "N/A",
           createdAt: user.createdAt,
           lastLogin: user.lastLogin || user.updatedAt,
-          address: user.address || {},
+          address: user.address_details || [],
           orders: user.orders || [],
+          first_name: user.first_name,
+          last_name: user.last_name,
         }));
 
         setUsers(transformedUsers);
-        setTotalUsers(
-          response.data.pagination?.total || transformedUsers.length
-        );
+        setTotalUsers(response.data.pagination?.total || transformedUsers.length);
+
+        console.log(`📊 Loaded ${transformedUsers.length} users of ${response.data.pagination?.total} total`);
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("❌ Error fetching users:", error);
       toast.error("Failed to load users");
       setUsers([]);
       setTotalUsers(0);
@@ -100,7 +110,7 @@ function Users() {
         const user = response.data.user;
         const transformedUser = {
           id: user._id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
           email: user.email,
           role: user.role || "customer",
           status: user.status || "active",
@@ -108,17 +118,19 @@ function Users() {
           phone: user.phone || "N/A",
           createdAt: user.createdAt,
           lastLogin: user.lastLogin || user.updatedAt,
-          address: user.address || {},
+          address: user.address_details || [],
           orders: user.orders || [],
           notes: user.notes || "",
           twoFactorEnabled: user.twoFactorEnabled || false,
           sessions: user.sessions || [],
           activityLog: user.activityLog || [],
+          first_name: user.first_name,
+          last_name: user.last_name,
         };
         setCurrentUser(transformedUser);
       }
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("❌ Error fetching user:", error);
       toast.error("Failed to load user details");
       navigate("/admin/users");
     }
@@ -138,13 +150,13 @@ function Users() {
         return true;
       }
     } catch (error) {
-      console.error("Error updating user status:", error);
+      console.error("❌ Error updating user status:", error);
       toast.error("Failed to update user status");
       return false;
     }
   };
 
-  // Delete user (if needed)
+  // Delete user
   const deleteUser = async (userId) => {
     try {
       const response = await axios.delete(
@@ -159,7 +171,7 @@ function Users() {
         return true;
       }
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("❌ Error deleting user:", error);
       toast.error("Failed to delete user");
       return false;
     }
@@ -225,23 +237,20 @@ function Users() {
     }
   };
 
+  // Add debugging to selection handlers
   const handleSelectUser = (id, selected) => {
+    console.log('👤 User selection:', { id, selected });
+    console.log('📋 Current selectedUsers before:', selectedUsers);
+    
     if (selected) {
-      setSelectedUsers([...selectedUsers, id]);
+      const newSelected = [...selectedUsers, id];
+      setSelectedUsers(newSelected);
+      console.log('📋 New selectedUsers after adding:', newSelected);
     } else {
-      setSelectedUsers(selectedUsers.filter((userId) => userId !== id));
+      const newSelected = selectedUsers.filter((userId) => userId !== id);
+      setSelectedUsers(newSelected);
+      console.log('📋 New selectedUsers after removing:', newSelected);
     }
-  };
-
-  const filteredUsers = users;
-
-  // User count by status
-  const userCounts = {
-    all: users.length,
-    active: users.filter((u) => u.status === "active").length,
-    inactive: users.filter((u) => u.status === "inactive").length,
-    suspended: users.filter((u) => u.status === "suspended").length,
-    pending: users.filter((u) => u.status === "pending").length,
   };
 
   // Sorted users based on sortConfig
@@ -249,8 +258,14 @@ function Users() {
     if (!sortConfig.key) return users;
 
     return [...users].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle date fields
+      if (sortConfig.key === 'createdAt' || sortConfig.key === 'lastLogin') {
+        aValue = new Date(aValue || 0);
+        bValue = new Date(bValue || 0);
+      }
 
       if (aValue < bValue) {
         return sortConfig.direction === "ascending" ? -1 : 1;
@@ -261,6 +276,28 @@ function Users() {
       return 0;
     });
   }, [users, sortConfig]);
+
+  // User count by status
+  const userCounts = useMemo(() => ({
+    all: users.length,
+    active: users.filter((u) => u.status === "active").length,
+    inactive: users.filter((u) => u.status === "inactive").length,
+    suspended: users.filter((u) => u.status === "suspended").length,
+  }), [users]);
+
+  // Add debugging to select all handler
+  const handleSelectAllUsers = (selected) => {
+    console.log('👥 Select all users:', { selected, userCount: sortedUsers.length });
+    
+    if (selected) {
+      const allUserIds = sortedUsers.map((user) => user.id);
+      setSelectedUsers(allUserIds);
+      console.log('📋 Selected all users:', allUserIds);
+    } else {
+      setSelectedUsers([]);
+      console.log('📋 Cleared all selections');
+    }
+  };
 
   // Functions to handle modal
   const closeEditModal = () => {
@@ -283,7 +320,7 @@ function Users() {
         return true;
       }
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error("❌ Error updating user:", error);
       toast.error("Failed to update user");
       return false;
     }
@@ -313,6 +350,41 @@ function Users() {
         </p>
       </div>
 
+      {/* User Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {Object.entries(userCounts).map(([status, count]) => (
+          <div
+            key={status}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setStatusFilter(status)}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 capitalize">
+                  {status === "all" ? "Total Users" : `${status} Users`}
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {count}
+                </p>
+              </div>
+              <div className={`p-3 rounded-full ${
+                status === "all" ? "bg-blue-100 text-blue-600" :
+                status === "active" ? "bg-green-100 text-green-600" :
+                status === "inactive" ? "bg-gray-100 text-gray-600" :
+                "bg-red-100 text-red-600"
+              }`}>
+                <i className={`fas ${
+                  status === "all" ? "fa-users" :
+                  status === "active" ? "fa-user-check" :
+                  status === "inactive" ? "fa-user-slash" :
+                  "fa-user-times"
+                }`}></i>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -339,7 +411,6 @@ function Users() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
-              <option value="pending">Pending</option>
             </select>
           </div>
         </div>
@@ -348,9 +419,18 @@ function Users() {
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
         <BulkActions
-          selectedCount={selectedUsers.length}
-          onDelete={() => handleDelete(selectedUsers)}
-          onClearSelection={() => setSelectedUsers([])}
+          selectedItems={selectedUsers} // ✅ Change from selectedCount to selectedItems
+          actions={[
+            {
+              label: "Delete Selected",
+              icon: "fas fa-trash",
+              onClick: (selectedIds) => handleDelete(selectedIds),
+              className: "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
+              title: "Delete selected users"
+            }
+          ]}
+          entityName="users"
+          position="bottom-right"
         />
       )}
 
@@ -367,27 +447,17 @@ function Users() {
             }).columns
           }
           selectedItems={selectedUsers}
-          onSelect={handleSelectUser}
-          onSelectAll={(selected) => {
-            if (selected) {
-              setSelectedUsers(sortedUsers.map((user) => user.id));
-            } else {
-              setSelectedUsers([]);
-            }
-          }}
+          onSelectItem={handleSelectUser} // ✅ Changed from onSelect to onSelectItem
+          onSelectAll={handleSelectAllUsers}
           sortConfig={sortConfig}
-          onSortChange={(key) => {
-            setSortConfig({
-              key,
-              direction:
-                sortConfig.key === key && sortConfig.direction === "ascending"
-                  ? "descending"
-                  : "ascending",
-            });
+          onSortChange={({ key, direction }) => {
+            setSortConfig({ key, direction });
           }}
           isLoading={isLoading}
           emptyMessage="No users found"
-          isSelectable={true}
+          enableSelection={true}
+          enableSorting={true}
+          itemKey="id"
         />
 
         {/* Pagination */}

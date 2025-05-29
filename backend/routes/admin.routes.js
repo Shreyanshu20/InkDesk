@@ -285,4 +285,327 @@ router.get('/reviews', async (req, res) => {
   }
 });
 
+// ========== USER MANAGEMENT ROUTES ==========
+
+// Get all users with pagination and filtering
+router.get('/users', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    console.log('🔍 Admin users request:', {
+      page,
+      limit,
+      search,
+      status,
+      sortBy,
+      sortOrder
+    });
+
+    // Build query
+    let query = {};
+
+    // Add status filter (using your existing enum: active, inactive, suspended)
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { first_name: searchRegex },
+        { last_name: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex }
+      ];
+    }
+
+    // Build sort object
+    let sortObject = {};
+    if (sortBy === 'name') {
+      sortObject.first_name = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    console.log('📊 Query:', JSON.stringify(query, null, 2));
+    console.log('🔄 Sort:', sortObject);
+
+    // Get users with pagination
+    const users = await User.find(query)
+      .select('-password -verify_Otp -forget_password_otp') // Exclude sensitive fields
+      .sort(sortObject)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Get total count
+    const totalUsers = await User.countDocuments(query);
+
+    console.log(`👥 Found ${users.length} users of ${totalUsers} total`);
+
+    const pagination = {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalUsers / parseInt(limit)),
+      total: totalUsers,
+      hasNextPage: parseInt(page) < Math.ceil(totalUsers / parseInt(limit)),
+      hasPrevPage: parseInt(page) > 1
+    };
+
+    res.json({
+      success: true,
+      users: users,
+      pagination
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching admin users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+});
+
+// Get single user by ID
+router.get('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    console.log('🔍 Getting user details:', userId);
+    
+    const user = await User.findById(userId)
+      .select('-password -verify_Otp -forget_password_otp') // Exclude sensitive fields
+      .populate('address_details')
+      .lean();
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get user's orders
+    let userOrders = [];
+    try {
+      userOrders = await Order.find({ user_id: userId })
+        .select('order_number total_amount status createdAt')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+    } catch (orderError) {
+      console.log('⚠️ Could not fetch user orders:', orderError.message);
+    }
+
+    // Add orders to user object
+    user.orders = userOrders;
+    
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('❌ Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    });
+  }
+});
+
+// Update user
+router.put('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { first_name, last_name, email, phone, role, status } = req.body;
+    
+    console.log('📝 Updating user:', userId, req.body);
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Update user fields (only fields that exist in your model)
+    if (first_name !== undefined) user.first_name = first_name;
+    if (last_name !== undefined) user.last_name = last_name;
+    if (email !== undefined) user.email = email;
+    if (phone !== undefined) user.phone = phone;
+    
+    // Validate role (only 'admin' or 'user' allowed)
+    if (role !== undefined && ['admin', 'user'].includes(role)) {
+      user.role = role;
+    }
+    
+    // Validate status (only 'active', 'inactive', 'suspended' allowed)
+    if (status !== undefined && ['active', 'inactive', 'suspended'].includes(status)) {
+      user.status = status;
+    }
+    
+    await user.save();
+    
+    console.log(`✅ Updated user ${userId}`);
+    
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      user: {
+        _id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user'
+    });
+  }
+});
+
+// Update user status
+router.put('/users/:id/status', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { status } = req.body;
+    
+    // Validate status using your existing enum
+    if (!status || !['active', 'inactive', 'suspended'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid status is required (active, inactive, or suspended)'
+      });
+    }
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    user.status = status;
+    await user.save();
+    
+    console.log(`✅ Updated user ${userId} status to ${status}`);
+    
+    res.json({
+      success: true,
+      message: 'User status updated successfully',
+      user: {
+        _id: user._id,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error updating user status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user status'
+    });
+  }
+});
+
+// Delete user
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    const user = await User.findByIdAndDelete(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Clean up user's related data
+    try {
+      // Delete user's orders
+      await Order.deleteMany({ user_id: userId });
+      
+      // Delete user's addresses if address_details has addresses
+      if (user.address_details && user.address_details.length > 0) {
+        // Try to delete addresses, but don't fail if Address model doesn't exist
+        try {
+          const Address = require('../models/Address.model');
+          await Address.deleteMany({ _id: { $in: user.address_details } });
+        } catch (addressError) {
+          console.log('⚠️ Could not delete addresses:', addressError.message);
+        }
+      }
+    } catch (cleanupError) {
+      console.log('⚠️ Error cleaning up user data:', cleanupError.message);
+    }
+    
+    console.log(`🗑️ Deleted user ${userId}`);
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user'
+    });
+  }
+});
+
+// Get user statistics
+router.get('/users/stats', async (req, res) => {
+  try {
+    console.log('📊 Getting user stats');
+
+    // Use your existing status enum values
+    const stats = {
+      total: await User.countDocuments({}),
+      active: await User.countDocuments({ status: 'active' }),
+      inactive: await User.countDocuments({ status: 'inactive' }),
+      suspended: await User.countDocuments({ status: 'suspended' }),
+      admins: await User.countDocuments({ role: 'admin' }),
+      users: await User.countDocuments({ role: 'user' })
+    };
+
+    console.log('📈 User stats:', stats);
+
+    res.json({
+      success: true,
+      stats
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching user stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user statistics',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
