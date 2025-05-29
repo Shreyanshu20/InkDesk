@@ -2,386 +2,320 @@
 
 const express = require('express');
 const router = express.Router();
-const Order = require('../models/order.model');
-const User = require('../models/User.model');
-const Product = require('../models/product.model');
+const { userAuth } = require('../middleware/userAuth');
 
-const Review = require('../models/review.model');
+// Import product controller functions
+const {
+  getAdminProducts,
+  getAdminProductById,
+  getAdminStats,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  bulkDeleteProducts
+} = require('../controllers/product.controller');
 
-// Get all users (admin)
-router.get('/users', async (req, res) => {
-    try {
-        const { page = 1, limit = 10, search, status, role, sortBy, sortOrder } = req.query;
-        
-        let query = {};
+// Apply auth middleware to all admin routes
+router.use(userAuth);
 
-        // Search filter
-        if (search) {
-            query.$or = [
-                { first_name: { $regex: search, $options: 'i' } },
-                { last_name: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } }
-            ];
-        }
+// Product management routes - FIXED
+router.get('/products', getAdminProducts);
+router.get('/products/stats', getAdminStats);
+router.get('/products/:id', getAdminProductById);
+router.post('/products', createProduct);
+router.put('/products/:id', updateProduct);
+router.delete('/products/:id', deleteProduct);
+router.post('/products/bulk-delete', bulkDeleteProducts);
 
-        // Status filter
-        if (status && status !== 'all') {
-            query.status = status;
-        }
-
-        // Role filter
-        if (role && role !== 'all') {
-            query.role = role;
-        }
-
-        // Build sort object
-        let sort = { createdAt: -1 }; // Default sort
-        if (sortBy && sortOrder) {
-            const sortDirection = sortOrder === 'ascending' ? 1 : -1;
-            
-            // Map frontend sort keys to backend fields
-            const sortMapping = {
-                'name': 'first_name',
-                'email': 'email',
-                'role': 'role',
-                'status': 'status',
-                'createdAt': 'createdAt'
-            };
-            
-            const backendSortKey = sortMapping[sortBy] || 'createdAt';
-            sort = { [backendSortKey]: sortDirection };
-        }
-        
-        const users = await User.find(query)
-            .select('-password')
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
-            .sort(sort);
-
-        const total = await User.countDocuments(query);
-
-        res.json({
-            success: true,
-            users,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch users'
-        });
-    }
-});
-
-// Get user by ID (admin)
-router.get('/users/:id', async (req, res) => {
+// Categories management
+router.get('/categories', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+    const { page = 1, limit = 10, search, sortBy, sortOrder } = req.query;
+    
+    let query = {};
+    if (search) {
+      query.category_name = { $regex: search, $options: 'i' };
     }
-
-    // Get user's orders
-    const orders = await Order.find({ user_id: req.params.id })
-      .populate('items.product_id', 'product_name product_price')
-      .sort({ createdAt: -1 })
-      .limit(5);
-
+    
+    let sort = { createdAt: -1 };
+    if (sortBy && sortOrder) {
+      const sortDirection = sortOrder === 'ascending' ? 1 : -1;
+      sort = { [sortBy]: sortDirection };
+    }
+    
+    const categories = await Category.find(query)
+      .sort(sort)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await Category.countDocuments(query);
+    
     res.json({
       success: true,
-      user: {
-        ...user.toObject(),
-        orders
+      categories,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalCategories: total,
+        hasNextPage: parseInt(page) < Math.ceil(total / limit),
+        hasPrevPage: parseInt(page) > 1
       }
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error('Error fetching categories:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch user'
+      message: 'Failed to fetch categories'
     });
   }
 });
 
-// Update user status (admin)
-router.put('/users/:id/status', async (req, res) => {
+router.post('/categories', async (req, res) => {
   try {
-    const { status } = req.body;
+    const { category_name, description } = req.body;
     
-    const user = await User.findByIdAndUpdate(
+    if (!category_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name is required'
+      });
+    }
+    
+    // Check if category already exists
+    const existingCategory = await Category.findOne({
+      category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
+    });
+    
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category already exists'
+      });
+    }
+    
+    const category = new Category({
+      category_name,
+      description: description || ''
+    });
+    
+    await category.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Category created successfully',
+      category
+    });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create category'
+    });
+  }
+});
+
+router.put('/categories/:id', async (req, res) => {
+  try {
+    const { category_name, description } = req.body;
+    
+    if (!category_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name is required'
+      });
+    }
+    
+    // Check if another category with same name exists
+    const existingCategory = await Category.findOne({
+      _id: { $ne: req.params.id },
+      category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
+    });
+    
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name already exists'
+      });
+    }
+    
+    const category = await Category.findByIdAndUpdate(
       req.params.id,
-      { status },
-      { new: true }
-    ).select('-password');
+      { category_name, description: description || '' },
+      { new: true, runValidators: true }
+    );
     
-    if (!user) {
+    if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Category not found'
       });
     }
     
     res.json({
       success: true,
-      message: 'User status updated successfully',
-      user
+      message: 'Category updated successfully',
+      category
     });
   } catch (error) {
-    console.error('Error updating user status:', error);
+    console.error('Error updating category:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update user status'
+      message: 'Failed to update category'
     });
   }
 });
 
-// Delete user (admin)
-router.delete('/users/:id', async (req, res) => {
+router.delete('/categories/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
+    // Check if category is being used by any products
+    const productsUsingCategory = await Product.countDocuments({
+      category: req.params.id
+    });
+    
+    if (productsUsingCategory > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete category. It is being used by ${productsUsingCategory} product(s).`
+      });
+    }
+    
+    const category = await Category.findByIdAndDelete(req.params.id);
+    
+    if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Category not found'
       });
     }
     
     res.json({
       success: true,
-      message: 'User deleted successfully'
+      message: 'Category deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error deleting category:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete user'
+      message: 'Failed to delete category'
     });
   }
 });
 
-// Update user (admin)
-router.put('/users/:id', async (req, res) => {
-  try {
-    const { first_name, last_name, email, phone, role, status } = req.body;
-    
-    const updateData = {
-      first_name,
-      last_name,
-      email,
-      phone,
-      role,
-      status
-    };
-
-    // Remove undefined values
-    Object.keys(updateData).forEach(key => {
-      if (updateData[key] === undefined) {
-        delete updateData[key];
-      }
-    });
-    
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    ).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'User updated successfully',
-      user
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update user'
-    });
-  }
-});
-
-// Get all orders (admin)
+// Orders management (orders for products owned by this seller)
 router.get('/orders', async (req, res) => {
-    try {
-        const { page = 1, limit = 10, status, search } = req.query;
-
-        let query = {};
-
-        // Status filter
-        if (status && status !== 'all') {
-            query.status = status;
-        }
-
-        // Search filter (by order number)
-        if (search) {
-            query.order_number = { $regex: search, $options: 'i' };
-        }
-
-        const orders = await Order.find(query)
-            .populate('user_id', 'first_name last_name email')
-            .populate('items.product_id', 'product_name product_price product_image')
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
-            .sort({ createdAt: -1 });
-
-        const total = await Order.countDocuments(query);
-
-        res.json({
-            success: true,
-            orders,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching orders:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch orders'
-        });
+  try {
+    const { page = 1, limit = 10, status, search, sortBy, sortOrder } = req.query;
+    const sellerId = req.userId;
+    
+    // Find orders that contain products owned by this seller
+    let matchQuery = {
+      'items.product_id': {
+        $in: await Product.find({ owner: sellerId }).distinct('_id')
+      }
+    };
+    
+    if (status && status !== 'all') {
+      matchQuery.status = status;
     }
+    
+    if (search) {
+      matchQuery.$or = [
+        { order_number: { $regex: search, $options: 'i' } },
+        { 'shipping_address.name': { $regex: search, $options: 'i' } },
+        { 'shipping_address.city': { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    let sort = { createdAt: -1 };
+    if (sortBy && sortOrder) {
+      const sortDirection = sortOrder === 'ascending' ? 1 : -1;
+      sort = { [sortBy]: sortDirection };
+    }
+    
+    const orders = await Order.find(matchQuery)
+      .populate('user_id', 'first_name last_name email')
+      .populate('items.product_id', 'product_name product_price owner')
+      .sort(sort)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    // Filter orders to only include items for this seller's products
+    const filteredOrders = orders.map(order => {
+      const sellerItems = order.items.filter(item => 
+        item.product_id && item.product_id.owner.toString() === sellerId
+      );
+      
+      if (sellerItems.length > 0) {
+        return {
+          ...order.toObject(),
+          items: sellerItems,
+          // Recalculate total for seller's items only
+          seller_total: sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        };
+      }
+      return null;
+    }).filter(Boolean);
+    
+    const total = await Order.countDocuments(matchQuery);
+    
+    res.json({
+      success: true,
+      orders: filteredOrders,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalOrders: total,
+        hasNextPage: parseInt(page) < Math.ceil(total / limit),
+        hasPrevPage: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching seller orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders'
+    });
+  }
 });
 
-// Get single order by ID (admin)
-router.get('/orders/:id', async (req, res) => {
-    try {
-        const order = await Order.findById(req.params.id)
-            .populate('user_id', 'first_name last_name email')
-            .populate('items.product_id', 'product_name product_price product_image product_brand');
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            order
-        });
-    } catch (error) {
-        console.error('Error fetching order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch order'
-        });
-    }
-});
-
-// Update order status (admin)
-router.put('/orders/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        const order = await Order.findByIdAndUpdate(
-            req.params.id,
-            { status },
-            { new: true }
-        ).populate('user_id', 'first_name last_name email')
-            .populate('items.product_id', 'product_name product_price');
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Order status updated successfully',
-            order
-        });
-    } catch (error) {
-        console.error('Error updating order status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update order status'
-        });
-    }
-});
-
-// Delete order (admin)
-router.delete('/orders/:id', async (req, res) => {
-    try {
-        const order = await Order.findByIdAndDelete(req.params.id);
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Order deleted successfully'
-        });
-    } catch (error) {
-        console.error('Error deleting order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete order'
-        });
-    }
-});
-
-// Get all reviews (admin)
+// Reviews for seller's products
 router.get('/reviews', async (req, res) => {
   try {
     const { page = 1, limit = 10, rating, search, sortBy, sortOrder } = req.query;
+    const sellerId = req.userId;
     
-    let query = {};
+    // Find reviews for products owned by this seller
+    let query = {
+      product_id: {
+        $in: await Product.find({ owner: sellerId }).distinct('_id')
+      }
+    };
     
-    // Rating filter
     if (rating && rating !== 'all') {
       query.rating = parseInt(rating);
     }
     
-    // Search filter
     if (search) {
       query.comment = { $regex: search, $options: 'i' };
     }
     
-    // Build sort object
-    let sort = { createdAt: -1 }; // Default sort
+    let sort = { createdAt: -1 };
     if (sortBy && sortOrder) {
       const sortDirection = sortOrder === 'ascending' ? 1 : -1;
-      
-      // Map frontend sort keys to backend fields
       const sortMapping = {
         'rating': 'rating',
         'date': 'createdAt'
       };
-      
       const backendSortKey = sortMapping[sortBy] || 'createdAt';
       sort = { [backendSortKey]: sortDirection };
     }
     
     const reviews = await Review.find(query)
       .populate('user_id', 'first_name last_name email avatar')
-      .populate('product_id', 'product_name product_price product_image category')
+      .populate('product_id', 'product_name product_price product_image category owner')
+      .sort(sort)
       .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort(sort);
+      .skip((page - 1) * limit);
     
     const total = await Review.countDocuments(query);
     
@@ -389,71 +323,125 @@ router.get('/reviews', async (req, res) => {
       success: true,
       reviews,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalReviews: total,
+        hasNextPage: parseInt(page) < Math.ceil(total / limit),
+        hasPrevPage: parseInt(page) > 1
       }
     });
   } catch (error) {
-    console.error('Error fetching reviews:', error);
+    console.error('Error fetching seller reviews:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch reviews',
-      error: error.message
+      message: 'Failed to fetch reviews'
     });
   }
 });
 
-// Get review by ID (admin)
-router.get('/reviews/:id', async (req, res) => {
+// Dashboard analytics for seller
+router.get('/dashboard/analytics', async (req, res) => {
   try {
-    const review = await Review.findById(req.params.id)
-      .populate('user_id', 'first_name last_name email avatar')
-      .populate('product_id', 'product_name product_price product_image category');
+    const sellerId = req.userId;
     
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: 'Review not found'
+    // Get seller's products
+    const sellerProducts = await Product.find({ owner: sellerId });
+    const sellerProductIds = sellerProducts.map(p => p._id);
+    
+    // Basic stats
+    const totalProducts = sellerProducts.length;
+    const activeProducts = sellerProducts.filter(p => p.product_stock > 0).length;
+    const outOfStockProducts = totalProducts - activeProducts;
+    
+    // Orders containing seller's products
+    const orders = await Order.find({
+      'items.product_id': { $in: sellerProductIds }
+    }).populate('items.product_id', 'owner');
+    
+    // Calculate seller-specific metrics
+    let totalRevenue = 0;
+    let totalOrders = 0;
+    let totalItemsSold = 0;
+    
+    orders.forEach(order => {
+      const sellerItems = order.items.filter(item => 
+        item.product_id && sellerProductIds.some(id => id.equals(item.product_id._id))
+      );
+      
+      if (sellerItems.length > 0) {
+        totalOrders++;
+        sellerItems.forEach(item => {
+          totalRevenue += item.price * item.quantity;
+          totalItemsSold += item.quantity;
+        });
+      }
+    });
+    
+    // Recent orders (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentOrders = await Order.find({
+      'items.product_id': { $in: sellerProductIds },
+      createdAt: { $gte: thirtyDaysAgo }
+    }).populate('items.product_id', 'owner');
+    
+    const recentRevenue = recentOrders.reduce((sum, order) => {
+      const sellerItems = order.items.filter(item => 
+        item.product_id && sellerProductIds.some(id => id.equals(item.product_id._id))
+      );
+      return sum + sellerItems.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
+    }, 0);
+    
+    // Top products
+    const productSales = {};
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.product_id && sellerProductIds.some(id => id.equals(item.product_id._id))) {
+          const productId = item.product_id._id.toString();
+          if (!productSales[productId]) {
+            productSales[productId] = { quantity: 0, revenue: 0 };
+          }
+          productSales[productId].quantity += item.quantity;
+          productSales[productId].revenue += item.price * item.quantity;
+        }
       });
-    }
+    });
+    
+    const topProducts = await Promise.all(
+      Object.entries(productSales)
+        .sort(([,a], [,b]) => b.quantity - a.quantity)
+        .slice(0, 5)
+        .map(async ([productId, sales]) => {
+          const product = await Product.findById(productId);
+          return {
+            id: productId,
+            name: product.product_name,
+            quantitySold: sales.quantity,
+            revenue: sales.revenue
+          };
+        })
+    );
     
     res.json({
       success: true,
-      review
+      analytics: {
+        totalProducts,
+        activeProducts,
+        outOfStockProducts,
+        totalRevenue,
+        totalOrders,
+        totalItemsSold,
+        recentRevenue,
+        topProducts,
+        averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+      }
     });
   } catch (error) {
-    console.error('Error fetching review:', error);
+    console.error('Error fetching dashboard analytics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch review',
-      error: error.message
-    });
-  }
-});
-
-// Delete review (admin)
-router.delete('/reviews/:id', async (req, res) => {
-  try {
-    const review = await Review.findByIdAndDelete(req.params.id);
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: 'Review not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Review deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting review:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete review',
-      error: error.message
+      message: 'Failed to fetch analytics'
     });
   }
 });

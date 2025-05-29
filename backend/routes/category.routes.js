@@ -3,33 +3,42 @@ const router = express.Router();
 const Category = require('../models/category.model');
 const SubCategory = require('../models/subCategory.model'); // Note the capital C
 
-// Get all categories WITH SUBCATEGORY NAMES
+// Get all categories
 router.get('/', async (req, res) => {
   try {
-    console.log('📦 Fetching categories with subcategories...');
-    
-    const categories = await Category.find().populate({
-      path: 'subcategories',
-      select: 'subcategory_name'
-    });
-    
-    console.log('✅ Found categories:', categories.length);
-    
-    // Log subcategory details for debugging
-    categories.forEach(cat => {
-      console.log(`📋 Category: ${cat.category_name}`);
-      console.log(`   Subcategories: ${cat.subcategories.map(sub => sub.subcategory_name).join(', ')}`);
-    });
+    const categories = await Category.find()
+      .sort({ category_name: 1 });
     
     res.json({
       success: true,
       categories
     });
   } catch (error) {
-    console.error('❌ Error fetching categories:', error);
+    console.error('Error fetching categories:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch categories',
+      error: error.message
+    });
+  }
+});
+
+// Get all categories with their subcategories populated
+router.get('/with-subcategories', async (req, res) => {
+  try {
+    const categories = await Category.find()
+      .populate('subcategories')
+      .sort({ category_name: 1 });
+    
+    res.json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    console.error('Error fetching categories with subcategories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch categories with subcategories',
       error: error.message
     });
   }

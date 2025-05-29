@@ -4,15 +4,34 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Test the connection
+const testConnection = async () => {
+  try {
+    const result = await cloudinary.api.ping();
+    console.log('✅ Cloudinary connection successful:', result);
+  } catch (error) {
+    console.error('❌ Cloudinary connection failed:', error.message);
+  }
+};
+
+// Call test on startup
+testConnection();
+
 // Debug environment variables
-console.log('CLOUDINARY_URL exists:', !!process.env.CLOUDINARY_URL);
+console.log('CLOUDINARY_CLOUD_NAME exists:', !!process.env.CLOUDINARY_CLOUD_NAME);
 
 let storage, upload;
 
 try {
   // Configure Cloudinary with explicit config
-  if (process.env.CLOUDINARY_URL) {
-    const url = new URL(process.env.CLOUDINARY_URL);
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    const url = new URL(process.env.CLOUDINARY_CLOUD_NAME);
     
     cloudinary.config({
       cloud_name: url.hostname,
@@ -24,7 +43,7 @@ try {
     
     console.log('✅ Configured Cloudinary with cloud_name:', url.hostname);
   } else {
-    throw new Error('CLOUDINARY_URL is required');
+    throw new Error('CLOUDINARY_CLOUD_NAME is required');
   }
 
   // Simple storage configuration without complex transformations

@@ -5,7 +5,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const authRoutes = require('./routes/auth.routes.js');
 const app = express();
 
 // Middleware
@@ -34,85 +33,110 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Upload routes (need to be registered early)
+try {
+  app.use('/api/upload', require('./routes/upload.routes'));
+  console.log('✅ Upload routes registered at /api/upload');
+} catch (error) {
+  console.error('❌ Upload routes error:', error.message);
+}
+
+// Test route for upload endpoint
+app.get('/api/upload/test', (req, res) => {
+  res.json({ message: 'Upload route is working!' });
+});
+
 // Auth routes
-app.use('/auth', authRoutes);
+try {
+  const authRoutes = require('./routes/auth.routes.js');
+  app.use('/auth', authRoutes);
+  console.log('✅ Auth routes loaded at /auth');
+} catch (error) {
+  console.error('❌ Auth routes error:', error.message);
+}
+
+// User routes
+try {
+  const userRoutes = require('./routes/user.routes');
+  app.use('/users', userRoutes);
+  console.log('✅ User routes loaded at /users');
+} catch (error) {
+  console.error('❌ User routes error:', error.message);
+}
 
 // Product routes
 try {
   const productRoutes = require('./routes/product.routes');
   app.use('/products', productRoutes);
-  console.log('✅ Product routes loaded');
+  console.log('✅ Product routes loaded at /products');
 } catch (error) {
   console.error('❌ Product routes error:', error.message);
 }
 
 // Category routes
-app.use('/categories', require('./routes/category.routes'));
-console.log('✅ Category routes registered at /categories');
+try {
+  const categoryRoutes = require('./routes/category.routes');
+  app.use('/categories', categoryRoutes);
+  console.log('✅ Category routes loaded at /categories');
+} catch (error) {
+  console.error('❌ Category routes error:', error.message);
+}
 
-// Cart routes - ADD THIS
+// Subcategory routes
+try {
+  const subcategoryRoutes = require('./routes/subcategory.routes');
+  app.use('/subcategories', subcategoryRoutes);
+  console.log('✅ Subcategory routes loaded at /subcategories');
+} catch (error) {
+  console.error('❌ Subcategory routes error:', error.message);
+}
+
+// Cart routes
 try {
   const cartRoutes = require('./routes/cart.routes');
   app.use('/cart', cartRoutes);
-  console.log('✅ Cart routes loaded');
+  console.log('✅ Cart routes loaded at /cart');
 } catch (error) {
   console.error('❌ Cart routes error:', error.message);
 }
 
-// User routes - ADD THIS
-try {
-  const userRoutes = require('./routes/user.routes');
-  app.use('/user', userRoutes);
-  console.log('✅ User routes loaded');
-} catch (error) {
-  console.error('❌ User routes error:', error.message);
-}
-
-// Wishlist routes - ADD THIS
+// Wishlist routes
 try {
   const wishlistRoutes = require('./routes/wishlist.route');
   app.use('/wishlist', wishlistRoutes);
-  console.log('✅ Wishlist routes loaded');
+  console.log('✅ Wishlist routes loaded at /wishlist');
 } catch (error) {
   console.error('❌ Wishlist routes error:', error.message);
 }
 
-// Add this with your other routes
+// Order routes
 try {
   const orderRoutes = require('./routes/orders.routes');
   app.use('/orders', orderRoutes);
-  console.log('✅ Order routes loaded successfully');
+  console.log('✅ Order routes loaded at /orders');
 } catch (error) {
-  console.error('❌ Failed to load order routes:', error.message);
+  console.error('❌ Order routes error:', error.message);
 }
 
+// Review routes
 try {
   const reviewRoutes = require('./routes/review.routes.js');
   app.use('/reviews', reviewRoutes);
-  console.log('✅ review routes loaded successfully');
+  console.log('✅ Review routes loaded at /reviews');
 } catch (error) {
-  console.error('❌ Failed to load review routes:', error.message);
+  console.error('❌ Review routes error:', error.message);
 }
 
-// Add admin routes
+// Admin routes (should be last among functional routes)
 try {
   const adminRoutes = require('./routes/admin.routes');
   app.use('/admin', adminRoutes);
-  console.log('✅ Admin routes loaded successfully');
+  console.log('✅ Admin routes loaded at /admin');
 } catch (error) {
-  console.error('❌ Failed to load admin routes:', error.message);
+  console.error('❌ Admin routes error:', error.message);
 }
 
-// Add this BEFORE other routes
-app.use('/api/upload', require('./routes/upload.routes'));
-console.log('🚀 Upload routes registered at /api/upload');
-
-// Test route to check if upload endpoint exists
-app.get('/api/upload/test', (req, res) => {
-  res.json({ message: 'Upload route is working!' });
-});
-
-// Add this AFTER your routes are loaded but BEFORE the 404 handler
+// Debug route to check all registered routes
 app.get('/debug/routes', (req, res) => {
   const routes = [];
   app._router.stack.forEach((middleware) => {
@@ -132,7 +156,10 @@ app.get('/debug/routes', (req, res) => {
       });
     }
   });
-  res.json({ routes });
+  res.json({ 
+    totalRoutes: routes.length,
+    routes 
+  });
 });
 
 // Error handling middleware
@@ -145,43 +172,73 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404 handler (must be last)
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`,
-    availableRoutes: [
-      'GET /health',
-      'POST /auth/register',
-      'POST /auth/login',
-      'POST /auth/logout',
-      'GET /products',
-      'GET /products?featured=true',
-      'GET /products?discount=true',
-      'GET /products?sort=newest-desc',
-      'GET /products/brands',
-      'GET /products/search?q=keyword',
-      'GET /products/category/:categoryName',
-      'GET /products/subcategory/:subcategoryName',
-      'GET /products/:id',
-      'GET /products/:id/related',
-      'GET /categories',
-      'GET /categories/with-subcategories',
-      'POST /cart/add (Auth Required)',
-      'GET /cart (Auth Required)',
-      'GET /cart/count (Auth Required)',
-      'PUT /cart/update/:id (Auth Required)',
-      'DELETE /cart/remove/:id (Auth Required)',
-      'DELETE /cart/clear (Auth Required)'
-    ]
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    availableRoutes: {
+      auth: [
+        'POST /auth/register',
+        'POST /auth/login', 
+        'POST /auth/logout'
+      ],
+      products: [
+        'GET /products',
+        'GET /products/:id',
+        'GET /products/brands',
+        'GET /products/search?q=keyword',
+        'GET /products/category/:categoryName',
+        'GET /products/subcategory/:subcategoryName'
+      ],
+      categories: [
+        'GET /categories',
+        'GET /categories/with-subcategories'
+      ],
+      subcategories: [
+        'GET /subcategories',
+        'GET /subcategories/by-category/:categoryId'
+      ],
+      admin: [
+        'GET /admin/products (Auth Required)',
+        'GET /admin/products/stats (Auth Required)',
+        'GET /admin/products/:id (Auth Required)',
+        'POST /admin/products (Auth Required)',
+        'PUT /admin/products/:id (Auth Required)',
+        'DELETE /admin/products/:id (Auth Required)'
+      ],
+      cart: [
+        'GET /cart (Auth Required)',
+        'POST /cart/add (Auth Required)',
+        'PUT /cart/update/:id (Auth Required)',
+        'DELETE /cart/remove/:id (Auth Required)'
+      ],
+      orders: [
+        'GET /orders (Auth Required)',
+        'POST /orders (Auth Required)',
+        'GET /orders/:id (Auth Required)'
+      ],
+      upload: [
+        'POST /api/upload/image (Auth Required)',
+        'GET /api/upload/test'
+      ],
+      debug: [
+        'GET /health',
+        'GET /debug/routes'
+      ]
+    }
   });
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on: http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`🚀 Server running on: http://localhost:${PORT}`);
+  console.log(`📋 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔍 Debug routes: http://localhost:${PORT}/debug/routes`);
+  console.log(`📁 Upload test: http://localhost:${PORT}/api/upload/test`);
 });
 
 module.exports = app;

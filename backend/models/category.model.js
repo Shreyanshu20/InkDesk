@@ -8,10 +8,10 @@ const categorySchema = new Schema({
     },
     category_image: {
         type: String,
-        required: false, // Changed to false to allow empty images
+        required: false,
         default: ''
     },
-    subcategories: [{ // Changed from sub_category to subcategories
+    subcategories: [{ 
         type: Schema.Types.ObjectId,
         ref: 'SubCategory'
     }],

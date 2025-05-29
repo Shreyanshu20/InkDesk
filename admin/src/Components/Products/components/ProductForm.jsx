@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify"; // Changed from react-hot-toast
+import { toast } from "react-toastify";
 import ProductFormFields from "./ProductFormFields";
 import ProductImageUpload from "./ProductImageUpload";
 
@@ -14,6 +14,8 @@ function ProductForm({ mode: propMode }) {
   const [mode, setMode] = useState(propMode || "add");
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -32,16 +34,88 @@ function ProductForm({ mode: propMode }) {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({}); // Track individual field touches
 
   // Fetch categories and product data
   useEffect(() => {
     fetchCategories();
+    fetchSubcategories();
 
     if (id && (mode === "edit" || propMode === "edit")) {
       setMode("edit");
       fetchProduct(id);
     }
   }, [id, propMode, mode]);
+
+  // Filter subcategories when category changes
+  useEffect(() => {
+    if (formData.category && categories.length > 0) {
+      const selectedCategory = categories.find(
+        (cat) => cat.name === formData.category
+      );
+      if (selectedCategory) {
+        fetchSubcategoriesByCategory(selectedCategory.id);
+      }
+    } else {
+      setFilteredSubcategories([]);
+      setFormData((prev) => ({ ...prev, subcategory: "" }));
+    }
+  }, [formData.category, categories]);
+
+  // Real-time validation for touched fields
+  useEffect(() => {
+    if (Object.keys(touchedFields).length > 0) {
+      const newErrors = {};
+
+      Object.keys(touchedFields).forEach((fieldName) => {
+        if (touchedFields[fieldName]) {
+          const error = validateField(fieldName, formData[fieldName]);
+          if (error) {
+            newErrors[fieldName] = error;
+          }
+        }
+      });
+
+      // Special case for images
+      if (touchedFields.images && uploadedImages.length === 0) {
+        newErrors.images = "At least one product image is required";
+      }
+
+      setErrors(newErrors);
+    }
+  }, [formData, uploadedImages, touchedFields]);
+
+  // Fetch subcategories for a specific category
+  const fetchSubcategoriesByCategory = async (categoryId) => {
+    try {
+      console.log("🔍 Fetching subcategories for category ID:", categoryId);
+
+      const response = await axios.get(
+        `${API_BASE_URL}/subcategories/by-category/${categoryId}`
+      );
+
+      if (response.data.success) {
+        console.log("📋 Received subcategories:", response.data.subcategories);
+        setFilteredSubcategories(response.data.subcategories);
+
+        // Reset subcategory if it doesn't belong to the selected category
+        if (formData.subcategory) {
+          const isValidSubcategory = response.data.subcategories.some(
+            (sub) => sub.subcategory_name === formData.subcategory
+          );
+          if (!isValidSubcategory) {
+            setFormData((prev) => ({ ...prev, subcategory: "" }));
+          }
+        }
+      } else {
+        console.log("⚠️ No subcategories found for category:", categoryId);
+        setFilteredSubcategories([]);
+      }
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      setFilteredSubcategories([]);
+    }
+  };
 
   // Fetch categories from backend
   const fetchCategories = async () => {
@@ -58,14 +132,34 @@ function ProductForm({ mode: propMode }) {
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
-      toast.error("Failed to load categories"); // react-toastify
+      toast.error("Failed to load categories");
+    }
+  };
+
+  // Fetch subcategories from backend
+  const fetchSubcategories = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/subcategories`);
+      if (response.data.success) {
+        setSubcategories(response.data.subcategories);
+      }
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      toast.error("Failed to load subcategories");
     }
   };
 
   // Fetch product for editing
   const fetchProduct = async (productId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/products/${productId}`,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
       if (response.data.success) {
         const product = response.data.product;
 
@@ -83,139 +177,252 @@ function ProductForm({ mode: propMode }) {
           status: product.product_stock > 0 ? "active" : "out_of_stock",
         });
 
-        // Handle both new multiple images and old single image format
+        // Handle images
         if (
           product.product_images &&
           Array.isArray(product.product_images) &&
           product.product_images.length > 0
         ) {
-          // New format - process to ensure consistent structure
           const processedImages = product.product_images.map((img) => ({
             url: img.url || img,
-            public_id: img.public_id || "", // Handle missing public_id
+            public_id: img.public_id || "",
             alt_text: img.alt_text || "",
           }));
           setUploadedImages(processedImages);
           setPreviewImages(processedImages.map((img) => img.url));
         } else if (product.product_image) {
-          // Old format - single image
           const singleImageObj = {
             url: product.product_image,
-            public_id: "", // Old images don't have public_id
+            public_id: "",
             alt_text: "",
           };
           setUploadedImages([singleImageObj]);
           setPreviewImages([product.product_image]);
         } else {
-          // No images
           setUploadedImages([]);
           setPreviewImages([]);
         }
       }
     } catch (error) {
       console.error("Error fetching product:", error);
-      toast.error("Failed to load product");
+      if (error.response?.status === 404) {
+        toast.error(
+          "Product not found or you don't have permission to edit it"
+        );
+      } else if (error.response?.status === 401) {
+        toast.error("Please login to edit products");
+      } else {
+        toast.error("Failed to load product");
+      }
       navigate("/admin/products");
     }
   };
 
-  // Validate field
+  // Enhanced field validation
   const validateField = (name, value) => {
+    const trimmedValue = typeof value === "string" ? value.trim() : value;
+
     switch (name) {
       case "name":
-        return value.trim() ? null : "Product name is required";
+        if (!trimmedValue) return "Product name is required";
+        if (trimmedValue.length < 3)
+          return "Product name must be at least 3 characters";
+        if (trimmedValue.length > 100)
+          return "Product name must not exceed 100 characters";
+        return null;
+
       case "description":
-        return value.trim() ? null : "Description is required";
+        if (!trimmedValue) return "Description is required";
+        if (trimmedValue.length < 10)
+          return "Description must be at least 10 characters";
+        if (trimmedValue.length > 1000)
+          return "Description must not exceed 1000 characters";
+        return null;
+
       case "price":
         if (!value) return "Price is required";
-        if (isNaN(value)) return "Price must be a number";
-        if (Number(value) < 0) return "Price cannot be negative";
+        const price = parseFloat(value);
+        if (isNaN(price)) return "Price must be a valid number";
+        if (price <= 0) return "Price must be greater than 0";
+        if (price > 1000000) return "Price seems too high";
         return null;
+
       case "stock":
-        if (!value) return "Stock quantity is required";
-        if (isNaN(value)) return "Stock must be a number";
-        if (Number(value) < 0) return "Stock cannot be negative";
+        if (value === "" || value === null || value === undefined)
+          return "Stock quantity is required";
+        const stock = parseInt(value);
+        if (isNaN(stock)) return "Stock must be a valid number";
+        if (stock < 0) return "Stock cannot be negative";
+        if (stock > 100000) return "Stock quantity seems too high";
         return null;
+
       case "category":
-        return value ? null : "Category is required";
+        if (!trimmedValue) return "Category is required";
+        return null;
+
+      case "subcategory":
+        if (!trimmedValue) return "Subcategory is required";
+        return null;
+
+      case "brand":
+        if (!trimmedValue) return "Brand is required";
+        if (trimmedValue.length < 2)
+          return "Brand name must be at least 2 characters";
+        if (trimmedValue.length > 50)
+          return "Brand name must not exceed 50 characters";
+        return null;
+
+      case "discount":
+        if (value && value !== "") {
+          const discount = parseFloat(value);
+          if (isNaN(discount)) return "Discount must be a valid number";
+          if (discount < 0) return "Discount cannot be negative";
+          if (discount > 100) return "Discount cannot exceed 100%";
+        }
+        return null;
+
+      case "rating":
+        if (value && value !== "") {
+          const rating = parseFloat(value);
+          if (isNaN(rating)) return "Rating must be a valid number";
+          if (rating < 0) return "Rating cannot be negative";
+          if (rating > 5) return "Rating cannot exceed 5";
+        }
+        return null;
+
       default:
         return null;
     }
   };
 
-  // Handle input changes
+  // Handle input changes with proper validation
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === "checkbox" ? checked : value;
 
+    // Update form data
     setFormData((prev) => ({ ...prev, [name]: fieldValue }));
-    setFormTouched(true);
 
-    if (formTouched) {
-      const fieldError = validateField(name, fieldValue);
-      setErrors((prev) => ({
-        ...prev,
-        [name]: fieldError,
-      }));
-    }
+    // Mark field as touched
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+
+    // Mark form as touched
+    setFormTouched(true);
   };
 
-  // Validate form
+  // Handle field blur for immediate validation
+  const handleFieldBlur = (fieldName) => {
+    setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
+  };
+
+  // Comprehensive form validation
   const validateForm = () => {
     const newErrors = {};
+    const requiredFields = [
+      "name",
+      "description",
+      "price",
+      "stock",
+      "category",
+      "subcategory",
+      "brand",
+    ];
 
-    Object.keys(formData).forEach((field) => {
+    // Validate all required fields
+    requiredFields.forEach((field) => {
       const error = validateField(field, formData[field]);
-      if (error) newErrors[field] = error;
+      if (error) {
+        newErrors[field] = error;
+      }
     });
 
-    if (uploadedImages.length === 0) {
+    // Validate optional fields if they have values
+    ["discount", "rating"].forEach((field) => {
+      if (formData[field] && formData[field] !== "") {
+        const error = validateField(field, formData[field]);
+        if (error) {
+          newErrors[field] = error;
+        }
+      }
+    });
+
+    // Validate images
+    if (!uploadedImages || uploadedImages.length === 0) {
       newErrors.images = "At least one product image is required";
     }
 
+    // Additional business logic validations
+    if (formData.discount && formData.price) {
+      const price = parseFloat(formData.price);
+      const discount = parseFloat(formData.discount);
+      if (discount >= price) {
+        newErrors.discount =
+          "Discount cannot be equal to or greater than price";
+      }
+    }
+
     setErrors(newErrors);
+    setTouchedFields(
+      Object.fromEntries(requiredFields.map((field) => [field, true]))
+    );
+    if (!uploadedImages || uploadedImages.length === 0) {
+      setTouchedFields((prev) => ({ ...prev, images: true }));
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormTouched(true);
 
+    console.log("🚀 Form submission started");
+    console.log("📝 Form data:", formData);
+    console.log("🖼️ Uploaded images:", uploadedImages);
+
+    // Validate entire form
     if (!validateForm()) {
-      const firstErrorField = document.querySelector(".error-field");
-      if (firstErrorField) {
-        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
-        firstErrorField.focus();
+      console.log("❌ Form validation failed:", errors);
+
+      // Focus on first error field
+      const firstErrorField = Object.keys(errors)[0];
+      const element =
+        document.getElementById(firstErrorField) ||
+        document.querySelector(`[name="${firstErrorField}"]`);
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+
+      toast.error("Please fix the errors before submitting");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Process uploadedImages to ensure proper structure
+      // Process images
       const processedImages = uploadedImages.map((img) => ({
         url: img.url || img,
-        public_id: img.public_id || "", // Ensure public_id exists (can be empty string)
+        public_id: img.public_id || "",
         alt_text: img.alt_text || "",
       }));
 
       const productData = {
-        product_name: formData.name,
-        product_description: formData.description,
+        product_name: formData.name.trim(),
+        product_description: formData.description.trim(),
         product_price: parseFloat(formData.price),
         product_stock: parseInt(formData.stock),
-        product_category: formData.category,
-        product_subcategory: formData.subcategory || "",
-        product_brand: formData.brand || "",
-        product_discount: parseFloat(formData.discount) || 0,
-        product_rating: parseFloat(formData.rating) || 0,
-        product_images: processedImages, // Use processed images
-        product_image: processedImages.length > 0 ? processedImages[0].url : "", // Backward compatibility
+        product_category: formData.category.trim(),
+        product_subcategory: formData.subcategory.trim(),
+        product_brand: formData.brand.trim(),
+        product_discount: formData.discount ? parseFloat(formData.discount) : 0,
+        product_rating: formData.rating ? parseFloat(formData.rating) : 0,
+        product_images: processedImages,
+        product_image: processedImages.length > 0 ? processedImages[0].url : "",
       };
 
-      console.log("Sending product data:", productData); // Debug log
+      console.log("📤 Sending product data:", productData);
 
       let response;
       if (mode === "add") {
@@ -238,19 +445,17 @@ function ProductForm({ mode: propMode }) {
         toast.success(
           `Product ${mode === "add" ? "created" : "updated"} successfully!`
         );
-
-        // Force refresh with timestamp
-        const timestamp = Date.now();
-        navigate(`/admin/products?t=${timestamp}`);
+        navigate(`/admin/products?t=${Date.now()}`);
       }
     } catch (error) {
-      console.error("Error saving product:", error);
-      console.error("Error details:", error.response?.data); // More detailed error log
+      console.error("❌ Error saving product:", error);
 
       if (error.response?.status === 401) {
         toast.error("Unauthorized. Please login again.");
       } else if (error.response?.status === 403) {
         toast.error("You can only modify your own products");
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
       } else {
         toast.error(
           `Failed to ${mode === "add" ? "create" : "update"} product`
@@ -272,15 +477,14 @@ function ProductForm({ mode: propMode }) {
     navigate("/admin/products");
   };
 
-  // Handle image change
-  const handleImageChange = (newImages) => {
-    setPreviewImages(newImages);
-
-    if (newImages.length > 0 && errors.images) {
+  // Handle image upload success
+  const handleImageUploadSuccess = () => {
+    // Clear image error when images are uploaded
+    if (errors.images) {
       setErrors((prev) => {
-        const updatedErrors = { ...prev };
-        delete updatedErrors.images;
-        return updatedErrors;
+        const newErrors = { ...prev };
+        delete newErrors.images;
+        return newErrors;
       });
     }
   };
@@ -321,7 +525,7 @@ function ProductForm({ mode: propMode }) {
         noValidate
       >
         {/* Form error summary */}
-        {Object.keys(errors).length > 0 && formTouched && (
+        {Object.keys(errors).length > 0 && (
           <div
             className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
             role="alert"
@@ -340,16 +544,24 @@ function ProductForm({ mode: propMode }) {
                       .filter(([_, message]) => message)
                       .map(([field, message]) => (
                         <li key={field}>
-                          <a
-                            href={`#${field}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              document.getElementById(field)?.focus();
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const element =
+                                document.getElementById(field) ||
+                                document.querySelector(`[name="${field}"]`);
+                              if (element) {
+                                element.focus();
+                                element.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "center",
+                                });
+                              }
                             }}
-                            className="hover:underline focus:outline-none focus:underline"
+                            className="hover:underline focus:outline-none focus:underline text-left"
                           >
                             {message}
-                          </a>
+                          </button>
                         </li>
                       ))}
                   </ul>
@@ -365,8 +577,10 @@ function ProductForm({ mode: propMode }) {
             formData={formData}
             errors={errors}
             categories={categories}
+            subcategories={filteredSubcategories}
             handleInputChange={handleInputChange}
-            formTouched={formTouched}
+            handleFieldBlur={handleFieldBlur}
+            touchedFields={touchedFields}
           />
 
           {/* Right Column */}
@@ -376,7 +590,8 @@ function ProductForm({ mode: propMode }) {
             uploadedImages={uploadedImages}
             setUploadedImages={setUploadedImages}
             error={errors.images}
-            formTouched={formTouched}
+            touched={touchedFields.images}
+            onUploadSuccess={handleImageUploadSuccess}
           />
         </div>
 
@@ -408,4 +623,5 @@ function ProductForm({ mode: propMode }) {
     </div>
   );
 }
+
 export default ProductForm;

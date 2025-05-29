@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify"; // Changed from react-hot-toast
+import { toast } from "react-toastify";
 import Loader from "../Common/Loader";
 import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
@@ -9,9 +9,24 @@ import BulkActions from "../Common/BulkActions";
 import { getProductTableConfig } from "../Common/tableConfig.jsx";
 import ProductDetails from "./components/ProductDetails";
 
-// Backend URL configuration - FIXED
-const API_BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+// Custom debounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -20,9 +35,13 @@ function Products() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [view, setView] = useState("list");
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Separate state for input values (immediate) and applied filters (debounced)
+  const [searchInput, setSearchInput] = useState(""); // What user types
+  const [searchQuery, setSearchQuery] = useState(""); // What gets applied
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({
@@ -30,44 +49,64 @@ function Products() {
     direction: "ascending",
   });
   const [totalProducts, setTotalProducts] = useState(0);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    activeProducts: 0,
+    outOfStockProducts: 0,
+    totalInventoryValue: 0
+  });
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // Add location hook
+  const location = useLocation();
 
-  // Fetch products from backend with owner filter
-  const fetchProducts = async () => {
+  // Debounce search input (500ms delay)
+  const debouncedSearchInput = useDebounce(searchInput, 500);
+
+  // Update searchQuery when debounced input changes
+  useEffect(() => {
+    setSearchQuery(debouncedSearchInput);
+    setPage(0); // Reset to first page when search changes
+  }, [debouncedSearchInput]);
+
+  // Memoize filter parameters to prevent unnecessary re-renders
+  const filterParams = useMemo(() => ({
+    searchQuery: searchQuery.trim(),
+    categoryFilter,
+    statusFilter,
+    page,
+    rowsPerPage,
+    sortConfig
+  }), [searchQuery, categoryFilter, statusFilter, page, rowsPerPage, sortConfig]);
+
+  // Fetch admin products with enhanced filtering
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
 
       const params = new URLSearchParams();
-      params.append("page", page + 1);
-      params.append("limit", rowsPerPage);
+      params.append("page", filterParams.page + 1);
+      params.append("limit", filterParams.rowsPerPage);
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
+      if (filterParams.searchQuery) {
+        params.append("search", filterParams.searchQuery);
       }
 
-      if (categoryFilter !== "all") {
+      if (filterParams.categoryFilter !== "all" && categories.length > 0) {
         const categoryObj = categories.find(
-          (c) => c.category_name === categoryFilter
+          (c) => c.category_name === filterParams.categoryFilter
         );
         if (categoryObj) {
           params.append("selectedCategories", categoryObj._id);
         }
       }
 
-      // ✅ Add status filter to backend call
-      if (statusFilter !== "all") {
-        if (statusFilter === "active") {
-          params.append("inStock", "true");
-        } else if (statusFilter === "out_of_stock") {
-          params.append("inStock", "false");
-        }
+      if (filterParams.statusFilter !== "all") {
+        params.append("status", filterParams.statusFilter);
       }
 
-      if (sortConfig.key) {
-        let sortBy = sortConfig.key;
+      if (filterParams.sortConfig.key) {
+        let sortBy = filterParams.sortConfig.key;
         if (sortBy === "name") sortBy = "product_name";
         else if (sortBy === "price") sortBy = "product_price";
         else if (sortBy === "inventory") sortBy = "product_stock";
@@ -76,14 +115,14 @@ function Products() {
         params.append("sortBy", sortBy);
         params.append(
           "order",
-          sortConfig.direction === "ascending" ? "asc" : "desc"
+          filterParams.sortConfig.direction === "ascending" ? "asc" : "desc"
         );
       }
 
       console.log('🔍 Fetching admin products with params:', params.toString());
 
       const response = await axios.get(
-        `${API_BASE_URL}/products/admin?${params.toString()}`,
+        `${API_BASE_URL}/admin/products?${params.toString()}`,
         {
           withCredentials: true,
           headers: {
@@ -104,7 +143,9 @@ function Products() {
           category: product.product_category,
           subcategory: product.product_subcategory,
           brand: product.product_brand,
-          images: product.product_image ? [product.product_image] : [],
+          images: product.product_images?.length > 0 
+            ? product.product_images.map(img => img.url) 
+            : (product.product_image ? [product.product_image] : []),
           rating: product.product_rating || 0,
           discount: product.product_discount || 0,
           status: product.product_stock > 0 ? "active" : "out_of_stock",
@@ -113,28 +154,44 @@ function Products() {
           owner: product.owner,
         }));
 
-        console.log('🔄 Transformed products for seller:', transformedProducts);
-        console.log(`📊 Seller has ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`);
+        console.log(`📊 Found ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`);
 
         setProducts(transformedProducts);
-        setTotalProducts(response.data.pagination?.totalProducts || 0); // ✅ Make sure this is set correctly
+        setTotalProducts(response.data.pagination?.totalProducts || 0);
       }
     } catch (error) {
-      console.error("❌ Error fetching seller's products:", error);
+      console.error("❌ Error fetching admin products:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to access admin products");
+        navigate('/admin/login');
       } else {
         toast.error("Failed to load your products");
       }
-      setProducts([]); // ✅ Clear products on error
-      setTotalProducts(0); // ✅ Reset total on error
+      setProducts([]);
+      setTotalProducts(0);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filterParams, categories, navigate]);
 
-  // Fetch categories from backend
-  const fetchCategories = async () => {
+  // Fetch admin statistics (separate from main products fetch)
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/admin/products/stats`, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.data.success) {
+        setStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+    }
+  }, []);
+
+  // Fetch categories (only once)
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/categories`);
       if (response.data.success) {
@@ -144,14 +201,19 @@ function Products() {
       console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
     }
-  };
+  }, []);
 
   // Fetch single product by ID
-  const fetchProductById = async (productId) => {
+  const fetchProductById = useCallback(async (productId) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/products/${productId}`
+        `${API_BASE_URL}/admin/products/${productId}`,
+        {
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
+      
       if (response.data.success) {
         const product = response.data.product;
         const transformedProduct = {
@@ -163,7 +225,9 @@ function Products() {
           category: product.product_category,
           subcategory: product.product_subcategory,
           brand: product.product_brand,
-          images: product.product_image ? [product.product_image] : [],
+          images: product.product_images?.length > 0 
+            ? product.product_images.map(img => img.url) 
+            : (product.product_image ? [product.product_image] : []),
           rating: product.product_rating || 0,
           discount: product.product_discount || 0,
           status: product.product_stock > 0 ? "active" : "out_of_stock",
@@ -174,156 +238,181 @@ function Products() {
       }
     } catch (error) {
       console.error("Error fetching product:", error);
-      toast.error("Failed to load product details");
+      if (error.response?.status === 404) {
+        toast.error("Product not found or you don't have permission to view it");
+      } else {
+        toast.error("Failed to load product details");
+      }
       navigate("/admin/products");
     }
-  };
+  }, [navigate]);
 
-  // Delete product
-  const deleteProduct = async (productId) => {
+  // Delete single product
+  const deleteProduct = useCallback(async (productId) => {
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/products/${productId}`,
         {
           withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' }
         }
       );
+      
       if (response.data.success) {
-        toast.success("Product deleted successfully"); // react-toastify
+        toast.success("Product deleted successfully");
         return true;
       }
     } catch (error) {
       console.error("Error deleting product:", error);
       if (error.response?.status === 401) {
-        toast.error("Unauthorized to delete this product"); // react-toastify
+        toast.error("Unauthorized to delete this product");
       } else if (error.response?.status === 403) {
-        toast.error("You can only delete your own products"); // react-toastify
+        toast.error("You can only delete your own products");
+      } else if (error.response?.status === 404) {
+        toast.error("Product not found");
       } else {
-        toast.error("Failed to delete product"); // react-toastify
+        toast.error("Failed to delete product");
       }
       return false;
     }
-  };
-
-  // Add a refresh function
-  const refreshProducts = useCallback(() => {
-    setPage(0); // Reset to first page
-    fetchProducts();
-  }, [fetchProducts]);
-
-  // Load initial data
-  useEffect(() => {
-    fetchCategories();
   }, []);
 
-  // Fetch products when dependencies change
+  // Bulk delete products
+  const bulkDeleteProducts = useCallback(async (productIds) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/products/bulk-delete`,
+        { productIds },
+        {
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success(`Successfully deleted ${response.data.deletedCount} products`);
+        return true;
+      }
+    } catch (error) {
+      console.error("Error bulk deleting products:", error);
+      if (error.response?.status === 403) {
+        toast.error("You can only delete your own products");
+      } else {
+        toast.error("Failed to delete products");
+      }
+      return false;
+    }
+  }, []);
+
+  // Load initial data (only once)
+  useEffect(() => {
+    fetchCategories();
+    fetchStats();
+  }, [fetchCategories, fetchStats]);
+
+  // Fetch products when filter parameters change (debounced)
   useEffect(() => {
     if (categories.length > 0) {
       fetchProducts();
     }
-  }, [page, rowsPerPage, searchQuery, categoryFilter, statusFilter, sortConfig, categories]); // ✅ Add statusFilter
+  }, [fetchProducts, categories]);
 
-  // Update the useEffect that handles URL parameters
+  // Handle URL parameters
   useEffect(() => {
     if (id) {
       fetchProductById(id);
       setView("view");
     } else {
-      // Reset to list view and fetch products
       setView("list");
-      if (categories.length > 0) {
-        setPage(0); // Reset to first page
-        fetchProducts();
-      }
     }
-  }, [id, categories]);
+  }, [id, fetchProductById]);
 
-  // Add effect to handle refresh from navigation state
+  // Handle refresh from navigation state
   useEffect(() => {
     if (location.state?.refresh) {
       console.log('🔄 Refreshing products due to navigation state');
       fetchProducts();
-      // Clear the state to prevent repeated refreshes
+      fetchStats();
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, fetchProducts, fetchStats]);
 
-  // Check if coming from product form
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    if (urlParams.get('refresh') === 'true') {
-      // Remove the refresh parameter from URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-      
-      // Refresh the products
-      if (categories.length > 0) {
-        setPage(0);
-        fetchProducts();
-      }
-    }
-  }, [location.search]);
-
-  // Add this useEffect to watch for timestamp changes:
+  // Handle URL timestamp refresh
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const timestamp = urlParams.get('t');
     
     if (timestamp) {
       console.log('🔄 Timestamp detected - forcing refresh');
-      
-      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
       
-      // Force complete refresh
       setPage(0);
+      setSearchInput("");
       setSearchQuery("");
       setCategoryFilter("all");
       setStatusFilter("all");
       
-      // Trigger fetchProducts
       if (categories.length > 0) {
         fetchProducts();
+        fetchStats();
       }
     }
-  }, [location.search, categories]);
+  }, [location.search, categories, fetchProducts, fetchStats]);
 
-  // Handle product actions
-  const handleViewProduct = (productId) => {
+  // Event handlers with proper state management
+  const handleSearchInputChange = useCallback((e) => {
+    setSearchInput(e.target.value);
+    // Don't call fetchProducts here - let debouncing handle it
+  }, []);
+
+  const handleCategoryFilterChange = useCallback((e) => {
+    setCategoryFilter(e.target.value);
+    setPage(0); // Reset to first page
+    // fetchProducts will be called automatically via useEffect
+  }, []);
+
+  const handleStatusFilterChange = useCallback((e) => {
+    setStatusFilter(e.target.value);
+    setPage(0); // Reset to first page
+    // fetchProducts will be called automatically via useEffect
+  }, []);
+
+  // Product action handlers
+  const handleViewProduct = useCallback((productId) => {
     navigate(`/admin/products/view/${productId}`);
-  };
+  }, [navigate]);
 
-  const handleEditProduct = (productId) => {
+  const handleEditProduct = useCallback((productId) => {
     navigate(`/admin/products/edit/${productId}`);
-  };
+  }, [navigate]);
 
-  const handleDeleteProduct = async (productId) => {
+  const handleDeleteProduct = useCallback(async (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       const success = await deleteProduct(productId);
       if (success) {
-        fetchProducts(); // Refresh the list
+        fetchProducts();
+        fetchStats();
       }
     }
-  };
+  }, [deleteProduct, fetchProducts, fetchStats]);
 
-  const handleDelete = async (ids) => {
-    if (
-      window.confirm(
-        `Delete ${ids.length > 1 ? "these products" : "this product"}?`
-      )
-    ) {
+  const handleDelete = useCallback(async (ids) => {
+    const isMultiple = ids.length > 1;
+    const message = isMultiple ? `Delete ${ids.length} products?` : "Delete this product?";
+    
+    if (window.confirm(message)) {
       try {
-        // Delete products one by one (you might want to implement bulk delete in backend)
-        const deletePromises = ids.map((id) => deleteProduct(id));
-        const results = await Promise.all(deletePromises);
+        let success;
+        if (isMultiple) {
+          success = await bulkDeleteProducts(ids);
+        } else {
+          success = await deleteProduct(ids[0]);
+        }
 
-        if (results.every((result) => result)) {
-          toast.success(`${ids.length} product(s) deleted successfully`);
+        if (success) {
           setSelectedProducts([]);
-          fetchProducts(); // Refresh the list
+          fetchProducts();
+          fetchStats();
 
           if (view === "view" && ids.includes(currentProduct?.id)) {
             navigate("/admin/products");
@@ -333,46 +422,52 @@ function Products() {
         toast.error("Some products could not be deleted");
       }
     }
-  };
+  }, [bulkDeleteProducts, deleteProduct, fetchProducts, fetchStats, view, currentProduct, navigate]);
 
-  const handleSelectProduct = (id, selected) => {
-    setSelectedProducts(
+  // Selection handlers
+  const handleSelectProduct = useCallback((id, selected) => {
+    setSelectedProducts(prev =>
       selected
-        ? [...selectedProducts, id]
-        : selectedProducts.filter((productId) => productId !== id)
+        ? [...prev, id]
+        : prev.filter(productId => productId !== id)
     );
-  };
+  }, []);
 
-  const handleSelectAll = (selected) => {
+  const handleSelectAll = useCallback((selected) => {
     if (selected) {
-      // Select all products on current page
-      const currentPageIds = products.map((p) => p.id);
-      setSelectedProducts([...new Set([...selectedProducts, ...currentPageIds])]);
+      const currentPageIds = products.map(p => p.id);
+      setSelectedProducts(prev => [...new Set([...prev, ...currentPageIds])]);
     } else {
-      // Deselect all products on current page
-      const currentPageIds = products.map((p) => p.id);
-      setSelectedProducts(selectedProducts.filter(id => !currentPageIds.includes(id)));
+      const currentPageIds = products.map(p => p.id);
+      setSelectedProducts(prev => prev.filter(id => !currentPageIds.includes(id)));
     }
-  };
+  }, [products]);
 
-  const handlePageChange = (newPage) => {
+  // Pagination handlers
+  const handlePageChange = useCallback((newPage) => {
     console.log('📄 Changing page from', page, 'to', newPage);
     setPage(newPage);
-  };
+  }, [page]);
 
-  const handleRowsPerPageChange = (e) => {
+  const handleRowsPerPageChange = useCallback((e) => {
     const newRowsPerPage = parseInt(e.target.value, 10);
     console.log('📊 Changing rows per page from', rowsPerPage, 'to', newRowsPerPage);
     setRowsPerPage(newRowsPerPage);
-    setPage(0); // Reset to first page
-  };
+    setPage(0);
+  }, [rowsPerPage]);
+
+  // Sort handler
+  const handleSortChange = useCallback((newSortConfig) => {
+    setSortConfig(newSortConfig);
+    setPage(0); // Reset to first page when sorting changes
+  }, []);
 
   // Get table configuration
-  const tableConfig = getProductTableConfig(
+  const tableConfig = useMemo(() => getProductTableConfig(
     handleViewProduct,
     handleEditProduct,
     handleDeleteProduct
-  );
+  ), [handleViewProduct, handleEditProduct, handleDeleteProduct]);
 
   // Render product details view
   if (view === "view" && currentProduct) {
@@ -394,23 +489,78 @@ function Products() {
   // Render product list view
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-            My Products
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {totalProducts} products you're selling
-          </p>
+      {/* Header with Stats */}
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+              My Products
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Manage your product inventory
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/admin/products/add")}
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium transition-colors"
+          >
+            <i className="fas fa-plus"></i>
+            <span>Add Product</span>
+          </button>
         </div>
-        <button
-          onClick={() => navigate("/admin/products/add")}
-          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium"
-        >
-          <i className="fas fa-plus"></i>
-          <span>Add Product</span>
-        </button>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <i className="fas fa-box text-blue-600 dark:text-blue-400"></i>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Products</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.totalProducts}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <i className="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Products</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.activeProducts}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Out of Stock</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.outOfStockProducts}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <i className="fas fa-rupee-sign text-purple-600 dark:text-purple-400"></i>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Inventory Value</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  ₹{stats.totalInventoryValue.toLocaleString('en-IN')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -430,11 +580,17 @@ function Products() {
             <input
               id="search"
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput} // Use searchInput for immediate response
+              onChange={handleSearchInputChange} // Use optimized handler
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-primary focus:border-primary"
               placeholder="Search products..."
             />
+            {/* Show loading indicator when searching */}
+            {searchInput !== searchQuery && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <i className="fas fa-spinner fa-spin text-gray-400 text-sm"></i>
+              </div>
+            )}
           </div>
         </div>
 
@@ -449,7 +605,7 @@ function Products() {
           <select
             id="category-filter"
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={handleCategoryFilterChange} // Use optimized handler
             className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Categories</option>
@@ -472,7 +628,7 @@ function Products() {
           <select
             id="status-filter"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={handleStatusFilterChange} // Use optimized handler
             className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Status</option>
@@ -491,15 +647,15 @@ function Products() {
         ) : (
           <>
             <Table
-              data={products} // ✅ Use products directly from backend
+              data={products}
               columns={tableConfig.columns}
               selectedItems={selectedProducts}
               onSelectItem={handleSelectProduct}
               onSelectAll={handleSelectAll}
               sortConfig={sortConfig}
-              onSortChange={setSortConfig}
+              onSortChange={handleSortChange} // Use optimized handler
               isLoading={isLoading}
-              emptyMessage="No products found"
+              emptyMessage="No products found. Start by adding your first product!"
               enableSelection={true}
               enableSorting={true}
               itemKey="id"
@@ -509,7 +665,7 @@ function Products() {
             <Pagination
               page={page}
               rowsPerPage={rowsPerPage}
-              totalItems={totalProducts} // ✅ Use backend total, not filtered length
+              totalItems={totalProducts}
               handlePageChange={handlePageChange}
               handleRowsPerPageChange={handleRowsPerPageChange}
               entityName="products"
@@ -527,8 +683,7 @@ function Products() {
             {
               label: "Delete",
               onClick: handleDelete,
-              className:
-                "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
+              className: "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
               icon: "fas fa-trash",
               title: "Delete selected products",
             },

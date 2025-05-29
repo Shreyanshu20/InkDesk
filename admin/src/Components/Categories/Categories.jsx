@@ -7,7 +7,8 @@ import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import CategoryDetails from "./components/CategoryDetails";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Categories({ view: propView }) {
   const { id } = useParams();
@@ -26,30 +27,98 @@ function Categories({ view: propView }) {
     direction: "ascending",
   });
 
-  // Fetch categories
+  // Fetch categories with product counts
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/categories`);
-      
+
+      // First, get categories with subcategories
+      const response = await axios.get(
+        `${API_BASE_URL}/categories/with-subcategories`
+      );
+
       if (response.data.success) {
-        const transformedCategories = response.data.categories.map(category => ({
-          id: category._id,
-          name: category.category_name,
-          description: category.description || "No description provided",
-          image: category.category_image || "",
-          subcategories: category.subcategories || [], // This will now be the populated array
-          subcategoryCount: category.subcategories ? category.subcategories.length : 0,
-          productCount: category.productCount || 0,
-          createdAt: category.createdAt,
-          updatedAt: category.updatedAt
-        }));
-        
-        setCategories(transformedCategories);
+        const categoriesWithCounts = await Promise.all(
+          response.data.categories.map(async (category) => {
+            try {
+              // Try to get product count for this category
+              const productResponse = await axios.get(
+                `${API_BASE_URL}/products?category=${encodeURIComponent(
+                  category.category_name
+                )}&limit=1`
+              );
+
+              const productCount =
+                productResponse.data.pagination?.totalProducts || 0;
+
+              return {
+                id: category._id,
+                name: category.category_name,
+                description: category.description || "No description provided",
+                image: category.category_image || "",
+                subcategories: category.subcategories || [],
+                subcategoryCount: category.subcategories
+                  ? category.subcategories.length
+                  : 0,
+                productCount: productCount,
+                createdAt: category.createdAt,
+                updatedAt: category.updatedAt,
+              };
+            } catch (error) {
+              console.warn(
+                `Failed to get product count for category ${category.category_name}:`,
+                error
+              );
+              // Return category without product count if failed
+              return {
+                id: category._id,
+                name: category.category_name,
+                description: category.description || "No description provided",
+                image: category.category_image || "",
+                subcategories: category.subcategories || [],
+                subcategoryCount: category.subcategories
+                  ? category.subcategories.length
+                  : 0,
+                productCount: 0, // Default to 0 if failed
+                createdAt: category.createdAt,
+                updatedAt: category.updatedAt,
+              };
+            }
+          })
+        );
+
+        console.log("📊 Categories with product counts:", categoriesWithCounts);
+        setCategories(categoriesWithCounts);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
+
+      // Fallback: try to get categories without subcategories
+      try {
+        const fallbackResponse = await axios.get(`${API_BASE_URL}/categories`);
+        if (fallbackResponse.data.success) {
+          const transformedCategories = fallbackResponse.data.categories.map(
+            (category) => ({
+              id: category._id,
+              name: category.category_name,
+              description: category.description || "No description provided",
+              image: category.category_image || "",
+              subcategories: category.subcategories || [],
+              subcategoryCount: category.subcategories
+                ? category.subcategories.length
+                : 0,
+              productCount: 0, // No product count in fallback
+              createdAt: category.createdAt,
+              updatedAt: category.updatedAt,
+            })
+          );
+
+          setCategories(transformedCategories);
+        }
+      } catch (fallbackError) {
+        console.error("Fallback failed:", fallbackError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -62,9 +131,12 @@ function Categories({ view: propView }) {
   // Delete category
   const deleteCategory = async (categoryId) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/categories/${categoryId}`, {
-        withCredentials: true,
-      });
+      const response = await axios.delete(
+        `${API_BASE_URL}/categories/${categoryId}`,
+        {
+          withCredentials: true,
+        }
+      );
       if (response.data.success) {
         toast.success("Category deleted successfully");
         fetchCategories();
@@ -72,7 +144,14 @@ function Categories({ view: propView }) {
       }
     } catch (error) {
       console.error("Error deleting category:", error);
-      toast.error("Failed to delete category");
+      if (error.response?.status === 400) {
+        toast.error(
+          error.response.data.message ||
+            "Cannot delete category - it may be in use"
+        );
+      } else {
+        toast.error("Failed to delete category");
+      }
       return false;
     }
   };
@@ -165,14 +244,29 @@ function Categories({ view: propView }) {
 
   const handleDelete = async (selectedIds) => {
     if (window.confirm(`Delete ${selectedIds.length} selected categories?`)) {
+      let successCount = 0;
       for (const id of selectedIds) {
-        await deleteCategory(id);
+        const success = await deleteCategory(id);
+        if (success) successCount++;
       }
+
+      if (successCount > 0) {
+        toast.success(`Successfully deleted ${successCount} categories`);
+      }
+      if (successCount < selectedIds.length) {
+        toast.warning(
+          `${selectedIds.length - successCount} categories could not be deleted`
+        );
+      }
+
       setSelectedCategories([]);
     }
   };
 
-  // Table columns
+  // Check if any category has product count data
+  const hasProductCounts = categories.some((cat) => cat.productCount > 0);
+
+  // Table columns - conditionally include product count
   const tableColumns = [
     {
       key: "name",
@@ -187,6 +281,7 @@ function Categories({ view: propView }) {
                 src={category.image}
                 alt={category.name}
                 className="h-full w-full object-cover"
+                loading="lazy"
               />
             ) : (
               <div className="h-full w-full bg-primary/10 rounded-md flex items-center justify-center text-primary">
@@ -213,24 +308,31 @@ function Categories({ view: propView }) {
       customRenderer: (category) => (
         <div className="text-sm text-gray-500 dark:text-gray-400">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
-            {category.subcategories ? category.subcategories.length : 0} subcategories
+            <i className="fas fa-layer-group mr-1"></i>
+            {category.subcategories ? category.subcategories.length : 0}
           </span>
         </div>
       ),
     },
-    {
-      key: "productCount",
-      label: "Products",
-      sortable: true,
-      className: "px-6 py-4 whitespace-nowrap",
-      customRenderer: (category) => (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
-            {category.productCount || 0} products
-          </span>
-        </div>
-      ),
-    },
+    // Only include product count column if we have product count data
+    ...(hasProductCounts
+      ? [
+          {
+            key: "productCount",
+            label: "Products",
+            sortable: true,
+            className: "px-6 py-4 whitespace-nowrap",
+            customRenderer: (category) => (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                  <i className="fas fa-box mr-1"></i>
+                  {category.productCount || 0}
+                </span>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       key: "createdAt",
       label: "Created",
@@ -238,13 +340,16 @@ function Categories({ view: propView }) {
       className: "px-6 py-4 whitespace-nowrap",
       customRenderer: (category) => (
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          {category.createdAt
-            ? new Date(category.createdAt).toLocaleDateString("en-IN", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })
-            : "Unknown"}
+          <div className="flex items-center">
+            <i className="fas fa-calendar-plus mr-2 text-gray-400"></i>
+            {category.createdAt
+              ? new Date(category.createdAt).toLocaleDateString("en-IN", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Unknown"}
+          </div>
         </div>
       ),
     },
@@ -258,7 +363,7 @@ function Categories({ view: propView }) {
           <button
             onClick={() => handleViewCategory(category.id)}
             className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
-            title="View category"
+            title="View category details"
           >
             <i className="fas fa-eye"></i>
           </button>
@@ -281,6 +386,15 @@ function Categories({ view: propView }) {
     },
   ];
 
+  // Calculate summary stats
+  const totalSubcategories = categories.reduce(
+    (sum, cat) => sum + (cat.subcategoryCount || 0),
+    0
+  );
+  const totalProducts = hasProductCounts
+    ? categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0)
+    : null;
+
   // 🔥 NOW WE CAN SAFELY DO CONDITIONAL RETURNS AFTER ALL HOOKS
   if (view === "view" && id) {
     return <CategoryDetails categoryId={id} />; // Pass the ID as prop
@@ -289,14 +403,32 @@ function Categories({ view: propView }) {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
             Categories
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage your product categories
+            Manage your product categories and subcategories
           </p>
+
+          {/* Summary Stats */}
+          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <span className="flex items-center gap-1">
+              <i className="fas fa-folder text-primary"></i>
+              {categories.length} Categories
+            </span>
+            <span className="flex items-center gap-1">
+              <i className="fas fa-layer-group text-blue-500"></i>
+              {totalSubcategories} Subcategories
+            </span>
+            {totalProducts !== null && (
+              <span className="flex items-center gap-1">
+                <i className="fas fa-box text-green-500"></i>
+                {totalProducts} Products
+              </span>
+            )}
+          </div>
         </div>
 
         <button
@@ -313,12 +445,20 @@ function Categories({ view: propView }) {
         <div className="relative">
           <input
             type="search"
-            placeholder="Search categories..."
+            placeholder="Search categories and descriptions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
           />
           <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          )}
         </div>
       </div>
 
@@ -328,16 +468,19 @@ function Categories({ view: propView }) {
           data={paginatedCategories}
           columns={tableColumns}
           selectedItems={selectedCategories}
-          onSelect={handleSelectCategory}
+          onSelectItem={handleSelectCategory}
           onSelectAll={handleSelectAll}
           sortConfig={sortConfig}
           onSortChange={setSortConfig}
           isLoading={isLoading}
           emptyMessage={
             searchQuery
-              ? "No categories matching your search"
-              : "No categories found"
+              ? "No categories matching your search criteria"
+              : "No categories found. Create your first category to get started!"
           }
+          enableSelection={true}
+          enableSorting={true}
+          itemKey="id"
         />
 
         <Pagination
@@ -359,9 +502,11 @@ function Categories({ view: propView }) {
             {
               label: "Delete",
               onClick: handleDelete,
-              className: "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
+              className:
+                "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
               icon: "fas fa-trash",
               title: "Delete selected categories",
+              confirmMessage: `Are you sure you want to delete ${selectedCategories.length} selected categories?`,
             },
           ]}
         />
