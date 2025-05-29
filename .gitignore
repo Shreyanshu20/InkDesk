@@ -154,7 +154,4 @@ psd
 thumb
 sketch
 
-# Ignore the init folder
-/init/
-
 # End of https://www.toptal.com/developers/gitignore/api/node,react
