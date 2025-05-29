@@ -5,6 +5,8 @@ const SubCategory = require('../models/subCategory.model');
 const Product = require('../models/product.model');
 const User = require('../models/User.model');
 const Review = require('../models/review.model'); 
+const Banner = require('../models/banner.model');
+const Order = require('../models/order.model');
 require('dotenv').config();
 
 // Connect to MongoDB
@@ -1956,5 +1958,281 @@ const initializeDatabase = async () => {
     }
 };
 
+// Sample banners data
+const sampleBanners = [
+    // Homepage Carousel Banners
+    {
+        title: "Summer Reading Collection",
+        subtitle: "Adventure Awaits in Every Page",
+        description: "Discover thrilling tales and captivating stories perfect for your summer adventures. From mystery to romance, find your next favorite book.",
+        tagline: "NEW ARRIVALS",
+        image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&h=600&fit=crop&auto=format",
+        url: "/shop/books",
+        buttonText: "Explore Collection",
+        location: "homepage-carousel",
+        position: 1,
+        textPosition: "left",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    {
+        title: "Back to School Essentials",
+        subtitle: "Get Ready for Academic Success",
+        description: "Complete your study setup with premium stationery, notebooks, and art supplies. Quality products for students of all ages.",
+        tagline: "BACK TO SCHOOL",
+        image: "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=1200&h=600&fit=crop&auto=format",
+        url: "/shop/stationery",
+        buttonText: "Shop Now",
+        location: "homepage-carousel",
+        position: 2,
+        textPosition: "center",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    {
+        title: "Artist's Creative Corner",
+        subtitle: "Unleash Your Imagination",
+        description: "Professional art supplies for artists and hobbyists. Premium brushes, paints, and drawing materials to bring your vision to life.",
+        tagline: "ARTIST COLLECTION",
+        image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=1200&h=600&fit=crop&auto=format",
+        url: "/shop/art-supplies",
+        buttonText: "Create Art",
+        location: "homepage-carousel",
+        position: 3,
+        textPosition: "right",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    // Homepage Banner
+    {
+        title: "Get 20% Off Your First Order!",
+        subtitle: "Join our newsletter and receive an exclusive discount code plus early access to new arrivals and special offers.",
+        description: "Subscribe now and save on your next purchase. Plus get insider tips on the latest stationery trends and office organization hacks.",
+        image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=600&fit=crop&auto=format",
+        url: "/signup",
+        buttonText: "Get My Discount",
+        location: "homepage",
+        position: 1,
+        textPosition: "center",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    // Newsletter Banner
+    {
+        title: "Stay Creative, Stay Informed",
+        subtitle: "Get the latest updates on new products, exclusive deals, and creative inspiration delivered straight to your inbox.",
+        description: "Join thousands of creative minds who never miss out on the latest trends in stationery, art supplies, and office essentials.",
+        image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=600&fit=crop&auto=format",
+        location: "newsletter",
+        position: 1,
+        textPosition: "center",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    // Advertisement Banners
+    {
+        title: "Premium Pen Collection Sale",
+        subtitle: "Luxury Writing Instruments",
+        description: "Discover our exclusive collection of premium pens from world-renowned brands. Limited time offer - up to 40% off.",
+        tagline: "LIMITED OFFER",
+        image: "https://images.unsplash.com/photo-1565106500876-29103faccd44?w=800&h=600&fit=crop&auto=format",
+        url: "/shop/pens",
+        buttonText: "Shop Pens",
+        location: "advertisement",
+        position: 1,
+        textPosition: "left",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    {
+        title: "Professional Art Workshop",
+        subtitle: "Learn from the Masters",
+        description: "Join our monthly art workshop and learn professional techniques. All skill levels welcome. Materials included.",
+        tagline: "WORKSHOP",
+        image: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&h=600&fit=crop&auto=format",
+        url: "/workshops",
+        buttonText: "Register Now",
+        location: "advertisement",
+        position: 2,
+        textPosition: "center",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    },
+    {
+        title: "Office Organization Made Easy",
+        subtitle: "Productivity Essentials",
+        description: "Transform your workspace with our organizational tools and office supplies. Create a productive environment that inspires success.",
+        tagline: "ORGANIZE",
+        image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800&h=600&fit=crop&auto=format",
+        url: "/shop/office-supplies",
+        buttonText: "Get Organized",
+        location: "advertisement",
+        position: 3,
+        textPosition: "right",
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31')
+    }
+];
+
+// Sample orders data generator
+const createSampleOrders = (users, products) => {
+    const orders = [];
+    const orderStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const paymentMethods = ['credit_card', 'debit_card', 'upi', 'net_banking', 'cash_on_delivery'];
+    const paymentStatuses = ['pending', 'completed', 'failed', 'refunded'];
+
+    // Create 15 sample orders
+    for (let i = 0; i < 15; i++) {
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        const numItems = Math.floor(Math.random() * 4) + 1; // 1-4 items per order
+        const orderItems = [];
+        let subtotal = 0;
+
+        // Generate order items
+        for (let j = 0; j < numItems; j++) {
+            const randomProduct = products[Math.floor(Math.random() * products.length)];
+            const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 quantity
+            const price = randomProduct.product_price - (randomProduct.product_price * (randomProduct.product_discount || 0) / 100);
+            const itemTotal = price * quantity;
+
+            orderItems.push({
+                product_id: randomProduct._id,
+                quantity: quantity,
+                price: Math.round(price)
+            });
+
+            subtotal += itemTotal;
+        }
+
+        const shipping = subtotal > 500 ? 0 : 50; // Free shipping over ₹500
+        const tax = Math.round(subtotal * 0.18); // 18% GST
+        const total = Math.round(subtotal + shipping + tax);
+
+        // Random date within last 3 months
+        const orderDate = new Date();
+        orderDate.setDate(orderDate.getDate() - Math.floor(Math.random() * 90));
+
+        // Delivery date (for completed orders)
+        const deliveryDate = new Date(orderDate);
+        deliveryDate.setDate(deliveryDate.getDate() + Math.floor(Math.random() * 7) + 1);
+
+        const status = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
+        const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+        
+        // Payment status logic
+        let paymentStatus;
+        if (status === 'cancelled') {
+            paymentStatus = Math.random() > 0.5 ? 'failed' : 'refunded';
+        } else if (status === 'delivered') {
+            paymentStatus = 'completed';
+        } else if (paymentMethod === 'cash_on_delivery') {
+            paymentStatus = status === 'delivered' ? 'completed' : 'pending';
+        } else {
+            paymentStatus = Math.random() > 0.1 ? 'completed' : 'pending';
+        }
+
+        // Create order with User.model.js compatible schema
+        orders.push({
+            user_id: randomUser._id,
+            order_number: `ORD${Date.now()}${i}`.slice(-12),
+            items: orderItems,
+            total_amount: total,
+            status: status,
+            shipping_address: {
+                name: `${randomUser.first_name} ${randomUser.last_name}`,
+                address: `${Math.floor(Math.random() * 999) + 1}, ${['MG Road', 'Park Street', 'Brigade Road', 'Commercial Street', 'Residency Road'][Math.floor(Math.random() * 5)]}, ${['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune'][Math.floor(Math.random() * 7)]}`,
+                city: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune'][Math.floor(Math.random() * 7)],
+                phone: randomUser.phone
+            },
+            createdAt: orderDate,
+            updatedAt: orderDate
+        });
+    }
+
+    return orders;
+};
+
+const initializeBannersAndOrders = async () => {
+    try {
+        console.log('🎯 Initializing Banners and Orders only...');
+
+        // Get existing users and products
+        console.log('📋 Fetching existing users and products...');
+        const existingUsers = await User.find({});
+        const existingProducts = await Product.find({});
+
+        if (existingUsers.length === 0) {
+            console.log('❌ No users found in database. Please add users first.');
+            process.exit(1);
+        }
+
+        if (existingProducts.length === 0) {
+            console.log('❌ No products found in database. Please add products first.');
+            process.exit(1);
+        }
+
+        console.log(`✅ Found ${existingUsers.length} users and ${existingProducts.length} products`);
+
+        // Clear only banners and orders
+        console.log('🗑️  Clearing existing banners and orders...');
+        await Banner.deleteMany({});
+        await Order.deleteMany({});
+        console.log('✅ Cleared existing banners and orders');
+
+        // Create banners
+        console.log('🎨 Creating sample banners...');
+        const bannerDocs = await Banner.insertMany(sampleBanners);
+        console.log(`✅ Inserted ${bannerDocs.length} banners`);
+
+        // Create orders with existing users and products
+        console.log('🛒 Creating sample orders...');
+        const sampleOrdersData = createSampleOrders(existingUsers, existingProducts);
+        const orderDocs = await Order.insertMany(sampleOrdersData);
+        console.log(`✅ Inserted ${orderDocs.length} orders`);
+
+        // Summary
+        console.log('\n🎉 Banners and Orders initialization complete!');
+        console.log('📊 Summary:');
+        console.log(`   Existing Users: ${existingUsers.length}`);
+        console.log(`   Existing Products: ${existingProducts.length}`);
+        console.log(`   New Banners: ${bannerDocs.length}`);
+        console.log(`   New Orders: ${orderDocs.length}`);
+
+        // Statistics
+        const totalOrderValue = orderDocs.reduce((sum, order) => sum + order.total_amount, 0);
+        const deliveredOrders = orderDocs.filter(order => order.status === 'delivered').length;
+
+        console.log(`\n📈 Order Statistics:`);
+        console.log(`   Total order value: ₹${totalOrderValue.toLocaleString()}`);
+        console.log(`   Delivered orders: ${deliveredOrders}/${orderDocs.length}`);
+        console.log(`   Success rate: ${((deliveredOrders/orderDocs.length)*100).toFixed(1)}%`);
+
+        // Banner breakdown
+        const bannersByLocation = bannerDocs.reduce((acc, banner) => {
+            acc[banner.location] = (acc[banner.location] || 0) + 1;
+            return acc;
+        }, {});
+
+        console.log(`\n🎨 Banner breakdown:`);
+        Object.entries(bannersByLocation).forEach(([location, count]) => {
+            console.log(`   ${location}: ${count} banners`);
+        });
+
+        console.log('\n✅ All existing data preserved, only banners and orders added!');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error initializing banners and orders:', error);
+        process.exit(1);
+    }
+};
+
 // Run the initialization
-initializeDatabase();   
+initializeBannersAndOrders();

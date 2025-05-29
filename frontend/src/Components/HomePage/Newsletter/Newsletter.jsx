@@ -1,9 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Newsletter() {
+  const [newsletterBanner, setNewsletterBanner] = useState(null);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    const fetchNewsletterBanner = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/banners?location=newsletter`);
+        const data = await response.json();
+        
+        if (data.success && data.banners.length > 0) {
+          setNewsletterBanner(data.banners[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching newsletter banner:', error);
+      }
+    };
+
+    fetchNewsletterBanner();
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -16,104 +36,104 @@ function Newsletter() {
     setIsSubmitting(true);
     setMessage(null);
 
-    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setMessage({ type: "success", text: "Thank you for subscribing!" });
       setEmail("");
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 5000);
     }, 1500);
   };
 
+  const defaultContent = {
+    title: "Stay in the Loop",
+    subtitle: "Get the latest updates and special offers delivered to your inbox."
+  };
+
+  const content = newsletterBanner || defaultContent;
+
   return (
     <section 
-      className="w-full bg-primary/10 py-12 md:py-16 px-6 relative overflow-hidden" 
-      aria-labelledby="newsletter-heading"
+      className="w-full py-12 md:py-16 px-4 relative"
+      style={newsletterBanner?.image ? {
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.5)), url(${newsletterBanner.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      } : {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}
     >
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <i className="fas fa-envelope-open text-8xl absolute top-10 left-10 transform -rotate-12" aria-hidden="true"></i>
-        <i className="fas fa-paper-plane text-7xl absolute bottom-10 right-10" aria-hidden="true"></i>
-      </div>
-      
-      <div className="max-w-6xl mx-auto flex flex-col items-center relative">
-        {/* Newsletter content */}
-        <div className="text-center max-w-2xl">
-          <i className="fas fa-envelope-open-text text-primary text-2xl lg:text-3xl mb-4" aria-hidden="true"></i>
+      <div className="max-w-2xl mx-auto text-center">
+        {/* Icon */}
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-4">
+          <i className="fas fa-envelope text-white text-lg"></i>
+        </div>
 
-          <h2 id="newsletter-heading" className="text-2xl lg:text-3xl md:text-3xl font-bold mb-3 text-text">
-            Subscribe to Our Newsletter
-          </h2>
+        {/* Title */}
+        <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
+          {content.title}
+        </h2>
 
-          <p className="text-text/70 mb-6 px-4 text-sm md:text-md">
-            Stay updated with our latest releases, articles, and exclusive
-            offers. Be the first to know about new products and promotions.
-          </p>
+        {/* Subtitle */}
+        <p className="text-base md:text-lg text-white/90 mb-6">
+          {content.subtitle}
+        </p>
 
-          <form
-            onSubmit={handleSubscribe}
-            className="flex flex-col sm:flex-row gap-3 max-w-xl w-full mx-auto"
-            aria-describedby={message ? "newsletter-message" : undefined}
-          >
-            <div className="flex-grow relative">
-              <label htmlFor="email-input" className="sr-only">Email address</label>
-              <input
-                id="email-input"
-                type="email"
-                placeholder="Your email address"
-                className="w-full px-5 py-3 rounded-lg border border-gray-300 text-text focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-                aria-required="true"
-              />
-            </div>
-
-            <button
-              type="submit"
+        {/* Form */}
+        <form
+          onSubmit={handleSubscribe}
+          className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4"
+        >
+          <div className="flex-grow">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="w-full px-4 py-3 rounded-lg bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-white/50"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
-              className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center whitespace-nowrap font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              aria-label={isSubmitting ? "Subscribing..." : "Subscribe to newsletter"}
-            >
-              {isSubmitting ? (
-                <>
-                  <i className="fas fa-circle-notch fa-spin mr-2" aria-hidden="true"></i>
-                  <span>Subscribing...</span>
-                </>
-              ) : (
-                <>
-                  Subscribe <i className="fas fa-paper-plane ml-2" aria-hidden="true"></i>
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-4 text-sm text-text/60">
-            We respect your privacy. Unsubscribe at any time.
+            />
           </div>
 
-          {message && (
-            <div
-              id="newsletter-message"
-              role="status"
-              aria-live="polite"
-              className={`mt-4 px-4 py-2 rounded-md ${
-                message.type === "error"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-green-100 text-green-700"
-              }`}
-            >
-              {message.type === "error" ? (
-                <i className="fas fa-exclamation-circle mr-2" aria-hidden="true"></i>
-              ) : (
-                <i className="fas fa-check-circle mr-2" aria-hidden="true"></i>
-              )}
-              {message.text}
-            </div>
-          )}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+          >
+            {isSubmitting ? (
+              <>
+                <i className="fas fa-spinner fa-spin mr-1"></i>
+                Subscribing...
+              </>
+            ) : (
+              "Subscribe"
+            )}
+          </button>
+        </form>
+
+        {/* Trust Indicators */}
+        <div className="flex items-center justify-center space-x-4 text-sm text-white/70 mb-4">
+          <span className="flex items-center">
+            <i className="fas fa-users mr-1"></i>
+            10,000+ readers
+          </span>
+          <span className="flex items-center">
+            <i className="fas fa-shield-alt mr-1"></i>
+            No spam
+          </span>
         </div>
+
+        {/* Message */}
+        {message && (
+          <div
+            className={`px-4 py-2 rounded-lg text-sm ${
+              message.type === "error"
+                ? "bg-red-500/20 text-red-100"
+                : "bg-green-500/20 text-green-100"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
       </div>
     </section>
   );

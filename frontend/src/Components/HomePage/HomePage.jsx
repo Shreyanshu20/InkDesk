@@ -5,8 +5,8 @@ import Categories from "./Categories/Categories";
 import Products from "./Products/Products";
 import Blogs from "./Blogs/Blogs";
 import Banner from "./Banner/Banner";
+import Advertisement from "./Advertisement/Advertisement";
 import Newsletter from "./Newsletter/Newsletter";
-import GetInTouch from "./GetInTouch/GetInTouch";
 
 function HomePage() {
   return (
@@ -16,6 +16,7 @@ function HomePage() {
       <Badges />
       <Products />
       <Banner />
+      <Advertisement />
       <Blogs />
       <Newsletter />
     </main>

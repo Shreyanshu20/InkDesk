@@ -1,9 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Banner() {
+  const [bannerData, setBannerData] = useState(null);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/banners?location=homepage`);
+        const data = await response.json();
+        
+        if (data.success && data.banners.length > 0) {
+          setBannerData(data.banners[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching homepage banner:', error);
+      }
+    };
+
+    fetchBanner();
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -16,94 +36,98 @@ function Banner() {
     setIsSubmitting(true);
     setMessage(null);
 
-    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
-      setMessage({ type: "success", text: "Thank you for subscribing!" });
+      setMessage({ type: "success", text: "Thank you! Check your email for your discount code." });
       setEmail("");
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 5000);
     }, 1500);
   };
 
+  const defaultBanner = {
+    title: "Get 10% Off Your First Order!",
+    subtitle: "Join our newsletter and receive an exclusive discount code.",
+    buttonText: "Get My Discount",
+    image: "/src/assets/banner.webp"
+  };
+
+  const banner = bannerData || defaultBanner;
+
   return (
     <section 
-      className="w-full bg-[#F8D7D5] bg-[url(/src/assets/banner.webp)] py-12 md:py-16 px-4 relative overflow-hidden" 
-      aria-labelledby="discount-banner-heading"
+      className="w-full py-12 md:py-16 px-4 relative"
+      style={{ 
+        backgroundImage: `linear-gradient(135deg, #667eea 0%, #764ba2 100%), url(${banner.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundBlendMode: 'overlay'
+      }}
     >
-      {/* Background overlay for better text contrast */}
-      <div className="absolute inset-0 bg-black/5"></div>
-      
-      <div className="max-w-6xl mx-auto flex flex-col items-center relative z-10">
-        {/* Banner content */}
-        <div className="text-center max-w-2xl bg-white/80 p-6 md:p-8 rounded-xl shadow-lg backdrop-blur-sm">
-          <div className="inline-block bg-primary text-white p-2 rounded-full mb-4">
-            <i className="fas fa-tags text-xl" aria-hidden="true"></i>
+      <div className="max-w-3xl mx-auto text-center">
+        <div className="bg-white/95 p-8 md:p-12 rounded-2xl shadow-lg">
+          {/* Icon */}
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-white rounded-full mb-4">
+            <i className="fas fa-tags"></i>
           </div>
 
-          <h2 id="discount-banner-heading" className="text-3xl text-[#090708] md:text-4xl font-bold mb-3">
-            Get <span className="text-[#E86A58]">10%</span> Off Your Order!
+          {/* Title */}
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-900">
+            {banner.title}
           </h2>
           
-          <p className="text-gray-700 mb-6">
-            Enter your email and receive a 10% discount on your next order!
+          {/* Subtitle */}
+          <p className="text-gray-600 text-base md:text-lg mb-6">
+            {banner.subtitle}
           </p>
 
-          <form
-            onSubmit={handleSubscribe}
-            className="flex flex-col sm:flex-row gap-3 max-w-xl w-full mx-auto"
-            aria-describedby={message ? "banner-message" : undefined}
-          >
-            <div className="flex-grow relative">
-              <label htmlFor="banner-email-input" className="sr-only">Email address</label>
+          {/* Form */}
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
+            <div className="flex-grow">
               <input
-                id="banner-email-input"
                 type="email"
-                placeholder="Your email address"
-                className="w-full px-5 py-3 rounded-full border-0 text-[#090708] focus:ring-2 focus:ring-[#E86A58]/30 outline-none shadow-sm"
+                placeholder="Enter your email address"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
-                aria-required="true"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#E86A58] hover:bg-[#E65443] text-white px-6 py-3 rounded-full transition-colors flex items-center justify-center whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E86A58]"
-              aria-label={isSubmitting ? "Subscribing..." : "Subscribe for 10% off"}
+              className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
             >
               {isSubmitting ? (
                 <>
-                  <i className="fas fa-circle-notch fa-spin mr-2" aria-hidden="true"></i>
-                  <span>Please wait...</span>
+                  <i className="fas fa-spinner fa-spin mr-1"></i>
+                  Please wait...
                 </>
               ) : (
-                <>
-                  Subscribe <i className="fas fa-arrow-right ml-2" aria-hidden="true"></i>
-                </>
+                banner.buttonText || "Get My Discount"
               )}
             </button>
           </form>
 
+          {/* Trust indicators */}
+          <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 mb-4">
+            <span className="flex items-center">
+              <i className="fas fa-shield-alt mr-1 text-green-500"></i>
+              Secure & Private
+            </span>
+            <span className="flex items-center">
+              <i className="fas fa-clock mr-1 text-blue-500"></i>
+              Instant Delivery
+            </span>
+          </div>
+
+          {/* Message */}
           {message && (
-            <div
-              id="banner-message"
-              role="status"
-              aria-live="polite"
-              className={`mt-4 px-4 py-2 rounded-md ${
-                message.type === "error"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-green-100 text-green-700"
-              }`}
-            >
-              {message.type === "error" ? (
-                <i className="fas fa-exclamation-circle mr-2" aria-hidden="true"></i>
-              ) : (
-                <i className="fas fa-check-circle mr-2" aria-hidden="true"></i>
-              )}
+            <div className={`px-4 py-2 rounded-lg text-sm ${
+              message.type === "error"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-700 border border-green-200"
+            }`}>
               {message.text}
             </div>
           )}
