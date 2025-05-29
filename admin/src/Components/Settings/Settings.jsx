@@ -1,47 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Settings() {
-  // State for tabs
   const [activeTab, setActiveTab] = useState("profile");
-
-  // Profile settings
-  const [profileSettings, setProfileSettings] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    avatar: "/images/avatar.png",
-    jobTitle: "Store Manager",
-    phone: "+1 (555) 123-4567",
-    timezone: "UTC-5",
-    language: "en",
-    bio: "Experienced store manager with 5+ years in retail management.",
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Profile data from backend
+  const [profileData, setProfileData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    role: "",
+    isAccountVerified: false,
+    status: "",
+    createdAt: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: ""
   });
 
-  // Security settings
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorEnabled: false,
-    lastPasswordChange: "2024-11-15",
-    sessionTimeout: 30,
-    loginNotifications: true,
-    loginHistory: [
-      {
-        date: "2025-05-20 09:45:12",
-        ip: "192.168.1.1",
-        device: "Chrome / Windows",
-      },
-      {
-        date: "2025-05-18 14:22:05",
-        ip: "192.168.1.1",
-        device: "Chrome / Windows",
-      },
-      {
-        date: "2025-05-15 10:33:47",
-        ip: "192.168.1.1",
-        device: "Mobile / iOS",
-      },
-    ],
+  // Profile form state (email readonly)
+  const [profileForm, setProfileForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: ""
   });
 
-  // Notification settings
+  // Address form state  
+  const [addressForm, setAddressForm] = useState({
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: ""
+  });
+
+  // Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+
+  // Delete account form state
+  const [deleteForm, setDeleteForm] = useState({
+    password: "",
+    confirmText: ""
+  });
+
+  // Notification settings (simple toggles)
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     orderUpdates: true,
@@ -50,972 +65,872 @@ function Settings() {
     securityAlerts: true,
     marketingEmails: false,
     webNotifications: true,
-    pushNotifications: false,
   });
 
-  // Billing settings
-  const [billingSettings, setBillingSettings] = useState({
-    plan: "Professional",
-    billingCycle: "monthly",
-    nextBillingDate: "2025-06-15",
-    paymentMethod: "Visa ending in 4242",
-    invoices: [
-      {
-        id: "INV-2022-001",
-        date: "2025-05-15",
-        amount: "$49.99",
-        status: "Paid",
-      },
-      {
-        id: "INV-2022-002",
-        date: "2025-04-15",
-        amount: "$49.99",
-        status: "Paid",
-      },
-      {
-        id: "INV-2022-003",
-        date: "2025-03-15",
-        amount: "$49.99",
-        status: "Paid",
-      },
-    ],
-  });
+  // Load user profile data on component mount
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
-  // Handle form changes
-  const handleChange = (section, field, value) => {
-    switch (section) {
-      case "profile":
-        setProfileSettings((prev) => ({ ...prev, [field]: value }));
-        break;
-      case "security":
-        setSecuritySettings((prev) => ({ ...prev, [field]: value }));
-        break;
-      case "notification":
-        setNotificationSettings((prev) => ({ ...prev, [field]: value }));
-        break;
-      case "billing":
-        setBillingSettings((prev) => ({ ...prev, [field]: value }));
-        break;
-      default:
-        break;
+  // Fetch complete user data from backend
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get user profile and auth data
+      const [profileResponse, authResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/auth/profile`, { withCredentials: true }),
+        axios.post(`${API_BASE_URL}/auth/is-auth`, {}, { withCredentials: true })
+      ]);
+
+      if (profileResponse.data.success && authResponse.data.success) {
+        const user = { ...profileResponse.data.user, ...authResponse.data.user };
+        
+        setProfileData(user);
+        
+        // Set form data
+        setProfileForm({
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          phone: user.phone || ""
+        });
+        
+        // Set address form data (now coming from backend)
+        setAddressForm({
+          address_line1: user.address_line1 || "",
+          address_line2: user.address_line2 || "",
+          city: user.city || "",
+          state: user.state || "",
+          postal_code: user.postal_code || "",
+          country: user.country || ""
+        });
+        
+        console.log("✅ User data loaded:", {
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          role: user.role,
+          hasAddress: !!(user.address_line1 && user.city)
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error fetching user data:", error);
+      toast.error("Failed to load profile data");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e, section, data) => {
+  // Handle profile form changes
+  const handleProfileChange = (field, value) => {
+    setProfileForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle address form changes
+  const handleAddressChange = (field, value) => {
+    setAddressForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle password form changes
+  const handlePasswordChange = (field, value) => {
+    setPasswordForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle delete form changes
+  const handleDeleteChange = (field, value) => {
+    setDeleteForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle notification changes
+  const handleNotificationChange = (field, value) => {
+    setNotificationSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Validate phone number
+  const validatePhone = (phone) => {
+    // Remove all spaces and special characters except +
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    // Allow international format with + or without
+    const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
+    
+    // Additional validation - check length
+    if (cleanPhone.length < 8 || cleanPhone.length > 16) {
+      return false;
+    }
+    
+    return phoneRegex.test(cleanPhone);
+  };
+
+  // Validate postal code
+  const validatePostalCode = (code, country) => {
+    if (!code) return false;
+    
+    // Basic validation - at least 3 characters
+    if (code.length < 3) return false;
+    
+    // India postal code validation
+    if (country === "India") {
+      const indiaPostalRegex = /^[1-9][0-9]{5}$/;
+      return indiaPostalRegex.test(code);
+    }
+    
+    // US postal code validation
+    if (country === "United States") {
+      const usPostalRegex = /^\d{5}(-\d{4})?$/;
+      return usPostalRegex.test(code);
+    }
+    
+    // Basic validation for other countries
+    return code.length >= 3 && code.length <= 10;
+  };
+
+  // Update profile
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    console.log(`Saving ${section} settings:`, data);
-    // Show success message
-    alert(
-      `${
-        section.charAt(0).toUpperCase() + section.slice(1)
-      } settings updated successfully!`
-    );
-  };
+    
+    // Validation
+    if (!profileForm.first_name.trim()) {
+      toast.error("First name is required");
+      return;
+    }
+    
+    if (!profileForm.last_name.trim()) {
+      toast.error("Last name is required");
+      return;
+    }
+    
+    if (!profileForm.phone.trim()) {
+      toast.error("Phone number is required");
+      return;
+    }
+    
+    if (!validatePhone(profileForm.phone)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
 
-  // Handle account deletion
-  const handleDeleteAccount = () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete your account? This action cannot be undone."
-    );
+    try {
+      setIsLoading(true);
+      console.log("📝 Updating profile with data:", {
+        first_name: profileForm.first_name.trim(),
+        last_name: profileForm.last_name.trim(),
+        phone: profileForm.phone.trim()
+      });
 
-    if (confirmed) {
-      // In a real app, this would call an API to delete the account
-      console.log("Account deletion requested");
-      alert(
-        "Your account has been scheduled for deletion. You will receive a confirmation email."
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/update-profile`, 
+        {
+          first_name: profileForm.first_name.trim(),
+          last_name: profileForm.last_name.trim(),
+          phone: profileForm.phone.trim()
+          // Note: NOT sending email - backend doesn't allow email updates
+        },
+        { withCredentials: true }
       );
+
+      if (response.data.success) {
+        toast.success("Profile updated successfully!");
+        // Update local state with the returned user data
+        setProfileData(prev => ({
+          ...prev,
+          first_name: response.data.user.first_name,
+          last_name: response.data.user.last_name,
+          phone: response.data.user.phone
+        }));
+        console.log("✅ Profile updated successfully");
+      }
+    } catch (error) {
+      console.error("❌ Error updating profile:", error);
+      const errorMessage = error.response?.data?.message || "Failed to update profile";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Update address
+  const handleAddressSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!addressForm.address_line1.trim()) {
+      toast.error("Address line 1 is required");
+      return;
+    }
+    
+    if (!addressForm.city.trim()) {
+      toast.error("City is required");
+      return;
+    }
+    
+    if (!addressForm.postal_code.trim()) {
+      toast.error("Postal code is required");
+      return;
+    }
+    
+    if (!addressForm.country) {
+      toast.error("Please select a country");
+      return;
+    }
+    
+    if (!validatePostalCode(addressForm.postal_code, addressForm.country)) {
+      toast.error("Please enter a valid postal code for the selected country");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/update-address`, 
+        {
+          address_line1: addressForm.address_line1.trim(),
+          address_line2: addressForm.address_line2.trim(),
+          city: addressForm.city.trim(),
+          state: addressForm.state.trim(),
+          postal_code: addressForm.postal_code.trim(),
+          country: addressForm.country
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("Address updated successfully!");
+        setProfileData(prev => ({ ...prev, ...addressForm }));
+      }
+    } catch (error) {
+      console.error("❌ Error updating address:", error);
+      toast.error(error.response?.data?.message || "Failed to update address");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Change password
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `${API_BASE_URL}/auth/change-password`, 
+        {
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("Password changed successfully!");
+        setPasswordForm({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: ""
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Delete account
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    
+    if (!deleteForm.password) {
+      toast.error("Please enter your password to confirm account deletion");
+      return;
+    }
+    
+    if (deleteForm.confirmText !== "DELETE") {
+      toast.error("Please type 'DELETE' to confirm account deletion");
+      return;
+    }
+
+    if (!window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.delete(
+        `${API_BASE_URL}/auth/delete-account`,
+        {
+          data: { password: deleteForm.password },
+          withCredentials: true
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Account deleted successfully. You will be redirected...");
+        
+        // Clear form
+        setDeleteForm({ password: "", confirmText: "" });
+        
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("❌ Error deleting account:", error);
+      toast.error(error.response?.data?.message || "Failed to delete account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save notification settings
+  const handleNotificationSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Since there's no backend for notifications yet, just show success
+    toast.success("Notification preferences saved!");
+    console.log("📬 Notification settings:", notificationSettings);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (isLoading && !profileData.email) {
+    return (
+      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Account Settings
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Admin Settings
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage your account preferences and settings
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage your admin account settings and preferences
           </p>
         </div>
 
-        {/* Settings Navigation */}
-        <div className="bg-white dark:bg-gray-800 rounded-md shadow-md overflow-hidden mb-6">
+        {/* Navigation Tabs */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex overflow-x-auto">
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={`px-4 py-4 text-sm font-medium ${
-                  activeTab === "profile"
-                    ? "border-b-2 border-primary text-primary dark:text-primary-light"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                <i className="fas fa-user mr-2"></i>
-                Profile
-              </button>
-
-              <button
-                onClick={() => setActiveTab("security")}
-                className={`px-4 py-4 text-sm font-medium ${
-                  activeTab === "security"
-                    ? "border-b-2 border-primary text-primary dark:text-primary-light"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                <i className="fas fa-shield-alt mr-2"></i>
-                Security
-              </button>
-
-              <button
-                onClick={() => setActiveTab("notification")}
-                className={`px-4 py-4 text-sm font-medium ${
-                  activeTab === "notification"
-                    ? "border-b-2 border-primary text-primary dark:text-primary-light"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                <i className="fas fa-bell mr-2"></i>
-                Notifications
-              </button>
-
-              <button
-                onClick={() => setActiveTab("billing")}
-                className={`px-4 py-4 text-sm font-medium ${
-                  activeTab === "billing"
-                    ? "border-b-2 border-primary text-primary dark:text-primary-light"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                <i className="fas fa-credit-card mr-2"></i>
-                Billing
-              </button>
+            <nav className="flex space-x-8 px-6">
+              {[
+                { key: "profile", icon: "fas fa-user", label: "Profile" },
+                { key: "address", icon: "fas fa-map-marker-alt", label: "Address" },
+                { key: "security", icon: "fas fa-shield-alt", label: "Security" },
+                { key: "notifications", icon: "fas fa-bell", label: "Notifications" }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.key
+                      ? "border-primary text-primary"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <i className={`${tab.icon} mr-2`}></i>
+                  {tab.label}
+                </button>
+              ))}
             </nav>
           </div>
         </div>
 
-        {/* Settings Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-md shadow-md overflow-hidden mb-6">
+        {/* Tab Content */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
           <div className="p-6">
-            {/* Profile Settings */}
+            {/* Profile Tab */}
             {activeTab === "profile" && (
               <div>
-                <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">
-                  Profile Settings
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Profile Information
                 </h2>
-                <form
-                  onSubmit={(e) => handleSubmit(e, "profile", profileSettings)}
-                >
-                  <div className="flex mb-6">
-                    <div className="mr-6">
-                      <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-                        {profileSettings.avatar ? (
-                          <img
-                            src={profileSettings.avatar}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-gray-400">
-                            <i className="fas fa-user text-4xl"></i>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-2 flex justify-center">
-                        <button
-                          type="button"
-                          className="text-xs text-primary hover:text-primary-dark dark:text-primary-light"
-                        >
-                          <i className="fas fa-camera mr-1"></i> Change
-                        </button>
+
+                {/* Account Overview */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Account Status</div>
+                      <div className="flex items-center mt-1">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          profileData.isAccountVerified 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}>
+                          <i className={`fas ${profileData.isAccountVerified ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-1`}></i>
+                          {profileData.isAccountVerified ? 'Verified' : 'Unverified'}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="flex-1">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label
-                            htmlFor="name"
-                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                          >
-                            Name
-                          </label>
-                          <input
-                            type="text"
-                            id="name"
-                            value={profileSettings.name}
-                            onChange={(e) =>
-                              handleChange("profile", "name", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                          />
-                        </div>
-
-                        <div>
-                          <label
-                            htmlFor="email"
-                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                          >
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            id="email"
-                            value={profileSettings.email}
-                            onChange={(e) =>
-                              handleChange("profile", "email", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                          />
-                        </div>
+                    <div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Role</div>
+                      <div className="font-medium text-gray-900 dark:text-white capitalize mt-1">
+                        {profileData.role || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Member Since</div>
+                      <div className="font-medium text-gray-900 dark:text-white mt-1">
+                        {formatDate(profileData.createdAt)}
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {/* Profile Form */}
+                <form onSubmit={handleProfileSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                      >
-                        Phone
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        First Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        id="phone"
-                        value={profileSettings.phone}
-                        onChange={(e) =>
-                          handleChange("profile", "phone", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                        value={profileForm.first_name}
+                        onChange={(e) => handleProfileChange('first_name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter your first name"
+                        required
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="jobTitle"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                      >
-                        Job Title
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Last Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        id="jobTitle"
-                        value={profileSettings.jobTitle}
-                        onChange={(e) =>
-                          handleChange("profile", "jobTitle", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                        value={profileForm.last_name}
+                        onChange={(e) => handleProfileChange('last_name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter your last name"
+                        required
                       />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="timezone"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                      >
-                        Timezone
-                      </label>
-                      <select
-                        id="timezone"
-                        value={profileSettings.timezone}
-                        onChange={(e) =>
-                          handleChange("profile", "timezone", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="UTC-8">Pacific Time (UTC-8)</option>
-                        <option value="UTC-7">Mountain Time (UTC-7)</option>
-                        <option value="UTC-6">Central Time (UTC-6)</option>
-                        <option value="UTC-5">Eastern Time (UTC-5)</option>
-                        <option value="UTC-4">Atlantic Time (UTC-4)</option>
-                        <option value="UTC">Greenwich Mean Time (UTC)</option>
-                        <option value="UTC+1">
-                          Central European Time (UTC+1)
-                        </option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="language"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                      >
-                        Language
-                      </label>
-                      <select
-                        id="language"
-                        value={profileSettings.language}
-                        onChange={(e) =>
-                          handleChange("profile", "language", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="pt">Portuguese</option>
-                      </select>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <label
-                      htmlFor="bio"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      Bio
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address
                     </label>
-                    <textarea
-                      id="bio"
-                      rows="3"
-                      value={profileSettings.bio}
-                      onChange={(e) =>
-                        handleChange("profile", "bio", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                    ></textarea>
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      placeholder="Email cannot be changed"
+                      disabled
+                      readOnly
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Email address cannot be changed for security reasons
+                    </p>
                   </div>
 
-                  <div className="flex justify-end mt-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) => handleProfileChange('phone', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter your phone number"
+                      required
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Example: +1234567890 or 1234567890
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
+                      disabled={isLoading}
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-6 py-2 rounded-md flex items-center gap-2"
                     >
-                      Save Changes
+                      {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                      Update Profile
                     </button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Security Settings */}
+            {/* Address Tab */}
+            {activeTab === "address" && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Address Information
+                </h2>
+
+                <form onSubmit={handleAddressSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Address Line 1 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={addressForm.address_line1}
+                      onChange={(e) => handleAddressChange('address_line1', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      placeholder="Street address, P.O. Box, company name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Address Line 2
+                    </label>
+                    <input
+                      type="text"
+                      value={addressForm.address_line2}
+                      onChange={(e) => handleAddressChange('address_line2', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      placeholder="Apartment, suite, unit, building, floor, etc."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.city}
+                        onChange={(e) => handleAddressChange('city', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter city"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.state}
+                        onChange={(e) => handleAddressChange('state', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter state or province"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Postal Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.postal_code}
+                        onChange={(e) => handleAddressChange('postal_code', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter postal code"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {addressForm.country === "India" && "Example: 110001 (6 digits)"}
+                        {addressForm.country === "United States" && "Example: 12345 or 12345-6789"}
+                        {(!addressForm.country || (addressForm.country !== "India" && addressForm.country !== "United States")) && "Enter valid postal code"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={addressForm.country}
+                        onChange={(e) => handleAddressChange('country', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        required
+                      >
+                        <option value="">Select Country</option>
+                        <option value="India">India</option>
+                        <option value="United States">United States</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Japan">Japan</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-6 py-2 rounded-md flex items-center gap-2"
+                    >
+                      {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                      Update Address
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Security Tab */}
             {activeTab === "security" && (
               <div>
-                <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
                   Security Settings
                 </h2>
-                <form
-                  onSubmit={(e) =>
-                    handleSubmit(e, "security", securitySettings)
-                  }
-                >
-                  {/* Password Section */}
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Password
-                    </h3>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          Change Password
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Last changed: {securitySettings.lastPasswordChange}
+
+                {/* Change Password Section */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Change Password
+                  </h3>
+                  
+                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                      <div className="flex items-start">
+                        <i className="fas fa-info-circle text-blue-500 mt-0.5 mr-3"></i>
+                        <div>
+                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-400">
+                            Password Security Tips
+                          </h3>
+                          <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                            <ul className="list-disc list-inside space-y-1">
+                              <li>Use at least 8 characters</li>
+                              <li>Include uppercase and lowercase letters</li>
+                              <li>Include numbers and special characters</li>
+                              <li>Don't use personal information</li>
+                            </ul>
+                          </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Current Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.oldPassword}
+                        onChange={(e) => handlePasswordChange('oldPassword', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter your current password"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        New Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter your new password"
+                        minLength="6"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Confirm New Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Confirm your new password"
+                        minLength="6"
+                        required
+                      />
+                      {passwordForm.newPassword && passwordForm.confirmPassword && 
+                       passwordForm.newPassword !== passwordForm.confirmPassword && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          Passwords do not match
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end">
                       <button
-                        type="button"
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md text-sm"
+                        type="submit"
+                        disabled={isLoading || (passwordForm.newPassword !== passwordForm.confirmPassword)}
+                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-6 py-2 rounded-md flex items-center gap-2"
                       >
+                        {isLoading && <i className="fas fa-spinner fa-spin"></i>}
                         Change Password
                       </button>
                     </div>
+                  </form>
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Delete Account Section */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+                  <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
+                    Delete Account
+                  </h3>
+                  
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <i className="fas fa-exclamation-triangle text-red-500 mt-0.5 mr-3"></i>
                       <div>
-                        <label
-                          htmlFor="sessionTimeout"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                        >
-                          Session Timeout (minutes)
-                        </label>
-                        <input
-                          type="number"
-                          id="sessionTimeout"
-                          min="5"
-                          max="120"
-                          value={securitySettings.sessionTimeout}
-                          onChange={(e) =>
-                            handleChange(
-                              "security",
-                              "sessionTimeout",
-                              parseInt(e.target.value)
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                        />
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="loginNotifications"
-                          checked={securitySettings.loginNotifications}
-                          onChange={(e) =>
-                            handleChange(
-                              "security",
-                              "loginNotifications",
-                              e.target.checked
-                            )
-                          }
-                          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                        />
-                        <label
-                          htmlFor="loginNotifications"
-                          className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                        >
-                          Get notified of new login attempts
-                        </label>
+                        <h4 className="text-sm font-medium text-red-800 dark:text-red-400">
+                          Warning: This action cannot be undone
+                        </h4>
+                        <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>All your data will be permanently deleted</li>
+                            <li>You will lose access to all admin features</li>
+                            <li>This action cannot be reversed</li>
+                            <li>You will be logged out immediately</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Two-Factor Authentication */}
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Two-Factor Authentication
-                      </h3>
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="twoFactorEnabled"
-                          checked={securitySettings.twoFactorEnabled}
-                          onChange={(e) =>
-                            handleChange(
-                              "security",
-                              "twoFactorEnabled",
-                              e.target.checked
-                            )
-                          }
-                          className="sr-only"
-                        />
-                        <label
-                          htmlFor="twoFactorEnabled"
-                          className={`${
-                            securitySettings.twoFactorEnabled
-                              ? "bg-primary"
-                              : "bg-gray-300 dark:bg-gray-600"
-                          } absolute block w-10 h-6 rounded-full cursor-pointer transition-colors duration-200`}
-                        >
-                          <span
-                            className={`${
-                              securitySettings.twoFactorEnabled
-                                ? "translate-x-4"
-                                : "translate-x-0"
-                            } inline-block w-6 h-6 transform bg-white rounded-full shadow-md transition-transform duration-200`}
-                          ></span>
-                        </label>
-                      </div>
+                  <form onSubmit={handleDeleteAccount} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Enter your password to confirm <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={deleteForm.password}
+                        onChange={(e) => handleDeleteChange('password', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter your current password"
+                        required
+                      />
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                      Add an extra layer of security to your account by
-                      requiring a verification code in addition to your
-                      password.
-                    </p>
-                    {securitySettings.twoFactorEnabled ? (
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Type "DELETE" to confirm <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteForm.confirmText}
+                        onChange={(e) => handleDeleteChange('confirmText', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Type DELETE to confirm"
+                        required
+                      />
+                      {deleteForm.confirmText && deleteForm.confirmText !== "DELETE" && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          Please type "DELETE" exactly as shown
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end">
                       <button
-                        type="button"
-                        className="px-3 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-800 dark:text-red-400 rounded-md text-sm"
+                        type="submit"
+                        disabled={isLoading || deleteForm.confirmText !== "DELETE" || !deleteForm.password}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-2 rounded-md flex items-center gap-2"
                       >
-                        Disable Two-Factor Authentication
+                        {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                        <i className="fas fa-trash mr-1"></i>
+                        Delete Account Permanently
                       </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-md text-sm"
-                      >
-                        Set Up Two-Factor Authentication
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Login History */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Recent Login Activity
-                    </h3>
-                    <div className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-750">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Date & Time
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              IP Address
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Device
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {securitySettings.loginHistory.map((login, index) => (
-                            <tr key={index}>
-                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                {login.date}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                {login.ip}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                {login.device}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
                     </div>
-                  </div>
-
-                  <div className="flex justify-end mt-6">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
-                    >
-                      Save Changes
-                    </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </div>
             )}
 
-            {/* Notification Settings */}
-            {activeTab === "notification" && (
+            {/* Notifications Tab */}
+            {activeTab === "notifications" && (
               <div>
-                <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">
-                  Notification Settings
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Notification Preferences
                 </h2>
-                <form
-                  onSubmit={(e) =>
-                    handleSubmit(e, "notification", notificationSettings)
-                  }
-                >
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Email Notifications
-                      </h3>
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="emailNotifications"
-                          checked={notificationSettings.emailNotifications}
-                          onChange={(e) =>
-                            handleChange(
-                              "notification",
-                              "emailNotifications",
-                              e.target.checked
-                            )
-                          }
-                          className="sr-only"
-                        />
-                        <label
-                          htmlFor="emailNotifications"
-                          className={`${
-                            notificationSettings.emailNotifications
-                              ? "bg-primary"
-                              : "bg-gray-300 dark:bg-gray-600"
-                          } absolute block w-10 h-6 rounded-full cursor-pointer transition-colors duration-200`}
-                        >
-                          <span
-                            className={`${
-                              notificationSettings.emailNotifications
-                                ? "translate-x-4"
-                                : "translate-x-0"
-                            } inline-block w-6 h-6 transform bg-white rounded-full shadow-md transition-transform duration-200`}
-                          ></span>
+
+                <form onSubmit={handleNotificationSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    {[
+                      { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
+                      { key: 'orderUpdates', label: 'Order Updates', desc: 'Get notified about new orders and status changes' },
+                      { key: 'productUpdates', label: 'Product Updates', desc: 'Receive alerts when products are added or modified' },
+                      { key: 'inventoryAlerts', label: 'Inventory Alerts', desc: 'Get notified about low stock and inventory issues' },
+                      { key: 'securityAlerts', label: 'Security Alerts', desc: 'Receive important security notifications' },
+                      { key: 'marketingEmails', label: 'Marketing Emails', desc: 'Receive promotional and marketing emails' },
+                      { key: 'webNotifications', label: 'Browser Notifications', desc: 'Show notifications in your browser' }
+                    ].map(notification => (
+                      <div key={notification.key} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                            {notification.label}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {notification.desc}
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notificationSettings[notification.key]}
+                            onChange={(e) => handleNotificationChange(notification.key, e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                         </label>
                       </div>
-                    </div>
-
-                    {notificationSettings.emailNotifications && (
-                      <div className="pl-6 border-l-2 border-gray-100 dark:border-gray-700 space-y-3 mt-4">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="orderUpdates"
-                            checked={notificationSettings.orderUpdates}
-                            onChange={(e) =>
-                              handleChange(
-                                "notification",
-                                "orderUpdates",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor="orderUpdates"
-                            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Order updates and confirmations
-                          </label>
-                        </div>
-
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="productUpdates"
-                            checked={notificationSettings.productUpdates}
-                            onChange={(e) =>
-                              handleChange(
-                                "notification",
-                                "productUpdates",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor="productUpdates"
-                            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Product updates and changes
-                          </label>
-                        </div>
-
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="inventoryAlerts"
-                            checked={notificationSettings.inventoryAlerts}
-                            onChange={(e) =>
-                              handleChange(
-                                "notification",
-                                "inventoryAlerts",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor="inventoryAlerts"
-                            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Inventory alerts
-                          </label>
-                        </div>
-
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="securityAlerts"
-                            checked={notificationSettings.securityAlerts}
-                            onChange={(e) =>
-                              handleChange(
-                                "notification",
-                                "securityAlerts",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor="securityAlerts"
-                            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Security alerts and warnings
-                          </label>
-                        </div>
-
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="marketingEmails"
-                            checked={notificationSettings.marketingEmails}
-                            onChange={(e) =>
-                              handleChange(
-                                "notification",
-                                "marketingEmails",
-                                e.target.checked
-                              )
-                            }
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor="marketingEmails"
-                            className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            Marketing and promotional emails
-                          </label>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
 
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Browser Notifications
-                      </h3>
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="webNotifications"
-                          checked={notificationSettings.webNotifications}
-                          onChange={(e) =>
-                            handleChange(
-                              "notification",
-                              "webNotifications",
-                              e.target.checked
-                            )
-                          }
-                          className="sr-only"
-                        />
-                        <label
-                          htmlFor="webNotifications"
-                          className={`${
-                            notificationSettings.webNotifications
-                              ? "bg-primary"
-                              : "bg-gray-300 dark:bg-gray-600"
-                          } absolute block w-10 h-6 rounded-full cursor-pointer transition-colors duration-200`}
-                        >
-                          <span
-                            className={`${
-                              notificationSettings.webNotifications
-                                ? "translate-x-4"
-                                : "translate-x-0"
-                            } inline-block w-6 h-6 transform bg-white rounded-full shadow-md transition-transform duration-200`}
-                          ></span>
-                        </label>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                      Receive notifications directly in your browser when you're
-                      using the app.
-                    </p>
-                    {notificationSettings.webNotifications && (
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-md text-sm"
-                      >
-                        Test Browser Notification
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Mobile Push Notifications
-                      </h3>
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="pushNotifications"
-                          checked={notificationSettings.pushNotifications}
-                          onChange={(e) =>
-                            handleChange(
-                              "notification",
-                              "pushNotifications",
-                              e.target.checked
-                            )
-                          }
-                          className="sr-only"
-                        />
-                        <label
-                          htmlFor="pushNotifications"
-                          className={`${
-                            notificationSettings.pushNotifications
-                              ? "bg-primary"
-                              : "bg-gray-300 dark:bg-gray-600"
-                          } absolute block w-10 h-6 rounded-full cursor-pointer transition-colors duration-200`}
-                        >
-                          <span
-                            className={`${
-                              notificationSettings.pushNotifications
-                                ? "translate-x-4"
-                                : "translate-x-0"
-                            } inline-block w-6 h-6 transform bg-white rounded-full shadow-md transition-transform duration-200`}
-                          ></span>
-                        </label>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Receive push notifications on your mobile device when
-                      you're not using the app.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-end mt-6">
+                  <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
+                      className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md flex items-center gap-2"
                     >
-                      Save Changes
+                      Save Preferences
                     </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Billing Settings */}
-            {activeTab === "billing" && (
-              <div>
-                <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">
-                  Billing Settings
-                </h2>
-                <form
-                  onSubmit={(e) => handleSubmit(e, "billing", billingSettings)}
-                >
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Current Plan
-                    </h3>
-                    <div className="bg-gray-50 dark:bg-gray-750 rounded-md p-4 mb-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium text-gray-900 dark:text-white">
-                            {billingSettings.plan} Plan
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {billingSettings.billingCycle === "monthly"
-                              ? "Billed monthly"
-                              : "Billed annually"}
-                          </div>
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                          $49.99
-                          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                            /mo
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                        Next billing date: {billingSettings.nextBillingDate}
-                      </div>
-                    </div>
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md text-sm"
-                      >
-                        Change Plan
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md text-sm"
-                      >
-                        Cancel Subscription
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Payment Method
-                    </h3>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="rounded-md bg-gray-100 dark:bg-gray-700 p-2 mr-3">
-                          <i className="fas fa-credit-card text-gray-500 dark:text-gray-400"></i>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {billingSettings.paymentMethod}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Expires 12/2026
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md text-sm"
-                      >
-                        Update
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Billing History
-                    </h3>
-                    <div className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-750">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Invoice
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Amount
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {billingSettings.invoices.map((invoice, index) => (
-                            <tr key={index}>
-                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                {invoice.id}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                {invoice.date}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                {invoice.amount}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                  {invoice.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-right">
-                                <button
-                                  type="button"
-                                  className="text-primary hover:text-primary-dark dark:text-primary-light text-sm"
-                                >
-                                  Download
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
                 </form>
               </div>
             )}
           </div>
         </div>
-
-        {/* Account Deletion Section - Only show on profile tab */}
-        {activeTab === "profile" && (
-          <div className="bg-white dark:bg-gray-800 rounded-md shadow-md overflow-hidden mt-6">
-            <div className="p-6">
-              <h2 className="text-xl font-medium text-red-600 dark:text-red-500 mb-2">
-                Delete Account
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Once you delete your account, there is no going back. All of
-                your data will be permanently removed.
-              </p>
-              <button
-                type="button"
-                onClick={handleDeleteAccount}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md"
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

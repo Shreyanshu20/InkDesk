@@ -3,10 +3,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.model.js');
 const Address = require('../models/address.model.js');
 const { transporter } = require('../config/nodemailer');
+const { profileChangeEmailTemplate } = require('../config/profileEmailTemplates');
 
-// This function handles user registration by creating a new user in the database
 module.exports.register = async (req, res) => {
-
     const { first_name, last_name, email, password, role } = req.body;
 
     if (!first_name || !last_name || !email || !password) {
@@ -17,7 +16,6 @@ module.exports.register = async (req, res) => {
     }
 
     try {
-
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
@@ -41,14 +39,12 @@ module.exports.register = async (req, res) => {
 
         const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        // Set cookie with token
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
-
 
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
@@ -58,8 +54,6 @@ module.exports.register = async (req, res) => {
         };
 
         transporter.sendMail(mailOptions);
-        console.log("Welcome email sent successfully");
-
 
         return res.json({
             success: true,
@@ -72,10 +66,8 @@ module.exports.register = async (req, res) => {
             message: err.message
         });
     }
+};
 
-}
-
-// This function handles user login by verifying credentials and generating a JWT token
 module.exports.login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -121,7 +113,6 @@ module.exports.login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        // Add this line - return a response with user data
         return res.json({
             success: true,
             message: "Login successful",
@@ -140,9 +131,8 @@ module.exports.login = async (req, res) => {
             message: err.message
         });
     }
-}
+};
 
-// This function handles user logout by clearing the cookie
 module.exports.logout = async (req, res) => {
     try {
         res.clearCookie('token', {
@@ -160,16 +150,11 @@ module.exports.logout = async (req, res) => {
             message: err.message
         });
     }
-}
+};
 
-// This function sends a verification email to the user with an OTP
 module.exports.sendVerificationEmail = async (req, res) => {
     try {
-        // Use userId from middleware instead of request body
         const userId = req.userId;
-
-        console.log("Sending verification email for userId:", userId);
-
         const user = await User.findById(userId);
 
         if (!user) {
@@ -186,10 +171,8 @@ module.exports.sendVerificationEmail = async (req, res) => {
             });
         }
 
-        // Remove role check - we already verified they're authenticated
-
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const expiry = Date.now() + 10 * 60 * 1000;
         user.verify_Otp = otp;
         user.verify_Otp_expiry = expiry;
         await user.save();
@@ -210,17 +193,14 @@ module.exports.sendVerificationEmail = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("OTP sending error:", err);
         return res.status(500).json({
             success: false,
             message: err.message || "Error sending OTP"
         });
     }
-}
+};
 
-// This function verifies the account using the OTP sent to the user's email
 module.exports.verifyAccount = async (req, res) => {
-    // Get userId from auth middleware instead of request body
     const userId = req.userId;
     const { otp } = req.body;
 
@@ -281,72 +261,8 @@ module.exports.verifyAccount = async (req, res) => {
             message: err.message
         });
     }
-}
-
-// Middleware to check if user is authenticated
-module.exports.isAuthenticated = async (req, res) => {
-    try {
-        const user = await User.findById(req.userId).populate('address_details');
-
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // Get address details if available
-        let addressLine1 = '';
-        let addressLine2 = '';
-        let city = '';
-        let state = '';
-        let postalCode = '';
-        let country = '';
-
-        if (user.address_details && user.address_details.length > 0) {
-            const address = user.address_details[0];
-
-            // Split address_line into line1 and line2 if it contains a comma
-            if (address.address_line) {
-                const parts = address.address_line.split(', ');
-                addressLine1 = parts[0] || '';
-                addressLine2 = parts.length > 1 ? parts.slice(1).join(', ') : '';
-            }
-
-            city = address.city || '';
-            state = address.state || '';
-            postalCode = address.pincode || '';
-            country = address.country || '';
-        }
-
-        return res.status(200).json({
-            success: true,
-            user: {
-                id: user._id,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                role: user.role,
-                isAccountVerified: user.isAccountVerified,
-                phone: user.phone,
-                address_line1: addressLine1,
-                address_line2: addressLine2,
-                city: city,
-                state: state,
-                postal_code: postalCode,
-                country: country,
-                status: user.status
-            }
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
 };
 
-// This function sends a password reset OTP to the user's email
 module.exports.sendResetPasswordEmail = async (req, res) => {
     const { email } = req.body;
 
@@ -389,15 +305,13 @@ module.exports.sendResetPasswordEmail = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("OTP sending error:", err);
         return res.status(500).json({
             success: false,
             message: err.message || "Error sending OTP"
         });
     }
-}
+};
 
-// This function resets the password using the OTP sent to the user's email
 module.exports.resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
@@ -458,22 +372,329 @@ module.exports.resetPassword = async (req, res) => {
             message: err.message
         });
     }
-}
+};
 
-module.exports.changePassword = async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
+module.exports.isAuth = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('-password -verify_Otp -forget_password_otp');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        return res.json({
+            success: true,
+            user: {
+                id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified,
+                status: user.status,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Authentication check failed"
+        });
+    }
+};
+
+module.exports.getUserProfile = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId)
+            .populate('address_details')
+            .select('-password -verify_Otp -forget_password_otp');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        let addressData = {
+            address_line1: '',
+            address_line2: '',
+            city: '',
+            state: '',
+            postal_code: '',
+            country: ''
+        };
+
+        if (user.address_details && user.address_details.length > 0) {
+            const primaryAddress = user.address_details.find(addr => addr.is_primary) || user.address_details[0];
+            if (primaryAddress) {
+                addressData = {
+                    address_line1: primaryAddress.address_line_1 || '',
+                    address_line2: primaryAddress.address_line_2 || '',
+                    city: primaryAddress.city || '',
+                    state: primaryAddress.state || '',
+                    postal_code: primaryAddress.postal_code || '',
+                    country: primaryAddress.country || ''
+                };
+            }
+        }
+
+        const userData = {
+            id: user._id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            isAccountVerified: user.isAccountVerified,
+            status: user.status,
+            createdAt: user.createdAt,
+            ...addressData
+        };
+
+        return res.json({
+            success: true,
+            user: userData
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch user profile"
+        });
+    }
+};
+
+module.exports.updateUserProfile = async (req, res) => {
+    const { first_name, last_name, phone } = req.body;
     const userId = req.userId;
 
-    if (!oldPassword || !newPassword) {
+    if (!first_name || !last_name || !phone) {
         return res.status(400).json({
             success: false,
-            message: "Please fill all the fields"
+            message: "Please fill all required fields (first name, last name, phone)"
+        });
+    }
+
+    const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
+    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        return res.status(400).json({
+            success: false,
+            message: "Please enter a valid phone number"
         });
     }
 
     try {
         const user = await User.findById(userId);
 
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.first_name = first_name.trim();
+        user.last_name = last_name.trim();
+        user.phone = phone.trim();
+
+        await user.save();
+
+        try {
+            const emailTemplate = profileChangeEmailTemplate(user, 'profile', {
+                first_name: user.first_name,
+                last_name: user.last_name,
+                phone: user.phone
+            });
+
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html,
+                text: emailTemplate.text
+            };
+
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            // Email error handling without exposing to user
+        }
+
+        return res.json({
+            success: true,
+            message: "Profile updated successfully",
+            user: {
+                id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified
+            }
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update profile. Please try again."
+        });
+    }
+};
+
+module.exports.updateUserAddress = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { address_line1, address_line2, city, state, postal_code, country } = req.body;
+
+        if (!address_line1 || !city || !postal_code || !country) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide address line 1, city, postal code, and country"
+            });
+        }
+
+        if (country === "India") {
+            const indiaPostalRegex = /^[1-9][0-9]{5}$/;
+            if (!indiaPostalRegex.test(postal_code)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid postal code for India. Please enter a 6-digit postal code."
+                });
+            }
+        } else if (country === "United States") {
+            const usPostalRegex = /^\d{5}(-\d{4})?$/;
+            if (!usPostalRegex.test(postal_code)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid postal code for United States. Use format: 12345 or 12345-6789"
+                });
+            }
+        } else {
+            if (postal_code.length < 3 || postal_code.length > 10) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Postal code must be between 3 and 10 characters"
+                });
+            }
+        }
+
+        const user = await User.findById(userId).populate('address_details');
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const addressData = {
+            first_name: user.first_name,
+            last_name: user.last_name,
+            phone: user.phone || '',
+            address_line_1: address_line1.trim(),
+            address_line_2: address_line2 ? address_line2.trim() : '',
+            city: city.trim(),
+            state: state ? state.trim() : '',
+            postal_code: postal_code.trim(),
+            country: country,
+            is_primary: true
+        };
+
+        let savedAddress;
+
+        if (user.address_details && user.address_details.length > 0) {
+            const existingAddress = user.address_details[0];
+
+            if (existingAddress && existingAddress._id) {
+                const updatedAddress = await Address.findByIdAndUpdate(
+                    existingAddress._id,
+                    addressData,
+                    { new: true, runValidators: true }
+                );
+
+                if (updatedAddress) {
+                    savedAddress = updatedAddress;
+                } else {
+                    const newAddress = new Address(addressData);
+                    savedAddress = await newAddress.save();
+                    user.address_details = [savedAddress._id];
+                    await user.save();
+                }
+            } else {
+                const newAddress = new Address(addressData);
+                savedAddress = await newAddress.save();
+                user.address_details = [savedAddress._id];
+                await user.save();
+            }
+        } else {
+            const newAddress = new Address(addressData);
+            savedAddress = await newAddress.save();
+            user.address_details = [savedAddress._id];
+            await user.save();
+        }
+
+        try {
+            const emailTemplate = profileChangeEmailTemplate(user, 'address', {
+                address_line1: savedAddress.address_line_1,
+                address_line2: savedAddress.address_line_2,
+                city: savedAddress.city,
+                state: savedAddress.state,
+                postal_code: savedAddress.postal_code,
+                country: savedAddress.country
+            });
+
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html,
+                text: emailTemplate.text
+            };
+
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            // Email error handling without exposing to user
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Address updated successfully",
+            address: savedAddress
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message || "An error occurred while updating the address"
+        });
+    }
+};
+
+module.exports.changePassword = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Old password and new password are required"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 6 characters long"
+            });
+        }
+
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -485,199 +706,113 @@ module.exports.changePassword = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({
                 success: false,
-                message: "Old password is incorrect"
+                message: "Current password is incorrect"
             });
         }
 
-        const hashPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashPassword;
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        user.password = hashedPassword;
         await user.save();
 
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
-            to: user.email,
-            subject: 'Password Changed Successfully',
-            text: `Hello ${user.first_name},\n\nYour password has been changed successfully.\n\nBest regards,\nInkDesk Team`
-        };
+        try {
+            const emailTemplate = profileChangeEmailTemplate(user, 'password');
 
-        await transporter.sendMail(mailOptions);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html,
+                text: emailTemplate.text
+            };
 
-        return res.json({
-            success: true,
-            message: "Password changed successfully"
-        });
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
-
-module.exports.updateUserProfile = async (req, res) => {
-    const { first_name, last_name, email, phone } = req.body;
-    const userId = req.userId;
-
-    if (!first_name || !last_name || !email || !phone) {
-        return res.status(400).json({
-            success: false,
-            message: "Please fill all the fields"
-        });
-    }
-
-    try {
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        user.first_name = first_name;
-        user.last_name = last_name;
-        user.email = email;
-        user.phone = phone;
-
-        await user.save();
-
-        return res.json({
-            success: true,
-            message: "Profile updated successfully",
-            user: {
-                id: user._id,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                phone: user.phone,
-            }
-        });
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
-
-module.exports.updateUserAddress = async (req, res) => {
-    try {
-        const userId = req.userId;
-        const { address_line1, address_line2, city, state, postal_code, country } = req.body;
-
-        // Validate required fields
-        if (!address_line1 || !city || !postal_code || !country) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide all required address fields"
-            });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        // Check if user already has an address
-        if (user.address_details && user.address_details.length > 0) {
-            // Update existing address
-            const existingAddress = await Address.findById(user.address_details[0]);
-
-            if (existingAddress) {
-                existingAddress.address_line = address_line1 + (address_line2 ? ', ' + address_line2 : '');
-                existingAddress.city = city;
-                existingAddress.state = state || '';
-                existingAddress.country = country;
-                existingAddress.pincode = postal_code;
-
-                await existingAddress.save();
-            } else {
-                // Create new address if reference exists but address doesn't
-                const newAddress = new Address({
-                    address_line: address_line1 + (address_line2 ? ', ' + address_line2 : ''),
-                    city: city,
-                    state: state || '',
-                    country: country,
-                    pincode: postal_code,
-                    user_id: userId
-                });
-
-                const savedAddress = await newAddress.save();
-
-                // Update user's address reference
-                user.address_details = [savedAddress._id];
-                await user.save();
-            }
-        } else {
-            // Create first address for user
-            const newAddress = new Address({
-                address_line: address_line1 + (address_line2 ? ', ' + address_line2 : ''),
-                city: city,
-                state: state || '',
-                country: country,
-                pincode: postal_code,
-                user_id: userId
-            });
-
-            const savedAddress = await newAddress.save();
-
-            // Add address to user's address_details
-            user.address_details = [savedAddress._id];
-            await user.save();
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            // Email error handling without exposing to user
         }
 
         return res.status(200).json({
             success: true,
-            message: "Address updated successfully"
+            message: "Password changed successfully"
         });
+
     } catch (error) {
-        console.error("Update address error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message || "An error occurred while updating the address"
+            message: "Failed to change password. Please try again."
         });
     }
-}
+};
 
-// Get user profile - uses userAuth middleware to get userId from token
-module.exports.getProfile = async (req, res) => {
+module.exports.deleteAccount = async (req, res) => {
     try {
-        // req.userId is already available from userAuth middleware
-        const user = await User.findById(req.userId)
-            .select('-password -verify_Otp -forget_password_otp'); // Exclude sensitive fields
-        
+        const userId = req.userId;
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password is required to delete account"
+            });
+        }
+
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: "User not found"
             });
         }
-        
-        res.json({
-            success: true,
-            message: 'Profile fetched successfully',
-            user: {
-                _id: user._id,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                role: user.role,
-                phone: user.phone,
-                isAccountVerified: user.isAccountVerified,
-                status: user.status,
-                createdAt: user.createdAt
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: "Incorrect password"
+            });
+        }
+
+        try {
+            const emailTemplate = profileChangeEmailTemplate(user, 'account_deleted');
+
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html,
+                text: emailTemplate.text
+            };
+
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            // Email error handling without exposing to user
+        }
+
+        try {
+            if (user.address_details && user.address_details.length > 0) {
+                await Address.deleteMany({ _id: { $in: user.address_details } });
             }
+        } catch (addressError) {
+            // Address deletion error handling
+        }
+
+        await User.findByIdAndDelete(userId);
+
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
         });
-        
+
+        return res.status(200).json({
+            success: true,
+            message: "Account deleted successfully"
+        });
+
     } catch (error) {
-        console.error('Get profile error:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: 'Failed to fetch profile'
+            message: "Failed to delete account. Please try again."
         });
     }
 };

@@ -615,7 +615,7 @@ const getAdminOrders = async (req, res) => {
     // Add search filter
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      
+
       // Find users matching search terms
       const matchingUsers = await User.find({
         $or: [
@@ -624,9 +624,9 @@ const getAdminOrders = async (req, res) => {
           { email: searchRegex }
         ]
       }).select('_id');
-      
+
       const matchingUserIds = matchingUsers.map(u => u._id);
-      
+
       query.$or = [
         { order_number: searchRegex },
         { user_id: { $in: matchingUserIds } },
@@ -727,20 +727,20 @@ const getAdminOrderStats = async (req, res) => {
 const getAdminOrderById = async (req, res) => {
   try {
     const orderId = req.params.id;
-    
+
     console.log('🔍 Getting order details:', orderId);
-    
+
     const order = await Order.findById(orderId)
       .populate('user_id', 'first_name last_name email phone')
       .populate('items.product_id', 'product_name product_price product_image owner');
-    
+
     if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-    
+
     res.json({
       success: true,
       order
@@ -758,28 +758,28 @@ const updateAdminOrderStatus = async (req, res) => {
   try {
     const orderId = req.params.id;
     const { status } = req.body;
-    
+
     if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Valid status is required'
       });
     }
-    
+
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-    
+
     order.status = status;
     await order.save();
-    
+
     console.log(`✅ Updated order ${orderId} status to ${status}`);
-    
+
     res.json({
       success: true,
       message: 'Order status updated successfully',
@@ -797,18 +797,18 @@ const updateAdminOrderStatus = async (req, res) => {
 const deleteAdminOrder = async (req, res) => {
   try {
     const orderId = req.params.id;
-    
+
     const order = await Order.findByIdAndDelete(orderId);
-    
+
     if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-    
+
     console.log(`🗑️ Deleted order ${orderId}`);
-    
+
     res.json({
       success: true,
       message: 'Order deleted successfully'
@@ -829,7 +829,7 @@ module.exports = {
   createOrder,
   cancelOrder,
   buyNowOrder,
-  
+
   // New admin exports
   getAdminOrders,
   getAdminOrderStats,
