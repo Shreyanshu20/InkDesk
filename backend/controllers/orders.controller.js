@@ -582,10 +582,258 @@ The InkDesk Team
   }
 };
 
+// ========== ADMIN ORDER MANAGEMENT FUNCTIONS ==========
+
+const getAdminOrders = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    console.log('🔍 Admin orders request:', {
+      page,
+      limit,
+      search,
+      status,
+      sortBy,
+      sortOrder
+    });
+
+    // Build query for ALL orders (not filtered by seller)
+    let query = {};
+
+    // Add status filter
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      
+      // Find users matching search terms
+      const matchingUsers = await User.find({
+        $or: [
+          { first_name: searchRegex },
+          { last_name: searchRegex },
+          { email: searchRegex }
+        ]
+      }).select('_id');
+      
+      const matchingUserIds = matchingUsers.map(u => u._id);
+      
+      query.$or = [
+        { order_number: searchRegex },
+        { user_id: { $in: matchingUserIds } },
+        { 'shipping_address.name': searchRegex }
+      ];
+    }
+
+    // Build sort object
+    let sortObject = {};
+    if (sortBy === 'user_id') {
+      sortObject.createdAt = sortOrder === 'asc' ? 1 : -1;
+    } else if (sortBy === 'total_amount') {
+      sortObject.total_amount = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    console.log('📊 Query:', JSON.stringify(query, null, 2));
+    console.log('🔄 Sort:', sortObject);
+
+    // Get ALL orders with pagination
+    const orders = await Order.find(query)
+      .populate('user_id', 'first_name last_name email phone')
+      .populate({
+        path: 'items.product_id',
+        select: 'product_name product_price product_image owner'
+      })
+      .sort(sortObject)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Get total count
+    const totalOrders = await Order.countDocuments(query);
+
+    console.log(`📦 Found ${orders.length} orders total: ${totalOrders}`);
+
+    const pagination = {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalOrders / parseInt(limit)),
+      totalOrders,
+      hasNextPage: parseInt(page) < Math.ceil(totalOrders / parseInt(limit)),
+      hasPrevPage: parseInt(page) > 1
+    };
+
+    res.json({
+      success: true,
+      orders: orders,
+      pagination
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching admin orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: error.message
+    });
+  }
+};
+
+const getAdminOrderStats = async (req, res) => {
+  try {
+    console.log('📊 Getting order stats for all orders');
+
+    // Get ALL orders (not filtered by seller)
+    const orders = await Order.find({}).select('status');
+
+    // Calculate statistics
+    const stats = {
+      total: orders.length,
+      pending: orders.filter(o => o.status === 'pending').length,
+      processing: orders.filter(o => o.status === 'processing').length,
+      shipped: orders.filter(o => o.status === 'shipped').length,
+      delivered: orders.filter(o => o.status === 'delivered').length,
+      cancelled: orders.filter(o => o.status === 'cancelled').length
+    };
+
+    console.log('📈 Order stats:', stats);
+
+    res.json({
+      success: true,
+      stats
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching order stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order statistics',
+      error: error.message
+    });
+  }
+};
+
+const getAdminOrderById = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    console.log('🔍 Getting order details:', orderId);
+    
+    const order = await Order.findById(orderId)
+      .populate('user_id', 'first_name last_name email phone')
+      .populate('items.product_id', 'product_name product_price product_image owner');
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    console.error('❌ Error fetching order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order'
+    });
+  }
+};
+
+const updateAdminOrderStatus = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { status } = req.body;
+    
+    if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid status is required'
+      });
+    }
+    
+    const order = await Order.findById(orderId);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    order.status = status;
+    await order.save();
+    
+    console.log(`✅ Updated order ${orderId} status to ${status}`);
+    
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      order
+    });
+  } catch (error) {
+    console.error('❌ Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update order status'
+    });
+  }
+};
+
+const deleteAdminOrder = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    const order = await Order.findByIdAndDelete(orderId);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    console.log(`🗑️ Deleted order ${orderId}`);
+    
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error deleting order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete order'
+    });
+  }
+};
+
 module.exports = {
+  // Existing exports
   getUserOrders,
   getOrderDetails,
   createOrder,
   cancelOrder,
-  buyNowOrder
+  buyNowOrder,
+  
+  // New admin exports
+  getAdminOrders,
+  getAdminOrderStats,
+  getAdminOrderById,
+  updateAdminOrderStatus,
+  deleteAdminOrder
 };

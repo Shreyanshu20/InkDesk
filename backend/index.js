@@ -131,7 +131,7 @@ try {
 try {
   const adminRoutes = require('./routes/admin.routes');
   app.use('/admin', adminRoutes);
-  console.log('✅ Admin routes loaded at /admin');
+  console.log('✅ Admin routes loaded');
 } catch (error) {
   console.error('❌ Admin routes error:', error.message);
 }

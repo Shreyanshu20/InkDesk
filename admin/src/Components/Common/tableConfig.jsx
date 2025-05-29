@@ -3,7 +3,7 @@ import { getStatusColor } from "../Orders/components/utils";
 // Order Table Configuration
 export const getOrderTableConfig = (
   handleViewOrder,
-  handleDelete,
+  handleDeleteOrder,
   openStatusModal
 ) => ({
   columns: [
@@ -12,9 +12,14 @@ export const getOrderTableConfig = (
       label: "Order ID",
       sortable: true,
       customRenderer: (order) => (
-        <span className="font-mono text-sm">
-          #{order.order_number || order.id}
-        </span>
+        <div className="font-mono text-sm">
+          <div className="font-semibold text-gray-900 dark:text-gray-100">
+            #{order.order_number || order.id.slice(-8).toUpperCase()}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {order.items?.length || 0} items
+          </div>
+        </div>
       ),
     },
     {
@@ -23,9 +28,9 @@ export const getOrderTableConfig = (
       sortable: true,
       customRenderer: (order) => (
         <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
             <span className="text-primary font-semibold text-sm">
-              {order.customer.name.charAt(0)}
+              {order.customer.name.charAt(0).toUpperCase()}
             </span>
           </div>
           <div>
@@ -41,44 +46,54 @@ export const getOrderTableConfig = (
     },
     {
       key: "date",
-      label: "Date",
+      label: "Order Date",
       sortable: true,
       customRenderer: (order) => (
         <div className="text-sm">
           <div className="text-gray-900 dark:text-gray-100">
-            {new Date(order.date).toLocaleDateString()}
+            {new Date(order.date).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(order.date).toLocaleTimeString()}
+            {new Date(order.date).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </div>
         </div>
       ),
     },
     {
       key: "total",
-      label: "Total",
+      label: "Total Amount",
       sortable: true,
-      type: "currency",
+      customRenderer: (order) => (
+        <div className="text-sm font-semibold">
+          <div className="text-gray-900 dark:text-gray-100">
+            ₹{(order.total || 0).toLocaleString("en-IN")}
+          </div>
+        </div>
+      ),
     },
     {
       key: "status",
       label: "Status",
-      sortable: false,
-      type: "status",
-      getStatusColor: (status) => {
-        switch (status) {
-          case "pending":
-            return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-          case "processing":
-            return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-          case "completed":
-            return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-          case "cancelled":
-            return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-          default:
-            return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-        }
-      },
+      sortable: true,
+      customRenderer: (order) => (
+        <button
+          onClick={(e) => openStatusModal(order, e)}
+          className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:opacity-80 ${getStatusColor(
+            order.status
+          )}`}
+          title="Click to update status"
+        >
+          <span className="capitalize">{order.status}</span>
+          <i className="fas fa-edit ml-1 text-xs"></i>
+        </button>
+      ),
     },
     {
       key: "actions",
@@ -88,21 +103,27 @@ export const getOrderTableConfig = (
         <div className="flex items-center space-x-2">
           <button
             onClick={() => handleViewOrder(order.id)}
-            className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
-            title="View order"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded transition-colors"
+            title="View order details"
           >
             <i className="fas fa-eye"></i>
           </button>
           <button
-            onClick={(e) => openStatusModal(order, e)}
+            onClick={(e) => {
+              e.stopPropagation();
+              openStatusModal(order, e);
+            }}
             className="text-primary hover:text-primary/80 p-1 rounded transition-colors"
             title="Update status"
           >
             <i className="fas fa-edit"></i>
           </button>
           <button
-            onClick={() => handleDelete([order.id])}
-            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteOrder(order.id);
+            }}
+            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded transition-colors"
             title="Delete order"
           >
             <i className="fas fa-trash"></i>
