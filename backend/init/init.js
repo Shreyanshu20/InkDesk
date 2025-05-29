@@ -4,11 +4,11 @@ const Category = require('../models/category.model');
 const SubCategory = require('../models/subCategory.model');
 const Product = require('../models/product.model');
 const User = require('../models/User.model');
-const Review = require('../models/Review.model'); // Use Review only
+const Review = require('../models/review.model'); 
 require('dotenv').config();
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://shreyanshudhawale2:6WtkwXgX3dWnbTA@cluster0.b2nil.mongodb.net/inkdesk?retryWrites=true&w=majority&appName=Cluster0')
+mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('MongoDB connected for initialization...'))
     .catch(err => {
         console.error('MongoDB connection error:', err);
