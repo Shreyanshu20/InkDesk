@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { userAuth } = require('../middleware/userAuth.js');
-const User = require('../models/User.model.js');
-const Address = require('../models/address.model.js');
+const { userAuth } = require('../middleware/userAuth');
+const User = require('../models/User.model');
+const Address = require('../models/address.model');
 
 // Get user addresses
 router.get('/addresses', userAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.userId).populate('address_details');
+        const userId = req.userId;
+        console.log('📍 GET /user/addresses called for user:', userId);
 
+        // Find user and populate address details
+        const user = await User.findById(userId).populate('address_details');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -16,25 +19,28 @@ router.get('/addresses', userAuth, async (req, res) => {
             });
         }
 
+        console.log('📍 Found addresses:', user.address_details?.length || 0);
+
         res.json({
             success: true,
             addresses: user.address_details || []
         });
+
     } catch (error) {
-        console.error('Error fetching addresses:', error);
+        console.error('❌ Error fetching addresses:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching addresses'
+            message: 'Error fetching addresses',
+            error: error.message
         });
     }
 });
 
-// Add new address
+// Save new address
 router.post('/addresses', userAuth, async (req, res) => {
     try {
-        console.log('📍 POST /addresses called');
-        console.log('📍 Request body:', req.body);
-        console.log('📍 User ID:', req.userId);
+        const userId = req.userId;
+        console.log('📍 POST /user/addresses called for user:', userId);
 
         const {
             first_name,
@@ -50,17 +56,13 @@ router.post('/addresses', userAuth, async (req, res) => {
 
         // Validate required fields
         if (!first_name || !last_name || !phone || !address_line_1 || !city || !state || !postal_code) {
-            console.log('❌ Missing required fields');
             return res.status(400).json({
                 success: false,
                 message: 'All required fields must be provided'
             });
         }
 
-        const user = await User.findById(req.userId);
-        console.log('📍 User found:', user ? 'Yes' : 'No');
-        console.log('📍 Current address count:', user?.address_details?.length || 0);
-
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -69,8 +71,7 @@ router.post('/addresses', userAuth, async (req, res) => {
         }
 
         // If setting as primary, update existing primary addresses
-        if (is_primary && user.address_details.length > 0) {
-            console.log('📍 Updating existing primary addresses to false');
+        if (is_primary) {
             await Address.updateMany(
                 { _id: { $in: user.address_details } },
                 { is_primary: false }
@@ -78,7 +79,7 @@ router.post('/addresses', userAuth, async (req, res) => {
         }
 
         // Create new address
-        const addressData = {
+        const newAddress = new Address({
             first_name,
             last_name,
             phone,
@@ -88,22 +89,17 @@ router.post('/addresses', userAuth, async (req, res) => {
             postal_code,
             country: country || 'India',
             is_primary: is_primary || user.address_details.length === 0
-        };
+        });
 
-        console.log('📍 Creating address with data:', addressData);
-
-        const newAddress = new Address(addressData);
         const savedAddress = await newAddress.save();
 
-        console.log('📍 Address saved:', savedAddress._id);
-
-        // Add address to user's address_details array
+        // Add to user's address list
         user.address_details.push(savedAddress._id);
-        const savedUser = await user.save();
+        await user.save();
 
-        console.log('📍 User updated, new address count:', savedUser.address_details.length);
+        console.log('📍 Address saved and added to user successfully');
 
-        res.json({
+        res.status(201).json({
             success: true,
             message: 'Address saved successfully',
             address: savedAddress
@@ -135,10 +131,7 @@ router.put('/addresses/:addressId', userAuth, async (req, res) => {
             is_primary
         } = req.body;
 
-        console.log('📍 PUT /addresses/:addressId called');
-        console.log('📍 Address ID:', addressId);
-        console.log('📍 User ID:', userId);
-        console.log('📍 Update data:', req.body);
+        console.log('📍 PUT /user/addresses/:addressId called');
 
         // Find the user
         const user = await User.findById(userId);
@@ -190,8 +183,6 @@ router.put('/addresses/:addressId', userAuth, async (req, res) => {
             });
         }
 
-        console.log('📍 Address updated successfully');
-
         res.json({
             success: true,
             message: 'Address updated successfully',
@@ -214,7 +205,7 @@ router.delete('/addresses/:addressId', userAuth, async (req, res) => {
         const { addressId } = req.params;
         const userId = req.userId;
 
-        console.log('Delete request - AddressId:', addressId, 'UserId:', userId);
+        console.log('📍 DELETE /user/addresses/:addressId called');
 
         // Find the user
         const user = await User.findById(userId).populate('address_details');
@@ -225,8 +216,6 @@ router.delete('/addresses/:addressId', userAuth, async (req, res) => {
             });
         }
 
-        console.log('User found, address count:', user.address_details.length);
-
         // Check if address belongs to user
         const addressExists = user.address_details.some(addr => addr._id.toString() === addressId);
         if (!addressExists) {
@@ -236,41 +225,12 @@ router.delete('/addresses/:addressId', userAuth, async (req, res) => {
             });
         }
 
-        console.log('Address exists in user addresses');
-
-        // Find the address to check if it's primary
-        const address = await Address.findById(addressId);
-        if (!address) {
-            return res.status(404).json({
-                success: false,
-                message: 'Address not found'
-            });
-        }
-
-        console.log('Address found, is_primary:', address.is_primary);
-
-        // Remove address from user's address_details array
-        user.address_details = user.address_details.filter(
-            addr => addr._id.toString() !== addressId
-        );
-
-        console.log('Address removed from user array, new count:', user.address_details.length);
-
-        // If deleted address was primary and user has other addresses, 
-        // make the first remaining address primary
-        if (address.is_primary && user.address_details.length > 0) {
-            console.log('Setting new primary address:', user.address_details[0]._id);
-            await Address.findByIdAndUpdate(
-                user.address_details[0]._id,
-                { is_primary: true }
-            );
-        }
-
-        // Save user and delete address
-        await user.save();
+        // Delete the address
         await Address.findByIdAndDelete(addressId);
 
-        console.log('Address deleted successfully');
+        // Remove from user's address list
+        user.address_details = user.address_details.filter(addr => addr._id.toString() !== addressId);
+        await user.save();
 
         res.json({
             success: true,
@@ -278,7 +238,7 @@ router.delete('/addresses/:addressId', userAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error deleting address:', error);
+        console.error('❌ Error deleting address:', error);
         res.status(500).json({
             success: false,
             message: 'Error deleting address',

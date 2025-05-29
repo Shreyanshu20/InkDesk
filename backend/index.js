@@ -58,8 +58,8 @@ try {
 // User routes
 try {
   const userRoutes = require('./routes/user.routes');
-  app.use('/users', userRoutes);
-  console.log('✅ User routes loaded at /users');
+  app.use('/user', userRoutes);
+  console.log('✅ User routes loaded at /user');
 } catch (error) {
   console.error('❌ User routes error:', error.message);
 }

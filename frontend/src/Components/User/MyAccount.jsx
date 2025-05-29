@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { AppContent } from "../../Context/AppContent.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -6,23 +6,19 @@ import { Link } from "react-router-dom";
 
 function MyAccount() {
   const { userData, setUserData, backendUrl } = useContext(AppContent);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [addressSaving, setAddressSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState("profile");
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Refs for scrolling to sections
-  const profileRef = useRef(null);
-  const addressRef = useRef(null);
-  const statusRef = useRef(null);
-  const passwordRef = useRef(null);
-
-  // Form state
-  const [formData, setFormData] = useState({
+  // Profile data from backend
+  const [profileData, setProfileData] = useState({
     first_name: "",
     last_name: "",
     email: "",
     phone: "",
+    role: "",
+    isAccountVerified: false,
+    status: "",
+    createdAt: "",
     address_line1: "",
     address_line2: "",
     city: "",
@@ -31,699 +27,1089 @@ function MyAccount() {
     country: "",
   });
 
-  // Load user data into form
+  // Profile form state (email readonly)
+  const [profileForm, setProfileForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+  });
+
+  // Address form state
+  const [addressForm, setAddressForm] = useState({
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "",
+  });
+
+  // Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // Delete account form state
+  const [deleteForm, setDeleteForm] = useState({
+    password: "",
+    confirmText: "",
+  });
+
+  // Load user profile data on component mount
   useEffect(() => {
-    if (userData) {
-      console.log("User data received:", userData);
-      console.log("Phone value:", userData.phone);
+    fetchUserData();
+  }, []);
 
-      setFormData({
-        first_name: userData.first_name || "",
-        last_name: userData.last_name || "",
-        email: userData.email || "",
-        phone: userData.phone || "",
-        address_line1: userData.address_line1 || "",
-        address_line2: userData.address_line2 || "",
-        city: userData.city || "",
-        state: userData.state || "",
-        postal_code: userData.postal_code || "",
-        country: userData.country || "",
-      });
-      setLoading(false);
-    }
-  }, [userData]);
+  // Fetch complete user data from backend
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+      
+      console.log('🔄 Fetching user data from backend...');
+      console.log('🌐 Backend URL:', backendUrl);
+      
+      // Get user profile and auth data
+      const [profileResponse, authResponse] = await Promise.all([
+        axios.get(`${backendUrl}/auth/profile`, { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }),
+        axios.post(`${backendUrl}/auth/is-auth`, {}, { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
 
-  const scrollToSection = (ref, sectionId) => {
-    setActiveSection(sectionId);
+      console.log('📊 Profile response:', profileResponse.data);
+      console.log('🔐 Auth response:', authResponse.data);
 
-    if (ref.current) {
-      const navbarHeight = window.innerWidth < 768 ? 60 : 80;
-      const yOffset = -navbarHeight - 50;
-      const y =
-        ref.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-      window.scrollTo({
-        top: y,
-        behavior: "smooth",
-      });
-
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("scroll"));
-      }, 100);
+      if (profileResponse.data.success && authResponse.data.success) {
+        const user = { ...profileResponse.data.user, ...authResponse.data.user };
+        
+        setProfileData(user);
+        
+        // Set form data
+        setProfileForm({
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          phone: user.phone || ""
+        });
+        
+        // Set address form data
+        setAddressForm({
+          address_line1: user.address_line1 || "",
+          address_line2: user.address_line2 || "",
+          city: user.city || "",
+          state: user.state || "",
+          postal_code: user.postal_code || "",
+          country: user.country || ""
+        });
+        
+        // Update context with fresh data
+        setUserData(user);
+        
+        console.log("✅ User data loaded successfully");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching user data:", error);
+      
+      if (error.response?.status === 401) {
+        console.log("🔓 User not authenticated, redirecting to login");
+        toast.error("Please login to access your account");
+        // Optionally redirect to login
+        // navigate('/login');
+      } else {
+        toast.error("Failed to load profile data");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    setTimeout(() => {
-      handleScroll();
-    }, 100);
-
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-
-      if (
-        !profileRef.current ||
-        !addressRef.current ||
-        !statusRef.current ||
-        !passwordRef.current
-      ) {
-        return;
-      }
-
-      const sections = [
-        { id: "profile", position: profileRef.current.offsetTop },
-        { id: "address", position: addressRef.current.offsetTop },
-        { id: "status", position: statusRef.current.offsetTop },
-        { id: "password", position: passwordRef.current.offsetTop },
-      ];
-
-      // Sort sections by position (this ensures we get the correct section regardless of DOM order)
-      sections.sort((a, b) => a.position - b.position);
-
-      // Find the current active section (the last section that's above the current scroll position)
-      let currentSection = sections[0].id;
-
-      for (let i = 0; i < sections.length; i++) {
-        if (scrollPosition >= sections[i].position) {
-          currentSection = sections[i].id;
-        } else {
-          break; // Stop once we find a section below the scroll position
-        }
-      }
-
-      setActiveSection(currentSection);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [
-    profileRef.current,
-    addressRef.current,
-    statusRef.current,
-    passwordRef.current,
-  ]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  // Handle profile form changes
+  const handleProfileChange = (field, value) => {
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  // Handle address form changes
+  const handleAddressChange = (field, value) => {
+    setAddressForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle password form changes
+  const handlePasswordChange = (field, value) => {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle delete form changes
+  const handleDeleteChange = (field, value) => {
+    setDeleteForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Validate phone number
+  const validatePhone = (phone) => {
+    // Remove all spaces and special characters except +
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
+
+    // Allow international format with + or without
+    const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
+
+    // Additional validation - check length
+    if (cleanPhone.length < 8 || cleanPhone.length > 16) {
+      return false;
+    }
+
+    return phoneRegex.test(cleanPhone);
+  };
+
+  // Validate postal code
+  const validatePostalCode = (code, country) => {
+    if (!code) return false;
+
+    // Basic validation - at least 3 characters
+    if (code.length < 3) return false;
+
+    // India postal code validation
+    if (country === "India") {
+      const indiaPostalRegex = /^[1-9][0-9]{5}$/;
+      return indiaPostalRegex.test(code);
+    }
+
+    // US postal code validation
+    if (country === "United States") {
+      const usPostalRegex = /^\d{5}(-\d{4})?$/;
+      return usPostalRegex.test(code);
+    }
+
+    // Basic validation for other countries
+    return code.length >= 3 && code.length <= 10;
+  };
+
+  // Update profile
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
+
+    // Validation
+    if (!profileForm.first_name.trim()) {
+      toast.error("First name is required");
+      return;
+    }
+
+    if (!profileForm.last_name.trim()) {
+      toast.error("Last name is required");
+      return;
+    }
+
+    if (!profileForm.phone.trim()) {
+      toast.error("Phone number is required");
+      return;
+    }
+
+    if (!validatePhone(profileForm.phone)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
 
     try {
-      // Add the backendUrl prefix and use POST instead of PUT to match your route
+      setIsLoading(true);
+      console.log("📝 Updating profile with data:", {
+        first_name: profileForm.first_name.trim(),
+        last_name: profileForm.last_name.trim(),
+        phone: profileForm.phone.trim(),
+      });
+
       const response = await axios.post(
         `${backendUrl}/auth/update-profile`,
-        formData,
+        {
+          first_name: profileForm.first_name.trim(),
+          last_name: profileForm.last_name.trim(),
+          phone: profileForm.phone.trim(),
+        },
         { withCredentials: true }
       );
 
       if (response.data.success) {
-        setUserData({
-          ...userData,
-          ...formData,
-        });
-        toast.success("Profile updated successfully");
-      } else {
-        toast.error(response.data.message || "Failed to update profile");
+        toast.success("Profile updated successfully!");
+
+        // Update local state with the returned user data
+        const updatedUser = {
+          ...profileData,
+          first_name: response.data.user.first_name,
+          last_name: response.data.user.last_name,
+          phone: response.data.user.phone,
+        };
+
+        setProfileData(updatedUser);
+        setUserData(updatedUser);
+
+        console.log("✅ Profile updated successfully");
       }
     } catch (error) {
-      console.error("Profile update error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "An error occurred while updating your profile"
-      );
+      console.error("❌ Error updating profile:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
-      setSaving(false);
+      setIsLoading(false);
     }
   };
 
+  // Update address
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required address fields
-    if (!formData.address_line1) {
-      toast.error("Address Line 1 is required");
+    // Validation
+    if (!addressForm.address_line1.trim()) {
+      toast.error("Address line 1 is required");
       return;
     }
 
-    if (!formData.city) {
+    if (!addressForm.city.trim()) {
       toast.error("City is required");
       return;
     }
 
-    if (!formData.postal_code) {
-      toast.error("Postal Code is required");
+    if (!addressForm.postal_code.trim()) {
+      toast.error("Postal code is required");
       return;
     }
 
-    if (!formData.country) {
-      toast.error("Country is required");
+    if (!addressForm.country) {
+      toast.error("Please select a country");
       return;
     }
 
-    setAddressSaving(true);
-
-    const addressData = {
-      address_line1: formData.address_line1,
-      address_line2: formData.address_line2,
-      city: formData.city,
-      state: formData.state,
-      postal_code: formData.postal_code,
-      country: formData.country,
-    };
+    if (!validatePostalCode(addressForm.postal_code, addressForm.country)) {
+      toast.error("Please enter a valid postal code for the selected country");
+      return;
+    }
 
     try {
+      setIsLoading(true);
       const response = await axios.post(
         `${backendUrl}/auth/update-address`,
-        addressData,
+        {
+          address_line1: addressForm.address_line1.trim(),
+          address_line2: addressForm.address_line2.trim(),
+          city: addressForm.city.trim(),
+          state: addressForm.state.trim(),
+          postal_code: addressForm.postal_code.trim(),
+          country: addressForm.country,
+        },
         { withCredentials: true }
       );
 
       if (response.data.success) {
-        // Update the userData in context to reflect the changes
-        setUserData({
-          ...userData,
-          ...addressData,
-        });
-        toast.success("Shipping address updated successfully");
-      } else {
-        toast.error(
-          response.data.message || "Failed to update shipping address"
-        );
+        toast.success("Address updated successfully!");
+
+        const updatedUser = { ...profileData, ...addressForm };
+        setProfileData(updatedUser);
+        setUserData(updatedUser);
       }
     } catch (error) {
-      console.error("Address update error:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "An error occurred while updating your shipping address"
-      );
+      console.error("❌ Error updating address:", error);
+      toast.error(error.response?.data?.message || "Failed to update address");
     } finally {
-      setAddressSaving(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
+  // Change password
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    if (
+      !passwordForm.oldPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `${backendUrl}/auth/change-password`,
+        {
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword,
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("Password changed successfully!");
+        setPasswordForm({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Delete account
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+
+    if (!deleteForm.password) {
+      toast.error("Please enter your password to confirm account deletion");
+      return;
+    }
+
+    if (deleteForm.confirmText !== "DELETE") {
+      toast.error("Please type 'DELETE' to confirm account deletion");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Are you absolutely sure you want to delete your account? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.delete(`${backendUrl}/auth/delete-account`, {
+        data: { password: deleteForm.password },
+        withCredentials: true,
+      });
+
+      if (response.data.success) {
+        toast.success(
+          "Account deleted successfully. You will be redirected..."
+        );
+
+        // Clear form
+        setDeleteForm({ password: "", confirmText: "" });
+
+        // Clear user data
+        setUserData(null);
+
+        // Redirect to home after 2 seconds
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("❌ Error deleting account:", error);
+      toast.error(error.response?.data?.message || "Failed to delete account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Send verification email
+  const handleSendVerificationEmail = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.post(
+        `${backendUrl}/auth/send-otp`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success("Verification email sent! Please check your inbox.");
+      }
+    } catch (error) {
+      console.error("❌ Error sending verification email:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to send verification email"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  if (isLoading && !profileData.email) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            Loading your account...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar */}
-        <aside className="md:w-64 flex-shrink-0">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-24">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-              My Account
-            </h2>
-            <nav className="space-y-1">
-              <button
-                onClick={() => scrollToSection(profileRef, "profile")}
-                className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeSection === "profile"
-                    ? "bg-primary text-white"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <i className="fas fa-user mr-3 w-5 text-center"></i>
-                <span>Personal Info</span>
-              </button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            My Account
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage your personal information, shipping address, and account
+            settings
+          </p>
+        </div>
 
-              <button
-                onClick={() => scrollToSection(addressRef, "address")}
-                className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeSection === "address"
-                    ? "bg-primary text-white"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <i className="fas fa-map-marker-alt mr-3 w-5 text-center"></i>
-                <span>Shipping Address</span>
-              </button>
-
-              <button
-                onClick={() => scrollToSection(statusRef, "status")}
-                className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeSection === "status"
-                    ? "bg-primary text-white"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <i className="fas fa-shield-alt mr-3 w-5 text-center"></i>
-                <span>Account Status</span>
-              </button>
-
-              <button
-                onClick={() => scrollToSection(passwordRef, "password")}
-                className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeSection === "password"
-                    ? "bg-primary text-white"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <i className="fas fa-lock mr-3 w-5 text-center"></i>
-                <span>Security</span>
-              </button>
+        {/* Navigation Tabs */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex space-x-8 px-6">
+              {[
+                { key: "profile", icon: "fas fa-user", label: "Profile" },
+                {
+                  key: "address",
+                  icon: "fas fa-map-marker-alt",
+                  label: "Address",
+                },
+                {
+                  key: "security",
+                  icon: "fas fa-shield-alt",
+                  label: "Security",
+                },
+                { key: "account", icon: "fas fa-cog", label: "Account" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.key
+                      ? "border-primary text-primary"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+                >
+                  <i className={`${tab.icon} mr-2`}></i>
+                  {tab.label}
+                </button>
+              ))}
             </nav>
           </div>
-        </aside>
+        </div>
 
-        {/* Main content */}
-        <div className="flex-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-10">
-            {/* Personal Info Section */}
-            <div ref={profileRef}>
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Personal Information
-              </h2>
+        {/* Tab Content */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <div className="p-8">
+            {/* Profile Tab */}
+            {activeTab === "profile" && (
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Personal Information
+                </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="first_name"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      name="first_name"
-                      id="first_name"
-                      value={formData.first_name}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                    />
+                {/* Account Overview */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center md:text-left">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        Account Status
+                      </div>
+                      <div className="flex items-center justify-center md:justify-start">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            profileData.isAccountVerified
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                          }`}
+                        >
+                          <i
+                            className={`fas ${
+                              profileData.isAccountVerified
+                                ? "fa-check-circle"
+                                : "fa-exclamation-triangle"
+                            } mr-2`}
+                          ></i>
+                          {profileData.isAccountVerified
+                            ? "Verified"
+                            : "Unverified"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center md:text-left">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        Account Type
+                      </div>
+                      <div className="font-medium text-gray-900 dark:text-white capitalize">
+                        <i className="fas fa-user mr-2 text-primary"></i>
+                        {profileData.role || "Customer"}
+                      </div>
+                    </div>
+                    <div className="text-center md:text-left">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        Member Since
+                      </div>
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        <i className="fas fa-calendar mr-2 text-primary"></i>
+                        {formatDate(profileData.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Profile Form */}
+                <form onSubmit={handleProfileSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        First Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.first_name}
+                        onChange={(e) =>
+                          handleProfileChange("first_name", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter your first name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Last Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.last_name}
+                        onChange={(e) =>
+                          handleProfileChange("last_name", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter your last name"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="last_name"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      name="last_name"
-                      id="last_name"
-                      value={formData.last_name}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email Address
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                      disabled
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Email cannot be changed
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={profileData.email}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Email cannot be changed"
+                        disabled
+                        readOnly
+                      />
+                      <i className="fas fa-lock absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      <i className="fas fa-info-circle mr-1"></i>
+                      Email address cannot be changed for security reasons
                     </p>
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="phone"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Phone Number
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
-                      name="phone"
-                      id="phone"
-                      value={formData.phone || ""} // This ensures an empty string if phone is null/undefined
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      placeholder="12345 67890"
+                      value={profileForm.phone}
+                      onChange={(e) =>
+                        handleProfileChange("phone", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      placeholder="Enter your phone number"
+                      required
                     />
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Example: +1234567890 or 1234567890
+                    </p>
                   </div>
-                </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {saving ? (
-                      <i className="fas fa-spinner fa-spin mr-2"></i>
-                    ) : null}
-                    {saving ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Shipping Address Section */}
-            <div
-              ref={addressRef}
-              className="pt-6 mt-6 border-t border-gray-200 dark:border-gray-700"
-            >
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Shipping Address
-              </h2>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddressSubmit(e);
-                }}
-                className="space-y-6"
-              >
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="address_line1"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
                     >
-                      Address Line 1
+                      {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                      <i className="fas fa-save"></i>
+                      Update Profile
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Address Tab */}
+            {activeTab === "address" && (
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Shipping Address
+                </h2>
+
+                <form onSubmit={handleAddressSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Address Line 1 <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      name="address_line1"
-                      id="address_line1"
-                      value={formData.address_line1 || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      placeholder="Street address or P.O. Box"
+                      value={addressForm.address_line1}
+                      onChange={(e) =>
+                        handleAddressChange("address_line1", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      placeholder="Street address, P.O. Box, company name"
                       required
                     />
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="address_line2"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Address Line 2
                     </label>
                     <input
                       type="text"
-                      name="address_line2"
-                      id="address_line2"
-                      value={formData.address_line2 || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      placeholder="Apt, suite, unit, building, floor, etc."
+                      value={addressForm.address_line2}
+                      onChange={(e) =>
+                        handleAddressChange("address_line2", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      placeholder="Apartment, suite, unit, building, floor, etc."
                     />
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="city"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      id="city"
-                      value={formData.city || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.city}
+                        onChange={(e) =>
+                          handleAddressChange("city", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter city"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.state}
+                        onChange={(e) =>
+                          handleAddressChange("state", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter state or province"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="state"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      State/Province
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      id="state"
-                      value={formData.state || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Postal Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.postal_code}
+                        onChange={(e) =>
+                          handleAddressChange("postal_code", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter postal code"
+                        required
+                      />
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        {addressForm.country === "India" &&
+                          "Example: 110001 (6 digits)"}
+                        {addressForm.country === "United States" &&
+                          "Example: 12345 or 12345-6789"}
+                        {(!addressForm.country ||
+                          (addressForm.country !== "India" &&
+                            addressForm.country !== "United States")) &&
+                          "Enter valid postal code"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={addressForm.country}
+                        onChange={(e) =>
+                          handleAddressChange("country", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        required
+                      >
+                        <option value="">Select Country</option>
+                        <option value="India">India</option>
+                        <option value="United States">United States</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Japan">Japan</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="postal_code"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
                     >
-                      Postal Code
-                    </label>
-                    <input
-                      type="text"
-                      name="postal_code"
-                      id="postal_code"
-                      value={formData.postal_code || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                    />
+                      {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                      <i className="fas fa-map-marker-alt"></i>
+                      Update Address
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Security Tab */}
+            {activeTab === "security" && (
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Security Settings
+                </h2>
+
+                {/* Change Password Section */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Change Password
+                  </h3>
+
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <i className="fas fa-shield-alt text-blue-500 mt-0.5 mr-3"></i>
+                      <div>
+                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-400 mb-2">
+                          Password Security Tips
+                        </h4>
+                        <div className="text-sm text-blue-700 dark:text-blue-300">
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>Use at least 8 characters</li>
+                            <li>Include uppercase and lowercase letters</li>
+                            <li>Include numbers and special characters</li>
+                            <li>Don't use personal information</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="country"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Country
-                    </label>
-                    <select
-                      name="country"
-                      id="country"
-                      value={formData.country || ""}
-                      onChange={handleChange}
-                      className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                      required
-                    >
-                      <option value="">Select a country</option>
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
-                      <option value="UK">United Kingdom</option>
-                      <option value="AU">Australia</option>
-                      <option value="IN">India</option>
-                    </select>
-                  </div>
-                </div>
+                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Current Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.oldPassword}
+                        onChange={(e) =>
+                          handlePasswordChange("oldPassword", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter your current password"
+                        required
+                      />
+                    </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={addressSaving}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {addressSaving ? (
-                      <i className="fas fa-spinner fa-spin mr-2"></i>
-                    ) : null}
-                    {addressSaving ? "Saving..." : "Save Address"}
-                  </button>
-                </div>
-              </form>
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        New Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) =>
+                          handlePasswordChange("newPassword", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter your new password"
+                        minLength="6"
+                        required
+                      />
+                    </div>
 
-            {/* Account Status Section */}
-            <div
-              ref={statusRef}
-              className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
-            >
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex justify-between items-center">
-                <span>Account Status</span>
-                {!userData.isAccountVerified && (
-                  <Link
-                    to={`/verify-email?email=${userData.email}`}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                  >
-                    Verify Email
-                  </Link>
-                )}
-              </h2>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
-                <div className="flex items-center">
-                  <div
-                    className={`h-3 w-3 rounded-full mr-2 ${
-                      userData.status === "active"
-                        ? "bg-green-500"
-                        : userData.status === "inactive"
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                    }`}
-                  ></div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 capitalize">
-                    {userData.status || "active"}
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Confirm New Password{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) =>
+                          handlePasswordChange(
+                            "confirmPassword",
+                            e.target.value
+                          )
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Confirm your new password"
+                        minLength="6"
+                        required
+                      />
+                      {passwordForm.newPassword &&
+                        passwordForm.confirmPassword &&
+                        passwordForm.newPassword !==
+                          passwordForm.confirmPassword && (
+                          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                            <i className="fas fa-exclamation-triangle mr-1"></i>
+                            Passwords do not match
+                          </p>
+                        )}
+                    </div>
 
-                <div className="mt-4">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">Email verification:</span>{" "}
-                    {userData.isAccountVerified ? (
-                      <span className="text-green-600 dark:text-green-400">
-                        Verified
-                      </span>
-                    ) : (
-                      <span className="text-yellow-600 dark:text-yellow-400">
-                        Not verified
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    <span className="font-medium">Account type:</span>{" "}
-                    <span>{userData.role}</span>
-                  </p>
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={
+                          isLoading ||
+                          passwordForm.newPassword !==
+                            passwordForm.confirmPassword
+                        }
+                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                      >
+                        {isLoading && (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        )}
+                        <i className="fas fa-key"></i>
+                        Change Password
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Password Section */}
-            <div
-              ref={passwordRef}
-              className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6"
-            >
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Change Password
-              </h2>
+            {/* Account Tab */}
+            {activeTab === "account" && (
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Account Settings
+                </h2>
 
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
+                {/* Account Status */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Account Status
+                  </h3>
 
-                  // Get form data
-                  const formData = new FormData(e.target);
-                  const currentPassword = formData.get("currentPassword");
-                  const newPassword = formData.get("newPassword");
-                  const confirmPassword = formData.get("confirmPassword");
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div
+                          className={`h-3 w-3 rounded-full mr-3 ${
+                            profileData.status === "active"
+                              ? "bg-green-500"
+                              : profileData.status === "inactive"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                          }`}
+                        ></div>
+                        <span className="text-lg font-medium text-gray-900 dark:text-white capitalize">
+                          {profileData.status || "active"}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          profileData.status === "active"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        }`}
+                      >
+                        {profileData.status === "active"
+                          ? "Active Account"
+                          : "Inactive Account"}
+                      </span>
+                    </div>
 
-                  // Validate
-                  if (!currentPassword || !newPassword || !confirmPassword) {
-                    toast.error("All password fields are required");
-                    return;
-                  }
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Email verification:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {profileData.isAccountVerified ? (
+                            <span className="text-green-600 dark:text-green-400 text-sm">
+                              <i className="fas fa-check-circle mr-1"></i>
+                              Verified
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-yellow-600 dark:text-yellow-400 text-sm">
+                                <i className="fas fa-exclamation-triangle mr-1"></i>
+                                Not verified
+                              </span>
+                              <button
+                                onClick={handleSendVerificationEmail}
+                                disabled={isLoading}
+                                className="ml-2 text-primary hover:text-primary/80 text-sm font-medium"
+                              >
+                                Send verification email
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Account type:
+                        </span>
+                        <span className="text-sm text-gray-900 dark:text-white capitalize">
+                          {profileData.role || "Customer"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                  if (newPassword !== confirmPassword) {
-                    toast.error("New passwords don't match");
-                    return;
-                  }
-
-                  if (newPassword.length < 8) {
-                    toast.error("Password must be at least 8 characters");
-                    return;
-                  }
-
-                  try {
-                    const response = await axios.put(
-                      `${backendUrl}/auth/change-password`,
-                      {
-                        userId: userData.id,
-                        oldPassword: currentPassword,
-                        newPassword: newPassword,
-                      },
-                      { withCredentials: true }
-                    );
-
-                    if (response.data.success) {
-                      toast.success("Password changed successfully");
-                      e.target.reset();
-                    } else {
-                      toast.error(
-                        response.data.message || "Failed to change password"
-                      );
-                    }
-                  } catch (error) {
-                    toast.error(
-                      error.response?.data?.message || "Password change failed"
-                    );
-                    console.error("Password change error:", error);
-                  }
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <label
-                    htmlFor="currentPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    name="currentPassword"
-                    id="currentPassword"
-                    className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                    placeholder="Enter your current password"
-                  />
+                  {!profileData.isAccountVerified && (
+                    <div className="mt-4">
+                      <Link
+                        to={`/verify-email?email=${profileData.email}`}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-primary/90 transition-colors"
+                      >
+                        <i className="fas fa-envelope-check mr-2"></i>
+                        Verify Email Now
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="newPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    name="newPassword"
-                    id="newPassword"
-                    className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                    placeholder="Enter your new password"
-                  />
-                </div>
+                {/* Danger Zone - Delete Account */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+                  <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
+                    <i className="fas fa-exclamation-triangle mr-2"></i>
+                    Danger Zone
+                  </h3>
 
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    id="confirmPassword"
-                    className="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 text-text dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary focus:ring-primary"
-                    placeholder="Confirm your new password"
-                  />
-                </div>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
+                    <div className="flex items-start">
+                      <i className="fas fa-trash-alt text-red-500 mt-0.5 mr-3"></i>
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800 dark:text-red-400 mb-2">
+                          Delete Account Permanently
+                        </h4>
+                        <div className="text-sm text-red-700 dark:text-red-300">
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>
+                              All your personal data will be permanently deleted
+                            </li>
+                            <li>Your order history will be lost</li>
+                            <li>
+                              You will lose access to your wishlist and saved
+                              items
+                            </li>
+                            <li>This action cannot be reversed</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                  >
-                    Update Password
-                  </button>
+                  <form onSubmit={handleDeleteAccount} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Enter your password to confirm{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={deleteForm.password}
+                        onChange={(e) =>
+                          handleDeleteChange("password", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Enter your current password"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Type "DELETE" to confirm{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteForm.confirmText}
+                        onChange={(e) =>
+                          handleDeleteChange("confirmText", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        placeholder="Type DELETE to confirm"
+                        required
+                      />
+                      {deleteForm.confirmText &&
+                        deleteForm.confirmText !== "DELETE" && (
+                          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                            <i className="fas fa-exclamation-triangle mr-1"></i>
+                            Please type "DELETE" exactly as shown
+                          </p>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={
+                          isLoading ||
+                          deleteForm.confirmText !== "DELETE" ||
+                          !deleteForm.password
+                        }
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                      >
+                        {isLoading && (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        )}
+                        <i className="fas fa-trash mr-1"></i>
+                        Delete Account Permanently
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
