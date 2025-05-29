@@ -9,7 +9,8 @@ import BulkActions from "../Common/BulkActions";
 import { getProductTableConfig } from "../Common/tableConfig.jsx";
 import ProductDetails from "./components/ProductDetails";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 // Custom debounce hook
 function useDebounce(value, delay) {
@@ -30,18 +31,19 @@ function useDebounce(value, delay) {
 
 function Products() {
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]); // Store all products for stats calculation
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [view, setView] = useState("list");
-  
+
   // Separate state for input values (immediate) and applied filters (debounced)
   const [searchInput, setSearchInput] = useState(""); // What user types
   const [searchQuery, setSearchQuery] = useState(""); // What gets applied
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({
@@ -49,12 +51,6 @@ function Products() {
     direction: "ascending",
   });
   const [totalProducts, setTotalProducts] = useState(0);
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    activeProducts: 0,
-    outOfStockProducts: 0,
-    totalInventoryValue: 0
-  });
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -70,16 +66,108 @@ function Products() {
   }, [debouncedSearchInput]);
 
   // Memoize filter parameters to prevent unnecessary re-renders
-  const filterParams = useMemo(() => ({
-    searchQuery: searchQuery.trim(),
-    categoryFilter,
-    statusFilter,
-    page,
-    rowsPerPage,
-    sortConfig
-  }), [searchQuery, categoryFilter, statusFilter, page, rowsPerPage, sortConfig]);
+  const filterParams = useMemo(
+    () => ({
+      searchQuery: searchQuery.trim(),
+      categoryFilter,
+      statusFilter,
+      page,
+      rowsPerPage,
+      sortConfig,
+    }),
+    [searchQuery, categoryFilter, statusFilter, page, rowsPerPage, sortConfig]
+  );
 
-  // Fetch admin products with enhanced filtering
+  // Calculate stats from all products data
+  const stats = useMemo(() => {
+    if (!allProducts || allProducts.length === 0) {
+      return {
+        totalProducts: 0,
+        activeProducts: 0,
+        outOfStockProducts: 0,
+        totalInventoryValue: 0,
+      };
+    }
+
+    const totalProducts = allProducts.length;
+    const activeProducts = allProducts.filter((p) => p.inventory > 0).length;
+    const outOfStockProducts = allProducts.filter(
+      (p) => p.inventory === 0
+    ).length;
+
+    // Calculate total inventory value: price × stock for each product
+    const totalInventoryValue = allProducts.reduce((total, product) => {
+      const price = parseFloat(product.price) || 0;
+      const stock = parseInt(product.inventory) || 0;
+      return total + price * stock;
+    }, 0);
+
+    console.log("📊 Calculated stats:", {
+      totalProducts,
+      activeProducts,
+      outOfStockProducts,
+      totalInventoryValue: totalInventoryValue.toFixed(2),
+    });
+
+    return {
+      totalProducts,
+      activeProducts,
+      outOfStockProducts,
+      totalInventoryValue,
+    };
+  }, [allProducts]);
+
+  // Fetch ALL admin products for stats calculation (separate from paginated products)
+  const fetchAllProducts = useCallback(async () => {
+    try {
+      console.log("📊 Fetching all products for stats calculation...");
+
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/products?limit=1000&page=1`, // Get a large number of products
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const transformedProducts = response.data.products.map((product) => ({
+          id: product._id,
+          name: product.product_name,
+          description: product.product_description,
+          price: product.product_price,
+          inventory: product.product_stock,
+          category: product.product_category,
+          subcategory: product.product_subcategory,
+          brand: product.product_brand,
+          images:
+            product.product_images?.length > 0
+              ? product.product_images.map((img) => img.url)
+              : product.product_image
+              ? [product.product_image]
+              : [],
+          rating: product.product_rating || 0,
+          discount: product.product_discount || 0,
+          status: product.product_stock > 0 ? "active" : "out_of_stock",
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
+          owner: product.owner,
+        }));
+
+        console.log(
+          `📊 Loaded ${transformedProducts.length} products for stats`
+        );
+        setAllProducts(transformedProducts);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching all products for stats:", error);
+      setAllProducts([]);
+    }
+  }, []);
+
+  // Fetch admin products with enhanced filtering (paginated)
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -119,19 +207,19 @@ function Products() {
         );
       }
 
-      console.log('🔍 Fetching admin products with params:', params.toString());
+      console.log("🔍 Fetching admin products with params:", params.toString());
 
       const response = await axios.get(
         `${API_BASE_URL}/admin/products?${params.toString()}`,
         {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      console.log('📦 Backend response:', response.data);
+      console.log("📦 Backend response:", response.data);
 
       if (response.data.success) {
         const transformedProducts = response.data.products.map((product) => ({
@@ -143,9 +231,12 @@ function Products() {
           category: product.product_category,
           subcategory: product.product_subcategory,
           brand: product.product_brand,
-          images: product.product_images?.length > 0 
-            ? product.product_images.map(img => img.url) 
-            : (product.product_image ? [product.product_image] : []),
+          images:
+            product.product_images?.length > 0
+              ? product.product_images.map((img) => img.url)
+              : product.product_image
+              ? [product.product_image]
+              : [],
           rating: product.product_rating || 0,
           discount: product.product_discount || 0,
           status: product.product_stock > 0 ? "active" : "out_of_stock",
@@ -154,7 +245,9 @@ function Products() {
           owner: product.owner,
         }));
 
-        console.log(`📊 Found ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`);
+        console.log(
+          `📊 Found ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`
+        );
 
         setProducts(transformedProducts);
         setTotalProducts(response.data.pagination?.totalProducts || 0);
@@ -163,7 +256,7 @@ function Products() {
       console.error("❌ Error fetching admin products:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to access admin products");
-        navigate('/admin/login');
+        navigate("/admin/login");
       } else {
         toast.error("Failed to load your products");
       }
@@ -173,22 +266,6 @@ function Products() {
       setIsLoading(false);
     }
   }, [filterParams, categories, navigate]);
-
-  // Fetch admin statistics (separate from main products fetch)
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/admin/products/stats`, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.data.success) {
-        setStats(response.data.stats);
-      }
-    } catch (error) {
-      console.error("Error fetching admin stats:", error);
-    }
-  }, []);
 
   // Fetch categories (only once)
   const fetchCategories = useCallback(async () => {
@@ -204,48 +281,56 @@ function Products() {
   }, []);
 
   // Fetch single product by ID
-  const fetchProductById = useCallback(async (productId) => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/admin/products/${productId}`,
-        {
-          withCredentials: true,
-          headers: { 'Content-Type': 'application/json' }
+  const fetchProductById = useCallback(
+    async (productId) => {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/admin/products/${productId}`,
+          {
+            withCredentials: true,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (response.data.success) {
+          const product = response.data.product;
+          const transformedProduct = {
+            id: product._id,
+            name: product.product_name,
+            description: product.product_description,
+            price: product.product_price,
+            inventory: product.product_stock,
+            category: product.product_category,
+            subcategory: product.product_subcategory,
+            brand: product.product_brand,
+            images:
+              product.product_images?.length > 0
+                ? product.product_images.map((img) => img.url)
+                : product.product_image
+                ? [product.product_image]
+                : [],
+            rating: product.product_rating || 0,
+            discount: product.product_discount || 0,
+            status: product.product_stock > 0 ? "active" : "out_of_stock",
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt,
+          };
+          setCurrentProduct(transformedProduct);
         }
-      );
-      
-      if (response.data.success) {
-        const product = response.data.product;
-        const transformedProduct = {
-          id: product._id,
-          name: product.product_name,
-          description: product.product_description,
-          price: product.product_price,
-          inventory: product.product_stock,
-          category: product.product_category,
-          subcategory: product.product_subcategory,
-          brand: product.product_brand,
-          images: product.product_images?.length > 0 
-            ? product.product_images.map(img => img.url) 
-            : (product.product_image ? [product.product_image] : []),
-          rating: product.product_rating || 0,
-          discount: product.product_discount || 0,
-          status: product.product_stock > 0 ? "active" : "out_of_stock",
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt,
-        };
-        setCurrentProduct(transformedProduct);
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        if (error.response?.status === 404) {
+          toast.error(
+            "Product not found or you don't have permission to view it"
+          );
+        } else {
+          toast.error("Failed to load product details");
+        }
+        navigate("/admin/products");
       }
-    } catch (error) {
-      console.error("Error fetching product:", error);
-      if (error.response?.status === 404) {
-        toast.error("Product not found or you don't have permission to view it");
-      } else {
-        toast.error("Failed to load product details");
-      }
-      navigate("/admin/products");
-    }
-  }, [navigate]);
+    },
+    [navigate]
+  );
 
   // Delete single product
   const deleteProduct = useCallback(async (productId) => {
@@ -254,10 +339,10 @@ function Products() {
         `${API_BASE_URL}/products/${productId}`,
         {
           withCredentials: true,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       if (response.data.success) {
         toast.success("Product deleted successfully");
         return true;
@@ -285,12 +370,14 @@ function Products() {
         { productIds },
         {
           withCredentials: true,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       if (response.data.success) {
-        toast.success(`Successfully deleted ${response.data.deletedCount} products`);
+        toast.success(
+          `Successfully deleted ${response.data.deletedCount} products`
+        );
         return true;
       }
     } catch (error) {
@@ -307,8 +394,8 @@ function Products() {
   // Load initial data (only once)
   useEffect(() => {
     fetchCategories();
-    fetchStats();
-  }, [fetchCategories, fetchStats]);
+    fetchAllProducts(); // Fetch all products for stats
+  }, [fetchCategories, fetchAllProducts]);
 
   // Fetch products when filter parameters change (debounced)
   useEffect(() => {
@@ -330,34 +417,34 @@ function Products() {
   // Handle refresh from navigation state
   useEffect(() => {
     if (location.state?.refresh) {
-      console.log('🔄 Refreshing products due to navigation state');
+      console.log("🔄 Refreshing products due to navigation state");
       fetchProducts();
-      fetchStats();
+      fetchAllProducts(); // Also refresh stats
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, fetchProducts, fetchStats]);
+  }, [location.state, fetchProducts, fetchAllProducts]);
 
   // Handle URL timestamp refresh
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
-    const timestamp = urlParams.get('t');
-    
+    const timestamp = urlParams.get("t");
+
     if (timestamp) {
-      console.log('🔄 Timestamp detected - forcing refresh');
+      console.log("🔄 Timestamp detected - forcing refresh");
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       setPage(0);
       setSearchInput("");
       setSearchQuery("");
       setCategoryFilter("all");
       setStatusFilter("all");
-      
+
       if (categories.length > 0) {
         fetchProducts();
-        fetchStats();
+        fetchAllProducts(); // Also refresh stats
       }
     }
-  }, [location.search, categories, fetchProducts, fetchStats]);
+  }, [location.search, categories, fetchProducts, fetchAllProducts]);
 
   // Event handlers with proper state management
   const handleSearchInputChange = useCallback((e) => {
@@ -378,83 +465,121 @@ function Products() {
   }, []);
 
   // Product action handlers
-  const handleViewProduct = useCallback((productId) => {
-    navigate(`/admin/products/view/${productId}`);
-  }, [navigate]);
+  const handleViewProduct = useCallback(
+    (productId) => {
+      navigate(`/admin/products/view/${productId}`);
+    },
+    [navigate]
+  );
 
-  const handleEditProduct = useCallback((productId) => {
-    navigate(`/admin/products/edit/${productId}`);
-  }, [navigate]);
+  const handleEditProduct = useCallback(
+    (productId) => {
+      navigate(`/admin/products/edit/${productId}`);
+    },
+    [navigate]
+  );
 
-  const handleDeleteProduct = useCallback(async (productId) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      const success = await deleteProduct(productId);
-      if (success) {
-        fetchProducts();
-        fetchStats();
-      }
-    }
-  }, [deleteProduct, fetchProducts, fetchStats]);
-
-  const handleDelete = useCallback(async (ids) => {
-    const isMultiple = ids.length > 1;
-    const message = isMultiple ? `Delete ${ids.length} products?` : "Delete this product?";
-    
-    if (window.confirm(message)) {
-      try {
-        let success;
-        if (isMultiple) {
-          success = await bulkDeleteProducts(ids);
-        } else {
-          success = await deleteProduct(ids[0]);
-        }
-
+  const handleDeleteProduct = useCallback(
+    async (productId) => {
+      if (window.confirm("Are you sure you want to delete this product?")) {
+        const success = await deleteProduct(productId);
         if (success) {
-          setSelectedProducts([]);
           fetchProducts();
-          fetchStats();
-
-          if (view === "view" && ids.includes(currentProduct?.id)) {
-            navigate("/admin/products");
-          }
+          fetchAllProducts(); // Refresh stats after deletion
         }
-      } catch (error) {
-        toast.error("Some products could not be deleted");
       }
-    }
-  }, [bulkDeleteProducts, deleteProduct, fetchProducts, fetchStats, view, currentProduct, navigate]);
+    },
+    [deleteProduct, fetchProducts, fetchAllProducts]
+  );
+
+  const handleDelete = useCallback(
+    async (ids) => {
+      const isMultiple = ids.length > 1;
+      const message = isMultiple
+        ? `Delete ${ids.length} products?`
+        : "Delete this product?";
+
+      if (window.confirm(message)) {
+        try {
+          let success;
+          if (isMultiple) {
+            success = await bulkDeleteProducts(ids);
+          } else {
+            success = await deleteProduct(ids[0]);
+          }
+
+          if (success) {
+            setSelectedProducts([]);
+            fetchProducts();
+            fetchAllProducts(); // Refresh stats after deletion
+
+            if (view === "view" && ids.includes(currentProduct?.id)) {
+              navigate("/admin/products");
+            }
+          }
+        } catch (error) {
+          toast.error("Some products could not be deleted");
+        }
+      }
+    },
+    [
+      bulkDeleteProducts,
+      deleteProduct,
+      fetchProducts,
+      fetchAllProducts,
+      view,
+      currentProduct,
+      navigate,
+    ]
+  );
 
   // Selection handlers
   const handleSelectProduct = useCallback((id, selected) => {
-    setSelectedProducts(prev =>
-      selected
-        ? [...prev, id]
-        : prev.filter(productId => productId !== id)
+    setSelectedProducts((prev) =>
+      selected ? [...prev, id] : prev.filter((productId) => productId !== id)
     );
   }, []);
 
-  const handleSelectAll = useCallback((selected) => {
-    if (selected) {
-      const currentPageIds = products.map(p => p.id);
-      setSelectedProducts(prev => [...new Set([...prev, ...currentPageIds])]);
-    } else {
-      const currentPageIds = products.map(p => p.id);
-      setSelectedProducts(prev => prev.filter(id => !currentPageIds.includes(id)));
-    }
-  }, [products]);
+  const handleSelectAll = useCallback(
+    (selected) => {
+      if (selected) {
+        const currentPageIds = products.map((p) => p.id);
+        setSelectedProducts((prev) => [
+          ...new Set([...prev, ...currentPageIds]),
+        ]);
+      } else {
+        const currentPageIds = products.map((p) => p.id);
+        setSelectedProducts((prev) =>
+          prev.filter((id) => !currentPageIds.includes(id))
+        );
+      }
+    },
+    [products]
+  );
 
   // Pagination handlers
-  const handlePageChange = useCallback((newPage) => {
-    console.log('📄 Changing page from', page, 'to', newPage);
-    setPage(newPage);
-  }, [page]);
+  const handlePageChange = useCallback(
+    (newPage) => {
+      console.log("📄 Changing page from", page, "to", newPage);
+      setPage(newPage);
+    },
+    [page]
+  );
 
-  const handleRowsPerPageChange = useCallback((e) => {
-    const newRowsPerPage = parseInt(e.target.value, 10);
-    console.log('📊 Changing rows per page from', rowsPerPage, 'to', newRowsPerPage);
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
-  }, [rowsPerPage]);
+  const handleRowsPerPageChange = useCallback(
+    (e) => {
+      const newRowsPerPage = parseInt(e.target.value, 10);
+      console.log(
+        "📊 Changing rows per page from",
+        rowsPerPage,
+        "to",
+        newRowsPerPage
+      );
+      setRowsPerPage(newRowsPerPage);
+      setPage(0);
+    },
+    [rowsPerPage]
+  );
 
   // Sort handler
   const handleSortChange = useCallback((newSortConfig) => {
@@ -463,11 +588,15 @@ function Products() {
   }, []);
 
   // Get table configuration
-  const tableConfig = useMemo(() => getProductTableConfig(
-    handleViewProduct,
-    handleEditProduct,
-    handleDeleteProduct
-  ), [handleViewProduct, handleEditProduct, handleDeleteProduct]);
+  const tableConfig = useMemo(
+    () =>
+      getProductTableConfig(
+        handleViewProduct,
+        handleEditProduct,
+        handleDeleteProduct
+      ),
+    [handleViewProduct, handleEditProduct, handleDeleteProduct]
+  );
 
   // Render product details view
   if (view === "view" && currentProduct) {
@@ -517,8 +646,12 @@ function Products() {
                 <i className="fas fa-box text-blue-600 dark:text-blue-400"></i>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Products</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.totalProducts}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Total Products
+                </p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {stats.totalProducts}
+                </p>
               </div>
             </div>
           </div>
@@ -529,8 +662,12 @@ function Products() {
                 <i className="fas fa-check-circle text-green-600 dark:text-green-400"></i>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Products</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.activeProducts}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Active Products
+                </p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {stats.activeProducts}
+                </p>
               </div>
             </div>
           </div>
@@ -541,8 +678,12 @@ function Products() {
                 <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Out of Stock</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.outOfStockProducts}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Out of Stock
+                </p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {stats.outOfStockProducts}
+                </p>
               </div>
             </div>
           </div>
@@ -553,10 +694,22 @@ function Products() {
                 <i className="fas fa-rupee-sign text-purple-600 dark:text-purple-400"></i>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Inventory Value</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  ₹{stats.totalInventoryValue.toLocaleString('en-IN')}
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Inventory Value
                 </p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  ₹
+                  {stats.totalInventoryValue.toLocaleString("en-IN", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+                {/* Debug info in development */}
+                {process.env.NODE_ENV === "development" && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    From {allProducts.length} products
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -683,7 +836,8 @@ function Products() {
             {
               label: "Delete",
               onClick: handleDelete,
-              className: "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
+              className:
+                "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
               icon: "fas fa-trash",
               title: "Delete selected products",
             },
