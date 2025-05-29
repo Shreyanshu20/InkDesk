@@ -19,20 +19,12 @@ function LowStockAlerts({ items }) {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-medium text-text">
-                    {item.name}
-                  </p>
+                  <p className="text-sm font-medium text-text">{item.name}</p>
                   <p className="text-xs text-accent flex items-center mt-1">
                     <i className="fas fa-exclamation-circle mr-1"></i>
                     Only {item.stock} left (min: {item.threshold})
                   </p>
                 </div>
-                <Link
-                  to={`/admin/products/${item.id}`}
-                  className="text-xs bg-primary/10 dark:bg-primary/20 text-primary px-3 py-1.5 rounded-md hover:bg-primary/20 dark:hover:bg-primary/30 transition-all"
-                >
-                  Restock
-                </Link>
               </div>
             </div>
           ))}
@@ -40,9 +32,7 @@ function LowStockAlerts({ items }) {
       ) : (
         <div className="text-center py-8">
           <i className="fas fa-check-circle text-3xl text-green-500 mb-2"></i>
-          <p className="text-sm text-text">
-            All products are well stocked!
-          </p>
+          <p className="text-sm text-text">All products are well stocked!</p>
         </div>
       )}
     </div>

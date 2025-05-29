@@ -7,6 +7,21 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Format currency for INR
+  const formatCurrency = (amount) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`; // Lakhs
+    } else if (amount >= 1000) {
+      return `₹${(amount / 1000).toFixed(0)}K`; // Thousands
+    }
+    return `₹${amount}`;
+  };
+
+  // Format full currency amount
+  const formatFullCurrency = (amount) => {
+    return `₹${amount.toLocaleString("en-IN")}`;
+  };
+
   // Check if dark mode is active
   useEffect(() => {
     const checkDarkMode = () => {
@@ -50,19 +65,19 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
               data: salesData[timeRange].data,
               fill: true,
               backgroundColor: isDarkMode
-                ? "rgba(185, 65, 81, 0.35)" // Increased opacity for dark mode
-                : "rgba(190, 72, 87, 0.1)",
+                ? "rgba(59, 130, 246, 0.2)" // Blue for better visibility in dark mode
+                : "rgba(59, 130, 246, 0.1)",
               borderColor: isDarkMode
-                ? "rgba(241, 82, 101, 1)" // Brighter accent color in dark mode
-                : "var(--primary)",
+                ? "rgba(59, 130, 246, 1)" // Bright blue in dark mode
+                : "rgb(59, 130, 246)",
               tension: 0.4,
-              pointBackgroundColor: isDarkMode ? "#ffffff" : "var(--primary)", // White points in dark mode
-              pointBorderColor: isDarkMode ? "rgba(241, 82, 101, 1)" : "#fff",
+              pointBackgroundColor: isDarkMode ? "#ffffff" : "rgb(59, 130, 246)",
+              pointBorderColor: isDarkMode ? "rgba(59, 130, 246, 1)" : "#fff",
               pointHoverBackgroundColor: "#ffffff",
-              pointHoverBorderColor: "var(--accent)",
-              pointRadius: 5, // Larger points
+              pointHoverBorderColor: "rgb(59, 130, 246)",
+              pointRadius: 6,
               pointHoverRadius: 8,
-              borderWidth: isDarkMode ? 2.5 : 2, // Thicker line for dark mode
+              borderWidth: isDarkMode ? 3 : 2.5,
             },
           ],
         },
@@ -73,7 +88,7 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             legend: {
               position: "top",
               labels: {
-                color: isDarkMode ? "#ffffff" : "rgba(9, 7, 8, 0.9)", // Brighter text in dark mode
+                color: isDarkMode ? "#ffffff" : "rgba(9, 7, 8, 0.9)",
                 usePointStyle: true,
                 boxWidth: 6,
                 font: {
@@ -84,14 +99,14 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             tooltip: {
               enabled: true,
               backgroundColor: isDarkMode
-                ? "rgba(255, 255, 255, 0.9)" // Light background in dark mode for contrast
-                : "rgba(255, 255, 255, 0.9)",
-              titleColor: isDarkMode ? "#000000" : "#333333", // Dark text for contrast
-              bodyColor: isDarkMode ? "#333333" : "#666666",
+                ? "rgba(17, 24, 39, 0.95)"
+                : "rgba(255, 255, 255, 0.95)",
+              titleColor: isDarkMode ? "#ffffff" : "#1f2937",
+              bodyColor: isDarkMode ? "#e5e7eb" : "#374151",
               borderColor: isDarkMode
-                ? "rgba(241, 82, 101, 0.7)" // Brighter border
-                : "rgba(190, 72, 87, 0.2)",
-              borderWidth: 2,
+                ? "rgba(59, 130, 246, 0.5)"
+                : "rgba(59, 130, 246, 0.3)",
+              borderWidth: 1,
               cornerRadius: 8,
               usePointStyle: true,
               padding: 12,
@@ -104,21 +119,10 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
                 size: 13,
                 family: '"Red Rose", serif',
               },
-              displayColors: false, // Hide color boxes
+              displayColors: false,
               callbacks: {
                 label: function (context) {
-                  let label = context.dataset.label || "";
-                  if (label) {
-                    label += ": ";
-                  }
-                  if (context.parsed.y !== null) {
-                    label += new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                      minimumFractionDigits: 0,
-                    }).format(context.parsed.y);
-                  }
-                  return label;
+                  return `Sales: ${formatFullCurrency(context.parsed.y)}`;
                 },
               },
             },
@@ -129,20 +133,20 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
               grid: {
                 display: true,
                 color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.08)" // Slightly more visible in dark mode
-                  : "rgba(0, 0, 0, 0.05)",
+                  ? "rgba(255, 255, 255, 0.1)"
+                  : "rgba(0, 0, 0, 0.1)",
                 drawBorder: false,
               },
               ticks: {
                 color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.85)" // Brighter text in dark mode
+                  ? "rgba(255, 255, 255, 0.85)"
                   : "rgba(9, 7, 8, 0.7)",
                 callback: function (value) {
-                  return "$" + value.toLocaleString();
+                  return formatCurrency(value);
                 },
                 font: {
                   family: '"Red Rose", serif',
-                  size: isDarkMode ? 12 : 11, // Larger in dark mode
+                  size: isDarkMode ? 12 : 11,
                 },
                 padding: 10,
               },
@@ -153,11 +157,11 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
               },
               ticks: {
                 color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.85)" // Brighter text in dark mode
+                  ? "rgba(255, 255, 255, 0.85)"
                   : "rgba(9, 7, 8, 0.7)",
                 font: {
                   family: '"Red Rose", serif',
-                  size: isDarkMode ? 12 : 11, // Larger in dark mode
+                  size: isDarkMode ? 12 : 11,
                 },
                 padding: 10,
               },
@@ -170,17 +174,6 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
           animation: {
             duration: 1000,
             easing: "easeOutQuart",
-          },
-          elements: {
-            point: {
-              // Add a shadow to make points stand out more
-              shadowOffsetX: 0,
-              shadowOffsetY: 3,
-              shadowBlur: 10,
-              shadowColor: isDarkMode
-                ? "rgba(0, 0, 0, 0.5)"
-                : "rgba(0, 0, 0, 0.2)",
-            },
           },
         },
       });
@@ -196,10 +189,25 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
     };
   }, [timeRange, salesData, isDarkMode]);
 
+  // Calculate total and stats for current timeRange
+  const currentData = salesData[timeRange].data;
+  const totalSales = currentData.reduce((sum, value) => sum + value, 0);
+  const averageSales = Math.round(totalSales / currentData.length);
+  const highestSales = Math.max(...currentData);
+  const lowestSales = Math.min(...currentData);
+
   return (
     <div className="bg-background p-6 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg border border-gray-200 dark:border-gray-800 lg:col-span-2">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-text">Sales Overview</h2>
+        <div>
+          <h2 className="text-lg font-medium text-text mb-1">Sales Overview</h2>
+          <p className="text-sm text-text/70">
+            Total:{" "}
+            <span className="font-semibold text-primary">
+              {formatFullCurrency(totalSales)}
+            </span>
+          </p>
+        </div>
         <div className="flex space-x-2">
           <button
             className={`px-3 py-1 text-xs rounded-md transition-all ${
@@ -236,6 +244,7 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
           </button>
         </div>
       </div>
+
       <div className="h-80 relative">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -252,6 +261,34 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             }
           `}
         ></canvas>
+      </div>
+
+      {/* Sales Summary */}
+      <div className="mt-6 grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-center">
+          <p className="text-xs text-text/70 uppercase tracking-wide font-medium">
+            Highest
+          </p>
+          <p className="text-sm font-bold text-text mt-1">
+            {formatCurrency(highestSales)}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-text/70 uppercase tracking-wide font-medium">
+            Average
+          </p>
+          <p className="text-sm font-bold text-text mt-1">
+            {formatCurrency(averageSales)}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-text/70 uppercase tracking-wide font-medium">
+            Lowest
+          </p>
+          <p className="text-sm font-bold text-text mt-1">
+            {formatCurrency(lowestSales)}
+          </p>
+        </div>
       </div>
     </div>
   );
