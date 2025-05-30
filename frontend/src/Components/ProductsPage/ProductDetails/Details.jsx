@@ -78,30 +78,51 @@ function Details({
                 )}
               </div>
 
-              {/* Thumbnail Images */}
-              {((product.product_images && product.product_images.length > 1) || 
-                (product.images && product.images.length > 1)) && (
-                <div className="flex gap-3 overflow-x-auto p-2">
-                  {(product.product_images || product.images).map((image, index) => (
-                    <button
-                      key={index}
-                      className={`w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 hover:opacity-80 transition-all duration-200 ${
-                        selectedImage === index
-                          ? "ring-2 ring-primary shadow-lg scale-102"
-                          : "border-2 border-gray-200 dark:border-gray-600 hover:border-primary/50"
-                      }`}
-                      onClick={() => setSelectedImage(index)}
-                      aria-label={`View product image ${index + 1}`}
-                    >
-                      <img
-                        src={image.url || image}
-                        alt={`${product.product_name || product.name} - view ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Thumbnail Images - UPDATED LOGIC */}
+              {(() => {
+                // Get images from either product_images (backend) or images (frontend)
+                const imageArray = product.product_images && product.product_images.length > 0
+                  ? product.product_images
+                  : product.images && product.images.length > 0
+                  ? product.images
+                  : [];
+
+                console.log('🖼️ Rendering thumbnails for images:', imageArray.length);
+
+                // Only show thumbnails if we have more than 1 image
+                if (imageArray.length > 1) {
+                  return (
+                    <div className="flex gap-3 overflow-x-auto p-2">
+                      {imageArray.map((image, index) => (
+                        <button
+                          key={index}
+                          className={`w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 hover:opacity-80 transition-all duration-200 ${
+                            selectedImage === index
+                              ? "ring-2 ring-primary shadow-lg scale-105"
+                              : "border-2 border-gray-200 dark:border-gray-600 hover:border-primary/50"
+                          }`}
+                          onClick={() => {
+                            console.log('🖱️ Thumbnail clicked:', index);
+                            setSelectedImage(index);
+                          }}
+                          aria-label={`View product image ${index + 1}`}
+                        >
+                          <img
+                            src={image.url || image}
+                            alt={`${product.product_name || product.name} - view ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('❌ Thumbnail image failed to load:', image.url || image);
+                              e.target.src = "/placeholder-image.jpg";
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 

@@ -142,6 +142,16 @@ try {
   const authRoutes = require('./routes/auth.routes.js');
   app.use('/auth', authRoutes);
   console.log('✅ Auth routes loaded at /auth');
+  
+  // Log available auth routes for debugging
+  console.log('📋 Available auth routes:');
+  console.log('  POST /auth/register');
+  console.log('  POST /auth/login');
+  console.log('  POST /auth/logout');
+  console.log('  GET /auth/is-auth');
+  console.log('  POST /auth/is-auth');
+  console.log('  GET /auth/profile');
+  console.log('  POST /auth/is-admin');
 } catch (error) {
   console.error('❌ Auth routes error:', error.message);
 }

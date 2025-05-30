@@ -118,15 +118,37 @@ const getProducts = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Format products to include proper image data
+    const formattedProducts = products.map(product => {
+      const productObj = product.toObject();
+      
+      // Ensure proper image formatting
+      return {
+        ...productObj,
+        product_images: productObj.product_images && productObj.product_images.length > 0 
+          ? productObj.product_images.map(img => ({
+              url: img.url,
+              public_id: img.public_id,
+              alt_text: img.alt_text || productObj.product_name
+            }))
+          : productObj.product_image 
+            ? [{ url: productObj.product_image, alt_text: productObj.product_name }]
+            : [],
+        mainImage: productObj.product_images && productObj.product_images.length > 0 
+          ? productObj.product_images[0].url 
+          : productObj.product_image || '',
+      };
+    });
+
     // Get total count for pagination
     const totalProducts = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProducts / parseInt(limit));
 
-    console.log(`✅ Found ${products.length} products (${totalProducts} total)`);
+    console.log(`✅ Found ${formattedProducts.length} products (${totalProducts} total)`);
 
     res.json({
       success: true,
-      products,
+      products: formattedProducts, // Return formatted products
       pagination: {
         currentPage: parseInt(page),
         totalPages,
@@ -291,7 +313,9 @@ const createProduct = async (req, res) => {
       product_description,
       product_price,
       product_stock,
-      product_category
+      product_category,
+      product_images, // Add this to handle multiple images
+      product_image    // Keep for backward compatibility
     } = req.body;
 
     if (!product_name || !product_description || !product_price || product_stock === undefined || !product_category) {
@@ -309,14 +333,41 @@ const createProduct = async (req, res) => {
       });
       if (category) {
         categoryId = category._id;
+        console.log('📂 Found category:', category.category_name);
+      } else {
+        console.log('⚠️ Category not found, will use string:', product_category);
       }
+    }
+
+    // Handle images - process both new array format and old single image
+    let processedImages = [];
+    
+    if (product_images && Array.isArray(product_images) && product_images.length > 0) {
+      // New multiple images format
+      processedImages = product_images.map((img, index) => ({
+        url: img.url || img,
+        public_id: img.public_id || '',
+        alt_text: img.alt_text || `${product_name} - Image ${index + 1}`
+      }));
+      console.log('📸 Using multiple images:', processedImages.length);
+    } else if (product_image) {
+      // Backward compatibility - single image
+      processedImages = [{
+        url: product_image,
+        public_id: '',
+        alt_text: product_name
+      }];
+      console.log('📸 Using single image as array');
     }
 
     const productData = {
       ...req.body,
       owner: userId,
-      category: categoryId, // Add ObjectId reference
-      product_rating: 0, // Default rating
+      category: categoryId,
+      product_images: processedImages, // Store processed images array
+      product_image: processedImages.length > 0 ? processedImages[0].url : '', // Keep main image for compatibility
+      product_rating: 0,
+      review_count: 0,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -328,7 +379,7 @@ const createProduct = async (req, res) => {
     const populatedProduct = await Product.findById(savedProduct._id)
       .populate('category', 'category_name');
 
-    console.log(`✅ Product created successfully:`, savedProduct._id);
+    console.log(`✅ Product created with ${processedImages.length} images:`, savedProduct._id);
 
     res.status(201).json({
       success: true,
@@ -456,6 +507,8 @@ const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log('🔍 Fetching product by ID:', id);
+
     const product = await Product.findById(id)
       .populate('category', 'category_name');
 
@@ -466,9 +519,30 @@ const getProductById = async (req, res) => {
       });
     }
 
+    // Format the product data to include all images properly
+    const productData = {
+      ...product.toObject(),
+      // Ensure images array is properly formatted
+      product_images: product.product_images && product.product_images.length > 0 
+        ? product.product_images.map(img => ({
+            url: img.url,
+            public_id: img.public_id,
+            alt_text: img.alt_text || product.product_name
+          }))
+        : product.product_image 
+          ? [{ url: product.product_image, alt_text: product.product_name }]
+          : [],
+      // Add mainImage virtual for backward compatibility
+      mainImage: product.product_images && product.product_images.length > 0 
+        ? product.product_images[0].url 
+        : product.product_image || '',
+    };
+
+    console.log('✅ Product found with images:', productData.product_images?.length || 0);
+
     res.json({
       success: true,
-      product
+      product: productData
     });
 
   } catch (error) {

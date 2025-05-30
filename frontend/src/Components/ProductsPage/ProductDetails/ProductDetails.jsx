@@ -65,8 +65,8 @@ function ProductDetails() {
               productData.product_sku ||
               `PRD-${productData._id.slice(-6).toUpperCase()}`,
             stock: parseInt(productData.product_stock) || 0,
-            rating: parseFloat(productData.product_rating) || 0, // Updated to use flat field
-            reviewCount: productData.review_count || 0, // Updated to use review_count
+            rating: parseFloat(productData.product_rating) || 0,
+            reviewCount: productData.review_count || 0,
             description:
               productData.product_description || "No description available.",
             longDescription:
@@ -102,35 +102,32 @@ function ProductDetails() {
                 value: productData.product_dimensions || "N/A",
               },
             ],
-            reviews: productData.reviews || [
-              // Mock reviews if none exist
-              {
-                id: 1,
-                title: "Great product!",
-                rating: 5,
-                user: "John D.",
-                date: "March 15, 2024",
-                comment:
-                  "Really happy with this purchase. Quality is excellent and arrived quickly.",
-              },
-            ],
+            reviews: productData.reviews || [],
             tags: [
               productData.product_category,
               productData.product_subcategory,
             ].filter(Boolean),
-            images: [
-              productData.product_image ||
-                "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
-              productData.product_image_2 ||
-                productData.product_image ||
-                "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
-              productData.product_image_3 ||
-                productData.product_image ||
-                "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
-              productData.product_image_4 ||
-                productData.product_image ||
-                "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
-            ],
+            
+            // UPDATED IMAGE HANDLING - Use backend product_images array
+            images: productData.product_images && productData.product_images.length > 0
+              ? productData.product_images.map(img => ({
+                  url: img.url,
+                  alt_text: img.alt_text || productData.product_name
+                }))
+              : productData.product_image
+                ? [{ 
+                    url: productData.product_image, 
+                    alt_text: productData.product_name 
+                  }]
+                : [{
+                    url: "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
+                    alt_text: "Product placeholder"
+                  }],
+                  
+            // Add backward compatibility fields
+            product_images: productData.product_images || [],
+            product_image: productData.product_image || productData.mainImage || "",
+            
             placeholderImages: [
               "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
               "https://placehold.co/100x100/ff9d8a/ffffff?text=Thumb+1",
@@ -138,6 +135,9 @@ function ProductDetails() {
               "https://placehold.co/100x100/ff9d8a/ffffff?text=Thumb+3",
             ],
           };
+
+          console.log('✅ Product transformed with images:', transformedProduct.images?.length);
+          console.log('📸 Product images:', transformedProduct.images);
 
           setProduct(transformedProduct);
 
