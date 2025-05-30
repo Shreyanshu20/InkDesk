@@ -7,6 +7,8 @@ import { useCart } from "../../Context/CartContext.jsx";
 import { useWishlist } from "../../Context/WishlistContext.jsx"; // ADD ONLY THIS LINE
 import { toast } from "react-toastify";
 import axios from "axios";
+import VoiceSearch from "../Common/VoiceSearch";
+import { useVoiceSearch } from "../../hooks/useVoiceSearch";
 
 function NavbarTop() {
   // Get categories from context
@@ -20,6 +22,7 @@ function NavbarTop() {
   const { getCartItemCount } = useCart(); // ADD ONLY getCartItemCount
   const { getWishlistItemCount } = useWishlist(); // ADD ONLY THIS LINE
   const navigate = useNavigate();
+  const { processVoiceCommand } = useVoiceSearch();
 
   const [isDark, setIsDark] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -122,6 +125,15 @@ function NavbarTop() {
   const cartItemCount = getCartItemCount ? getCartItemCount() : 0;
   const wishlistItemCount = getWishlistItemCount ? getWishlistItemCount() : 0;
 
+  // Add this function to handle voice search results:
+  const handleVoiceResult = (transcript) => {
+    // Set the search text
+    setSearchText(transcript);
+
+    // Process the voice command
+    processVoiceCommand(transcript);
+  };
+
   return (
     <div className="bg-primary px-4 py-3 md:py-5 text-white">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -143,74 +155,21 @@ function NavbarTop() {
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search for products..."
+              placeholder="Search for products... (or use voice search)"
               aria-label="Search for products"
-              className="pl-4 py-2 pr-16 text-gray-700 bg-white w-full rounded-l-full focus:outline-none border-none"
+              className="pl-4 py-2 pr-20 text-gray-700 bg-white w-full rounded-l-full focus:outline-none border-none"
             />
 
-            {/* Category Dropdown - Hidden on smaller screens */}
-            <div className="relative hidden md:inline-block group">
-              <button
-                className="h-full w-38 bg-white text-gray-700 border-l border-gray-200 px-4 py-2 flex items-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                aria-label="Select search category"
-                aria-expanded="false"
-                aria-haspopup="true"
-              >
-                <span className="mr-2">{category}</span>
-                <i
-                  className="fas fa-chevron-down text-gray-500 text-xs group-hover:rotate-180 transition-transform"
-                  aria-hidden="true"
-                ></i>
-              </button>
-
-              <div
-                className="absolute right-0 mt-0.5 w-45 hidden group-hover:block z-50 bg-white shadow-lg rounded-lg border border-gray-200 py-2"
-                role="menu"
-                aria-orientation="vertical"
-              >
-                {/* ADD: Browse All section */}
-                <div className="border-b border-gray-200 pb-2 mb-2">
-                  <div className="px-4 py-1 text-xs font-medium text-blue-600 uppercase tracking-wider">
-                    Browse All
-                  </div>
-                  <div
-                    className={`px-4 py-2 hover:bg-gray-50 hover:text-blue-600 cursor-pointer text-gray-700 ${
-                      category === "All Category"
-                        ? "text-blue-600 font-medium bg-blue-50"
-                        : ""
-                    }`}
-                    onClick={() => setCategory("All Category")}
-                    role="menuitem"
-                  >
-                    All Category
-                  </div>
-                </div>
-
-                {/* Regular categories */}
-                <div className="px-4 py-1 text-xs font-medium text-[#E66354] uppercase tracking-wider">
-                  Categories
-                </div>
-                {categoryNames.map((cat) => (
-                  <div
-                    key={cat}
-                    className={`px-4 py-2 hover:bg-gray-50 hover:text-[#E66354] cursor-pointer text-gray-700 ${
-                      category === cat
-                        ? "text-[#E66354] font-medium bg-red-50"
-                        : ""
-                    }`}
-                    onClick={() => setCategory(cat)}
-                    role="menuitem"
-                  >
-                    {cat}
-                  </div>
-                ))}
-              </div>
+            {/* Voice Search Button */}
+            <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+              <VoiceSearch onVoiceResult={handleVoiceResult} />
             </div>
 
             {/* Search Button */}
             <button
               className="bg-[#E66354] px-4 py-2 rounded-r-full text-white border-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E66354] hover:bg-[#E66354]/80 transition-all duration-300 flex items-center"
               aria-label="Search"
+              onClick={() => handleVoiceResult(searchText)}
             >
               <i className="fas fa-search" aria-hidden="true"></i>
             </button>

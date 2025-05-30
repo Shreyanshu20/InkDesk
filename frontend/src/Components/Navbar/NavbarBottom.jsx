@@ -6,6 +6,8 @@ import { useCart } from "../../Context/CartContext.jsx"; // ADD ONLY THIS LINE
 import { useWishlist } from "../../Context/WishlistContext.jsx"; // ADD ONLY THIS LINE
 import { AppContent } from "../../Context/AppContent.jsx"; // ADD ONLY THIS LINE
 import { toast } from "react-toastify"; // ADD ONLY THIS LINE
+import VoiceSearch from '../Common/VoiceSearch';
+import { useVoiceSearch } from '../../hooks/useVoiceSearch';
 
 function NavbarBottom() {
   // Get categories from context
@@ -23,6 +25,7 @@ function NavbarBottom() {
 
   const [searchText, setSearchText] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const { processVoiceCommand } = useVoiceSearch();
 
   // Handle search bar expansion
   const handleSearchExpand = () => {
@@ -185,6 +188,15 @@ function NavbarBottom() {
   const cartItemCount = getCartItemCount ? getCartItemCount() : 0;
   const wishlistItemCount = getWishlistItemCount ? getWishlistItemCount() : 0;
 
+  // Add this function to handle voice search results:
+  const handleVoiceResult = (transcript) => {
+    // Set the search text
+    setSearchText(transcript);
+    
+    // Process the voice command
+    processVoiceCommand(transcript);
+  };
+
   return (
     <div className="bg-background shadow-sm relative z-20 bg-gradient-to-b from-accent/30 to-background/90">
       <div className="max-w-7xl mx-auto md:flex items-center justify-between p-2 pr-3">
@@ -306,15 +318,21 @@ function NavbarBottom() {
                     type="text"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
-                    placeholder="Search for products..."
+                    placeholder="Search for products... (or use voice)"
                     aria-label="Search for products"
-                    className="pl-4 py-2 pr-16 text-text bg-gray-100 dark:bg-gray-950 w-full rounded-l-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-[#E66354] transition-all duration-300"
+                    className="pl-4 py-2 pr-20 text-text bg-gray-100 dark:bg-gray-950 w-full rounded-l-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-[#E66354] transition-all duration-300"
                   />
+
+                  {/* Voice Search Button */}
+                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                    <VoiceSearch onVoiceResult={handleVoiceResult} isExpanded={true} />
+                  </div>
 
                   {/* Search Button */}
                   <button
                     className="bg-gray-100 dark:bg-gray-950 px-4 py-2 rounded-r-full text-text/70 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-[#E66354] transition-all duration-300"
                     aria-label="Search"
+                    onClick={() => handleVoiceResult(searchText)}
                   >
                     <i className="fas fa-search" aria-hidden="true"></i>
                   </button>

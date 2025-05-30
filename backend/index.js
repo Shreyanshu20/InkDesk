@@ -255,6 +255,12 @@ try {
   console.error('❌ Admin routes error:', error.message);
 }
 
+// Add this with your other route imports:
+const voiceSearchRoutes = require('./routes/voiceSearch.routes');
+
+// Add this with your other route definitions:
+app.use('/voice-search', voiceSearchRoutes);
+
 // Debug route to check all registered routes
 app.get('/debug/routes', (req, res) => {
   const routes = [];

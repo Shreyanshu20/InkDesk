@@ -239,7 +239,10 @@ function Products() {
                           <div className="mt-auto">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-lg text-primary">
-                                ${product.price ? product.price.toFixed(2) : "0.00"}
+                                ₹
+                                {product.price
+                                  ? product.price.toFixed(2)
+                                  : "0.00"}
                               </span>
                             </div>
                           </div>

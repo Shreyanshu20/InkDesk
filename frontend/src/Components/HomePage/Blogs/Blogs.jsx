@@ -2,147 +2,119 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 function Blogs() {
-  // Sample blog data - replace with your actual data
   const blogPosts = [
     {
       id: 1,
-      title: "Top 10 Books To Make It A Great Year",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi...",
-      image: "/src/assets/hero.jpg",
-      date: "July 26, 2023",
-      author: "Apollo Theme",
-      authorImage: "/src/assets/hero.jpg",
-      category: "Books",
+      title: "Essential Stationery for Students",
+      excerpt: "Discover the must-have stationery items every student needs for a successful academic year.",
+      image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&w=400",
+      date: "May 28, 2025",
+      author: "Sarah Johnson",
+      category: "Education",
       readTime: "5 min read",
     },
     {
       id: 2,
-      title: "Top 10 Books To Make It A Great Year",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi...",
-      image: "/src/assets/hero.jpg",
-      date: "July 26, 2023",
-      author: "Apollo Theme",
-      authorImage: "/src/assets/hero.jpg",
-      category: "Books",
+      title: "Office Organization Tips",
+      excerpt: "Transform your workspace with these simple organization strategies using quality office supplies.",
+      image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&w=400",
+      date: "May 25, 2025",
+      author: "Mike Chen",
+      category: "Productivity",
       readTime: "7 min read",
     },
     {
       id: 3,
-      title: "Top 5 Tarot Decks For The Tarot World Summit",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi...",
-      image: "/src/assets/hero.jpg",
-      date: "July 26, 2023",
-      author: "Apollo Theme",
-      authorImage: "/src/assets/hero.jpg",
-      category: "Tarot",
-      readTime: "8 min read",
+      title: "Art Supply Guide for Beginners",
+      excerpt: "Starting your artistic journey? Here are the essential art supplies every beginner should have.",
+      image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&w=400",
+      date: "May 22, 2025",
+      author: "Emma Wilson",
+      category: "Art & Craft",
+      readTime: "6 min read",
     },
   ];
 
   return (
-    <section
-      className="mt-8 lg:py-12 px-6 md:p-16 lg:mt-10 bg-background"
-      aria-labelledby="blog-section-heading"
-    >
-      <div className="container mx-auto">
-        {/* Section header with View All button */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-10">
-          <div>
-            <h2
-              id="blog-section-heading"
-              className="text-3xl font-bold text-text mb-3"
-            >
-              Latest from Our Blog
-            </h2>
-            <p className="text-text/70 max-w-xl">
-              Discover insights, tutorials, and inspiration about books,
-              stationery, and creative pursuits
-            </p>
-          </div>
-
-          <Link
-            to="/blog"
-            className="hidden lg:block mt-4 md:mt-0 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            View All
-            <i
-              className="fas fa-arrow-right ml-2 text-sm"
-              aria-hidden="true"
-            ></i>
-          </Link>
+    <section className="py-16 px-4 bg-background text-text">
+      <div className="max-w-7xl mx-auto">
+        {/* Section Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Latest from Our Blog
+          </h2>
+          <div className="w-24 h-1 bg-primary mx-auto mb-4"></div>
+          <p className=" text-lg max-w-2xl mx-auto">
+            Tips, guides, and inspiration for stationery lovers and productivity enthusiasts
+          </p>
         </div>
 
-        {/* Blog grid - responsive layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        {/* Blog Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {blogPosts.map((post) => (
             <article
               key={post.id}
-              className="group bg-background rounded-lg overflow-hidden border border-accent/80 shadow hover:shadow-md hover:translate-y-[-4px] transition-all duration-300 flex flex-col h-full"
+              className="bg-gray-100 dark:bg-gray-900 text-text rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
             >
-              {/* Blog image */}
-              <div className="relative w-full aspect-[3/2]">
+              {/* Image */}
+              <div className="relative h-48 overflow-hidden">
                 <img
                   src={post.image}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+                  alt={post.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <span className="absolute top-3 left-3 bg-primary/80 text-white text-xs font-medium px-2 py-1 rounded">
-                  {post.category}
-                </span>
-                <span className="absolute top-3 right-3 bg-white/80 text-gray-700 text-xs font-medium px-2 py-1 rounded flex items-center">
-                  <i className="far fa-clock mr-1" aria-hidden="true"></i>{" "}
-                  {post.readTime}
-                </span>
+                <div className="absolute top-4 left-4">
+                  <span className="bg-primary text-text px-3 py-1 rounded-full text-xs font-medium">
+                    {post.category}
+                  </span>
+                </div>
+                <div className="absolute top-4 right-4">
+                  <span className="bg-white/90 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+                    {post.readTime}
+                  </span>
+                </div>
               </div>
 
-              {/* Blog content */}
-              <div className="p-5 flex flex-col justify-between flex-grow">
-                <div>
-                  <div className="flex items-center text-text/60 text-sm mb-3">
-                    <time dateTime="2023-07-26">{post.date}</time>
-                    <span className="mx-2" aria-hidden="true">
-                      •
-                    </span>
-                    <span>By {post.author}</span>
-                  </div>
-
-                  <h3 className="font-bold text-lg md:text-xl text-text mb-3 line-clamp-2 group-hover:text-primary transition-colors duration-300">
-                    <Link
-                      to={`/blog/${post.id}`}
-                      className="focus:outline-none focus:underline"
-                    >
-                      {post.title}
-                    </Link>
-                  </h3>
-
-                  <p className="text-text/70 mb-4 line-clamp-3 text-sm">
-                    {post.excerpt}
-                  </p>
+              {/* Content */}
+              <div className="p-6">
+                <div className="flex items-center text-text text-sm mb-3">
+                  <i className="far fa-calendar mr-2"></i>
+                  <span>{post.date}</span>
+                  <span className="mx-2">•</span>
+                  <span>By {post.author}</span>
                 </div>
+
+                <h3 className="text-xl font-bold text-text mb-3 group-hover:text-primary transition-colors">
+                  <Link to={`/blog/${post.id}`} className="block">
+                    {post.title}
+                  </Link>
+                </h3>
+
+                <p className="text-text mb-4 line-clamp-2">
+                  {post.excerpt}
+                </p>
 
                 <Link
                   to={`/blog/${post.id}`}
-                  className="text-primary text-sm hover:underline focus:outline-none focus:underline flex items-center font-medium"
+                  className="inline-flex items-center text-primary font-medium hover:text-primary-dark transition-colors"
                 >
                   Read More
-                  <i className="fas fa-arrow-right ml-2" aria-hidden="true"></i>
+                  <i className="fas fa-arrow-right ml-2 text-sm"></i>
                 </Link>
               </div>
             </article>
           ))}
         </div>
 
-        {/* Mobile view - show more button */}
-        <div className="mt-8 mb-5 text-center md:hidden">
+        {/* View All Button */}
+        <div className="text-center mt-12">
           <Link
             to="/blog"
-            className="inline-block px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            className="inline-flex items-center px-8 py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition-colors duration-300"
           >
-            Read More Articles
+            <i className="fas fa-blog mr-3"></i>
+            View All Articles
+            <i className="fas fa-arrow-right ml-3"></i>
           </Link>
         </div>
       </div>

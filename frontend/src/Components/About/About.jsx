@@ -65,7 +65,7 @@ function About() {
             <div className="order-1 md:order-2">
               <div className="relative">
                 <img
-                  src="/src/assets/about-mission.jpg"
+                  src="https://images.unsplash.com/photo-1631173716529-fd1696a807b0?q=80&w=2012&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Our mission"
                   className="rounded-lg shadow-xl w-full object-cover h-[450px] border-4 border-white dark:border-[#1a1212]"
                 />
@@ -98,7 +98,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-4 text-center">
                 The Beginning
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 <i className="fas fa-store text-primary/60 mr-2"></i>
                 InkDesk started as a small corner shop with a passion for unique
                 stationery and carefully curated book collections.
@@ -112,7 +112,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-4 text-center">
                 Expansion
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 <i className="fas fa-chart-line text-primary/60 mr-2"></i>
                 We expanded our catalog to include premium art supplies and
                 office essentials, becoming a one-stop shop for creative minds.
@@ -126,7 +126,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-4 text-center">
                 Going Digital
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 <i className="fas fa-globe text-primary/60 mr-2"></i>
                 Launch of our online store, bringing our carefully curated
                 collections to customers around the world.
@@ -160,7 +160,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-3 text-center">
                 Quality
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 We source only the finest materials and products that stand the
                 test of time.
               </p>
@@ -173,7 +173,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-3 text-center">
                 Sustainability
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 We're committed to eco-friendly practices and sustainable
                 product sourcing.
               </p>
@@ -186,7 +186,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-3 text-center">
                 Excellence
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 We strive for excellence in customer service and product
                 curation.
               </p>
@@ -199,7 +199,7 @@ function About() {
               <h3 className="text-xl font-bold text-white mb-3 text-center">
                 Community
               </h3>
-              <p className="text-white/80 text-center leading-relaxed">
+              <p className="text-text text-center leading-relaxed">
                 Building a community of creators, thinkers, and book lovers
                 worldwide.
               </p>
@@ -229,7 +229,7 @@ function About() {
             <div className="bg-white dark:bg-[#1a1212] rounded-lg overflow-hidden shadow-md group hover:shadow-xl transition-shadow duration-300">
               <div className="aspect-[3/4] overflow-hidden relative">
                 <img
-                  src="/src/assets/team-1.jpg"
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Sarah Johnson"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -262,7 +262,7 @@ function About() {
                   <i className="fas fa-briefcase mr-2 text-primary/70"></i>
                   Founder & CEO
                 </p>
-                <p className="text-white/80 text-sm leading-relaxed">
+                <p className="text-text text-sm leading-relaxed">
                   With a background in design and a lifelong love for books,
                   Sarah founded InkDesk to share her passion with the world.
                 </p>
@@ -272,7 +272,7 @@ function About() {
             <div className="bg-white dark:bg-[#1a1212] rounded-lg overflow-hidden shadow-md group hover:shadow-xl transition-shadow duration-300">
               <div className="aspect-[3/4] overflow-hidden relative">
                 <img
-                  src="/src/assets/team-2.jpg"
+                  src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="David Chen"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -305,7 +305,7 @@ function About() {
                   <i className="fas fa-palette mr-2 text-primary/70"></i>
                   Creative Director
                 </p>
-                <p className="text-white/80 text-sm leading-relaxed">
+                <p className="text-text text-sm leading-relaxed">
                   David's eye for aesthetics and product design helps shape our
                   unique collections and visual identity.
                 </p>
@@ -315,7 +315,7 @@ function About() {
             <div className="bg-white dark:bg-[#1a1212] rounded-lg overflow-hidden shadow-md group hover:shadow-xl transition-shadow duration-300">
               <div className="aspect-[3/4] overflow-hidden relative">
                 <img
-                  src="/src/assets/team-3.jpg"
+                  src="https://plus.unsplash.com/premium_photo-1677368597077-009727e906db?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Maya Rodriguez"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -348,7 +348,7 @@ function About() {
                   <i className="fas fa-books mr-2 text-primary/70"></i>
                   Head of Curation
                 </p>
-                <p className="text-white/80 text-sm leading-relaxed">
+                <p className="text-text text-sm leading-relaxed">
                   With extensive experience in publishing, Maya brings her
                   expertise to curating our diverse book selections.
                 </p>
@@ -384,7 +384,7 @@ function About() {
                   <i className="fas fa-star"></i>
                   <i className="fas fa-star"></i>
                 </div>
-                <p className="text-white/80 italic mb-6 relative z-10 leading-relaxed">
+                <p className="text-text italic mb-6 relative z-10 leading-relaxed">
                   I've been ordering from InkDesk for over a year now, and the
                   quality of their products is consistently excellent. Their
                   notebooks have become essential to my creative process.
@@ -419,7 +419,7 @@ function About() {
                   <i className="fas fa-star"></i>
                   <i className="fas fa-star"></i>
                 </div>
-                <p className="text-white/80 italic mb-6 relative z-10 leading-relaxed">
+                <p className="text-text italic mb-6 relative z-10 leading-relaxed">
                   The attention to detail in packaging and the personalized note
                   made my first purchase from InkDesk special. Their customer
                   service is exceptional, and the products exceeded my

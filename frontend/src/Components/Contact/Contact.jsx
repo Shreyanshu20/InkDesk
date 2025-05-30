@@ -57,7 +57,7 @@ function Contact() {
         <div className="container mx-auto px-4 py-16 max-w-4xl -mt-8 ">
           <div className="grid md:grid-cols-2 gap-8 items-start">
             {/* Contact Form */}
-            <div className="bg-background/50 p-8 rounded-2xl shadow-lg border border-primary/10">
+            <div className="bg-background/50 h-full p-8 rounded-2xl shadow-lg border border-primary/10">
               <h2 className="text-2xl font-bold mb-6 text-text flex items-center">
                 <i className="fas fa-envelope-open-text text-primary mr-3"></i>
                 Send a Message
@@ -170,13 +170,13 @@ function Contact() {
             </div>
 
             {/* Contact Info */}
-            <div className="bg-background/50 p-8 rounded-2xl shadow-lg border border-primary/10">
+            <div className="bg-background/50 h-full p-8 rounded-2xl shadow-lg border border-primary/10">
               <h2 className="text-2xl font-bold mb-6 text-text flex items-center">
                 <i className="fas fa-address-card text-primary mr-3"></i>
                 Contact Information
               </h2>
 
-              <div className="space-y-6">
+              <div className="space-y-12">
                 <div className="flex items-start space-x-4">
                   <div className="bg-primary/10 p-3 rounded-full text-primary">
                     <i className="fas fa-envelope"></i>
@@ -214,7 +214,7 @@ function Contact() {
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-primary/5 rounded-xl border border-primary/10">
+              <div className="mt-8 p-6 bg-primary/5 rounded-xl border border-primary/10 mt-20">
                 <h3 className="text-lg font-semibold mb-4 text-text flex items-center">
                   <i className="fas fa-share-alt text-primary mr-2"></i> Follow
                   Us
