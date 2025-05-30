@@ -177,7 +177,7 @@ router.post('/login', async (req, res) => {
         res.json({
             success: true,
             message: "Login successful",
-            token: token, // Add this for frontend to store in localStorage
+            token: token, // Always return token for frontend storage
             user: {
                 id: user._id,
                 first_name: user.first_name,
@@ -565,6 +565,97 @@ router.delete('/delete-account', userAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error deleting account"
+        });
+    }
+});
+
+// Check if user is admin (specific route for admin panel)
+router.post('/is-admin', async (req, res) => {
+    try {
+        console.log('🔐 Admin auth check request received');
+        console.log('🍪 Cookies:', req.cookies);
+        console.log('🎫 Authorization header:', req.headers.authorization);
+        
+        // Check for token in cookies first, then Authorization header
+        let token = req.cookies.userToken || req.cookies.token;
+        
+        // If no cookie token, check Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7); // Remove 'Bearer ' prefix
+                console.log('🎫 Found token in Authorization header');
+            }
+        }
+        
+        if (!token) {
+            console.log('❌ No token found in cookies or headers');
+            return res.status(401).json({
+                success: false,
+                message: "No authentication token provided"
+            });
+        }
+
+        console.log('🎫 Verifying token...');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_USER);
+        console.log('✅ Token verified, user ID:', decoded.userId || decoded.id);
+
+        // Handle both possible user ID field names
+        const userId = decoded.userId || decoded.id;
+        const user = await User.findById(userId).select('-password -verificationOTP');
+        
+        if (!user) {
+            console.log('❌ User not found for ID:', userId);
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Check if user is admin
+        if (user.role !== 'admin') {
+            console.log('❌ User is not admin, role:', user.role);
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Admin privileges required."
+            });
+        }
+
+        console.log('✅ Admin authenticated:', user.email);
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified,
+                phone: user.phone,
+                status: user.status,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('❌ Admin auth check error:', error);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid token"
+            });
+        }
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: "Token expired"
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: "Error checking admin authentication"
         });
     }
 });

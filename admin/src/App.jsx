@@ -1,27 +1,52 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Import your components
-import Layout from "./Layouts.jsx";
-import Dashboard from "./Components/Dashboard/Dashboard.jsx";
-import NotFound from "./Components/NotFound.jsx";
-import Products from "./Components/Products/Products.jsx";
-import ProductForm from "./Components/Products/components/ProductForm.jsx";
-import Categories from "./Components/Categories/Categories.jsx";
-import CategoryForm from "./Components/Categories/components/CategoryForm.jsx";
-import Orders from "./Components/Orders/Orders.jsx";
-import OrderDetails from "./Components/Orders/components/OrderDetails.jsx";
-import Users from "./Components/Users/Users.jsx";
-import Reviews from "./Components/Reviews/Reviews.jsx";
-import Banners from "./Components/Banners/Banners.jsx";
-import BannerForm from "./Components/Banners/components/BannerForm.jsx";
-import Settings from "./Components/Settings/Settings.jsx";
+// Import the admin context
+import { AdminContextProvider, useAdmin } from "./Context/AdminContext";
+
+// Import components
+import Layout from "./Layouts";
+import Dashboard from "./Components/Dashboard/Dashboard";
+import Products from "./Components/Products/Products";
+import ProductForm from "./Components/Products/components/ProductForm";
+import Categories from "./Components/Categories/Categories";
+import Orders from "./Components/Orders/Orders";
+import Users from "./Components/Users/Users";
+import Banners from "./Components/Banners/Banners";
+import BannerForm from "./Components/Banners/components/BannerForm";
+import Reviews from "./Components/Reviews/Reviews";
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { loading } = useAdmin();
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Always allow access for now
+  return children;
+};
+
+// Redirect Component for root path
+const RedirectToAdmin = () => {
+  return <Navigate to="/admin" replace />;
+};
 
 function App() {
   return (
-    <>
+    <AdminContextProvider>
+      {/* REMOVED <Router> - it's already in main.jsx */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -34,14 +59,24 @@ function App() {
         pauseOnHover
         theme="light"
         toastStyle={{
-          fontFamily: 'inherit',
-          borderRadius: '8px',
+          fontFamily: "inherit",
+          borderRadius: "8px",
         }}
-        className="custom-toast-container"
       />
 
       <Routes>
-        <Route path="/admin" element={<Layout />}>
+        {/* Root redirect */}
+        <Route path="/" element={<RedirectToAdmin />} />
+
+        {/* Protected admin routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
 
           {/* Products routes */}
@@ -53,46 +88,30 @@ function App() {
           </Route>
 
           {/* Categories routes */}
-          <Route path="categories">
-            <Route index element={<Categories />} />
-            <Route path="add" element={<CategoryForm mode="add" />} />
-            <Route path="edit/:id" element={<CategoryForm mode="edit" />} />
-            <Route path="view/:id" element={<Categories view="view" />} />
-          </Route>
+          <Route path="categories" element={<Categories />} />
 
           {/* Orders routes */}
-          <Route path="orders">
-            <Route index element={<Orders />} />
-            <Route path=":id" element={<OrderDetails />} />
-          </Route>
+          <Route path="orders" element={<Orders />} />
 
           {/* Users routes */}
-          <Route path="users">
-            <Route index element={<Users />} />
-            <Route path="view/:id" element={<Users view="view" />} />
-            <Route path="add" element={<Users mode="add" />} />
-            <Route path="edit/:id" element={<Users mode="edit" />} />
-          </Route>
+          <Route path="users" element={<Users />} />
 
-          {/* Reviews routes */}
-          <Route path="reviews" element={<Reviews />} />
-
-          {/* Banner routes */}
+          {/* Banners routes */}
           <Route path="banners">
             <Route index element={<Banners />} />
             <Route path="add" element={<BannerForm mode="add" />} />
             <Route path="edit/:id" element={<BannerForm mode="edit" />} />
-            <Route path="view/:id" element={<BannerForm viewOnly={true} />} />
           </Route>
 
-          {/* Settings routes */}
-          <Route path="settings" element={<Settings />} />
-
-          {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
+          {/* Reviews routes */}
+          <Route path="reviews" element={<Reviews />} />
         </Route>
+
+        {/* Catch all - redirect to admin */}
+        <Route path="*" element={<RedirectToAdmin />} />
       </Routes>
-    </>
+      {/* REMOVED </Router> - it's already in main.jsx */}
+    </AdminContextProvider>
   );
 }
 

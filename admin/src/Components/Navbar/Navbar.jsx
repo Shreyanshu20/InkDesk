@@ -1,15 +1,16 @@
-import { useState, useContext, useRef, useEffect } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ThemeContext } from "../../Context/ThemeContext.jsx";
+import { useAdmin } from "../../Context/AdminContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 
 function Navbar({ collapsed, toggleSidebar }) {
   const { themeToggle } = useContext(ThemeContext);
+  const { adminData, logout } = useAdmin();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [adminData, setAdminData] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -108,7 +109,6 @@ function Navbar({ collapsed, toggleSidebar }) {
       });
 
       if (response.data.success) {
-        setAdminData(response.data.user);
         console.log("✅ Admin profile loaded:", response.data.user);
       }
     } catch (error) {
@@ -180,32 +180,11 @@ function Navbar({ collapsed, toggleSidebar }) {
 
     setIsLoggingOut(true);
     try {
-      const response = await axios.post(
-        `${backendUrl}/auth/logout`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (response.data.success) {
-        toast.success("Logged out successfully!");
-
-        // Clear admin data
-        setAdminData(null);
-
-        // Redirect to frontend login page
-        const frontendUrl =
-          import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
-        window.location.href = `${frontendUrl}/login?type=seller`;
-      } else {
-        throw new Error(response.data.message || "Logout failed");
-      }
+      toast.info("Logging out...");
+      await logout(); // This will handle the redirect
     } catch (error) {
       console.error("Logout failed:", error);
-      toast.error(
-        error.response?.data?.message || "Logout failed. Please try again."
-      );
+      toast.error("Logout failed. Please try again.");
     } finally {
       setIsLoggingOut(false);
     }

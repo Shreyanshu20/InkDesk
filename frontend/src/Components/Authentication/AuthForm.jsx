@@ -178,6 +178,18 @@ function AuthForm() {
             setIsLoggedIn(true);
             setUserData(response.data.user);
 
+            // Store token in localStorage for cross-domain auth
+            if (response.data.token) {
+              localStorage.setItem("userToken", response.data.token);
+
+              // For admin/seller, also store admin-specific token and data
+              if (response.data.user.role === "admin") {
+                localStorage.setItem("adminToken", response.data.token);
+                localStorage.setItem("adminData", JSON.stringify(response.data.user));
+                console.log("🔑 Admin token and data stored for:", response.data.user.email);
+              }
+            }
+
             // Check if user needs email verification
             if (!response.data.user.isAccountVerified) {
               toast.info("Please verify your email to access all features.");
@@ -195,12 +207,12 @@ function AuthForm() {
             setTimeout(() => {
               if (response.data.user.role === "admin") {
                 // Use environment variable for admin panel URL
-                const adminUrl =
-                  import.meta.env.VITE_ADMIN_URL ||
-                  import.meta.env.VITE_ADMIN_PANEL_URL ||
-                  "http://localhost:5174"; // fallback for development
+                const adminUrl = import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
 
-                // Redirect to admin panel
+                console.log("🔄 Redirecting admin to:", adminUrl);
+                toast.success(`Welcome ${response.data.user.first_name}! Redirecting to admin panel...`);
+
+                // Redirect to admin panel with proper token
                 window.location.href = adminUrl;
               } else {
                 navigate("/");
