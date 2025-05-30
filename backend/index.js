@@ -7,12 +7,87 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 
+// CORS Configuration - Updated to handle production domains
+const getAllowedOrigins = () => {
+  const origins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://inkdesk-frontend.onrender.com',
+    'https://inkdesk-admin.onrender.com'
+  ];
+
+  // Add environment URLs if they exist
+  if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
+  if (process.env.ADMIN_URL) origins.push(process.env.ADMIN_URL);
+
+  return [...new Set(origins)]; // Remove duplicates
+};
+
 // Middleware
-console.log('Adding middleware...');
+console.log('🌐 Configuring CORS...');
+console.log('📋 Allowed origins:', getAllowedOrigins());
+
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL],
-  credentials: true
+  origin: function (origin, callback) {
+    const allowedOrigins = getAllowedOrigins();
+    
+    console.log('🔍 Request from origin:', origin || 'no origin');
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) {
+      console.log('✅ Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS allowed for origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      console.log('📋 Allowed origins:', allowedOrigins);
+      callback(new Error(`CORS policy blocked origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// Additional CORS headers for browsers that need them
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('🔧 Handling preflight request for:', req.path);
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -20,16 +95,32 @@ app.use(cookieParser());
 // Connect to MongoDB
 console.log('Connecting to MongoDB...');
 mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Health check route
+// Health check route with CORS info
 app.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'InkDesk API is running!',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    cors: {
+      allowedOrigins: getAllowedOrigins(),
+      requestOrigin: req.headers.origin || 'no origin'
+    }
+  });
+});
+
+// Test CORS route
+app.get('/test-cors', (req, res) => {
+  res.json({
+    success: true,
+    message: 'CORS test successful!',
+    requestOrigin: req.headers.origin || 'no origin',
+    allowedOrigins: getAllowedOrigins(),
+    timestamp: new Date().toISOString(),
+    headers: req.headers
   });
 });
 

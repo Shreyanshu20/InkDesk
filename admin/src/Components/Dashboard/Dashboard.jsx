@@ -6,6 +6,7 @@ import TopProducts from "./components/TopProducts";
 import LowStockAlerts from "./components/LowStockAlerts";
 import RecentOrders from "./components/RecentOrders";
 import RecentActivity from "./components/RecentActivity";
+import axios from "axios";
 
 function Dashboard() {
   const [timeRange, setTimeRange] = useState("weekly");
@@ -30,7 +31,7 @@ function Dashboard() {
   });
 
   // API base URL - Vite uses import.meta.env instead of process.env
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // Get auth token from localStorage
   const getAuthToken = () => {

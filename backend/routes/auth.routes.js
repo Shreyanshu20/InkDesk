@@ -169,13 +169,15 @@ router.post('/login', async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: 'lax'
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
         });
 
         console.log('✅ Login successful for:', email);
         res.json({
             success: true,
             message: "Login successful",
+            token: token, // Add this for frontend to store in localStorage
             user: {
                 id: user._id,
                 first_name: user.first_name,
@@ -203,12 +205,22 @@ router.post('/is-auth', async (req, res) => {
     try {
         console.log('🔐 Auth check request received');
         console.log('🍪 Cookies:', req.cookies);
+        console.log('🎫 Authorization header:', req.headers.authorization);
         
-        // Check for both possible cookie names
-        const token = req.cookies.userToken || req.cookies.token;
+        // Check for token in cookies first, then Authorization header
+        let token = req.cookies.userToken || req.cookies.token;
+        
+        // If no cookie token, check Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7); // Remove 'Bearer ' prefix
+                console.log('🎫 Found token in Authorization header');
+            }
+        }
         
         if (!token) {
-            console.log('❌ No token found in cookies');
+            console.log('❌ No token found in cookies or headers');
             return res.status(401).json({
                 success: false,
                 message: "No authentication token provided"
@@ -275,12 +287,22 @@ router.get('/profile', async (req, res) => {
     try {
         console.log('👤 Profile request received');
         console.log('🍪 Cookies:', req.cookies);
+        console.log('🎫 Authorization header:', req.headers.authorization);
         
-        // Check for both possible cookie names
-        const token = req.cookies.userToken || req.cookies.token;
+        // Check for token in cookies first, then Authorization header
+        let token = req.cookies.userToken || req.cookies.token;
+        
+        // If no cookie token, check Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+                console.log('🎫 Found token in Authorization header');
+            }
+        }
         
         if (!token) {
-            console.log('❌ No token found in cookies');
+            console.log('❌ No token found in cookies or headers');
             return res.status(401).json({
                 success: false,
                 message: "No authentication token provided"
@@ -318,14 +340,12 @@ router.get('/profile', async (req, res) => {
                 isAccountVerified: user.isAccountVerified,
                 status: user.status,
                 createdAt: user.createdAt,
-                // Include address fields from user document (for backward compatibility)
                 address_line1: user.address_line1,
                 address_line2: user.address_line2,
                 city: user.city,
                 state: user.state,
                 postal_code: user.postal_code,
                 country: user.country,
-                // Include populated address details
                 address_details: user.address_details || []
             }
         });

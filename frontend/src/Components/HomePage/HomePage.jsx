@@ -14,7 +14,7 @@ function HomePage() {
       <Hero />
       <Categories />
       <Badges />
-      <Products />
+      {/* <Products /> */}
       <Banner />
       <Advertisement />
       <Blogs />
