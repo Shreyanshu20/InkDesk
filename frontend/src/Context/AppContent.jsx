@@ -4,35 +4,35 @@ import axios from "axios";
 export const AppContent = createContext();
 
 export const AppContentProvider = ({ children }) => {
-  const backendUrl = "http://localhost:5000"; // Updated to match your backend
-  
+  const backendUrl = import.meta.env.VITE_BACKEND_URL; // Updated to match your backend
+
   // Initialize state from localStorage if available
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('isLoggedIn') === 'true';
+    return localStorage.getItem("isLoggedIn") === "true";
   });
-  
+
   const [userData, setUserData] = useState(() => {
-    const savedUserData = localStorage.getItem('userData');
+    const savedUserData = localStorage.getItem("userData");
     return savedUserData ? JSON.parse(savedUserData) : null;
   });
-  
+
   const [loading, setLoading] = useState(true);
 
   // Save auth state to localStorage whenever it changes
   useEffect(() => {
     if (isLoggedIn) {
-      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem("isLoggedIn", "true");
     } else {
-      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem("isLoggedIn");
     }
   }, [isLoggedIn]);
 
   // Save user data to localStorage whenever it changes
   useEffect(() => {
     if (userData) {
-      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem("userData", JSON.stringify(userData));
     } else {
-      localStorage.removeItem('userData');
+      localStorage.removeItem("userData");
     }
   }, [userData]);
 
@@ -42,12 +42,16 @@ export const AppContentProvider = ({ children }) => {
       if (!userData) {
         setLoading(true);
       }
-      
+
       try {
-        const response = await axios.post(`${backendUrl}/auth/is-auth/`, {}, {
-          withCredentials: true
-        });
-        
+        const response = await axios.post(
+          `${backendUrl}/auth/is-auth/`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
         if (response.data.success) {
           setIsLoggedIn(true);
           setUserData(response.data.user);
@@ -61,21 +65,25 @@ export const AppContentProvider = ({ children }) => {
         setLoading(false);
       }
     };
-    
+
     checkAuthStatus();
   }, [backendUrl]);
-  
+
   // Logout function with proper cleanup
   const logout = async () => {
     try {
-      await axios.post(`${backendUrl}/auth/logout/`, {}, { withCredentials: true });
+      await axios.post(
+        `${backendUrl}/auth/logout/`,
+        {},
+        { withCredentials: true }
+      );
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
       setIsLoggedIn(false);
       setUserData(null);
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('userData');
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("userData");
       return true;
     }
   };
@@ -87,10 +95,8 @@ export const AppContentProvider = ({ children }) => {
     userData,
     setUserData,
     loading,
-    logout
+    logout,
   };
 
-  return (
-    <AppContent.Provider value={value}>{children}</AppContent.Provider>
-  );
+  return <AppContent.Provider value={value}>{children}</AppContent.Provider>;
 };

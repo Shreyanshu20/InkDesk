@@ -18,8 +18,8 @@ import { ReviewProvider } from "./Context/ReviewContext.jsx";
 axios.defaults.withCredentials = true;
 
 // Set the correct backend URL
-if (window.location.origin === "http://localhost:5173") {
-  axios.defaults.baseURL = "http://localhost:5000/";
+if (window.location.origin === import.meta.env.VITE_BACKEND_URL) {
+  axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

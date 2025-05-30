@@ -13,8 +13,8 @@ import { ThemeProvider } from "./Context/ThemeContext.jsx";
 axios.defaults.withCredentials = true;
 
 // Set the correct backend URL for admin
-if (window.location.origin === "http://localhost:5174") {
-  axios.defaults.baseURL = "http://localhost:5000/";
+if (window.location.origin === import.meta.env.VITE_BACKEND_URL) {
+  axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
