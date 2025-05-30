@@ -9,25 +9,20 @@ function TopProducts({ products }) {
       </h2>
       <div className="space-y-5">
         {products.map((product, index) => (
-          <div
-            key={product.id}
-            className="flex justify-between items-center"
-          >
+          <div key={product.id} className="flex justify-between items-center">
             <div className="flex items-center">
               <span className="w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium mr-3">
                 {index + 1}
               </span>
               <div>
-                <p className="text-sm font-medium text-text">
-                  {product.name}
-                </p>
+                <p className="text-sm font-medium text-text">{product.name}</p>
                 <p className="text-xs text-text/60">
                   {product.sales} units sold
                 </p>
               </div>
             </div>
             <p className="text-sm font-semibold text-text">
-              ${product.revenue.toLocaleString()}
+              ₹{product.revenue.toLocaleString()}
             </p>
           </div>
         ))}

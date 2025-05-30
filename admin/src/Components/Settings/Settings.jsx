@@ -77,14 +77,13 @@ function Settings() {
     try {
       setIsLoading(true);
       
-      // Get user profile and auth data
-      const [profileResponse, authResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/auth/profile`, { withCredentials: true }),
-        axios.post(`${API_BASE_URL}/auth/is-auth`, {}, { withCredentials: true })
-      ]);
+      // Use the admin context's checkAuth method or direct API call
+      const response = await axios.post(`${API_BASE_URL}/auth/is-admin`, {}, { 
+        withCredentials: true 
+      });
 
-      if (profileResponse.data.success && authResponse.data.success) {
-        const user = { ...profileResponse.data.user, ...authResponse.data.user };
+      if (response.data.success) {
+        const user = response.data.user;
         
         setProfileData(user);
         
@@ -95,26 +94,42 @@ function Settings() {
           phone: user.phone || ""
         });
         
-        // Set address form data (now coming from backend)
-        setAddressForm({
-          address_line1: user.address_line1 || "",
-          address_line2: user.address_line2 || "",
-          city: user.city || "",
-          state: user.state || "",
-          postal_code: user.postal_code || "",
-          country: user.country || ""
-        });
+        // For address data, use profile endpoint if needed
+        try {
+          const profileResponse = await axios.get(`${API_BASE_URL}/auth/profile`, { 
+            withCredentials: true 
+          });
+          
+          if (profileResponse.data.success) {
+            const profileUser = profileResponse.data.user;
+            setAddressForm({
+              address_line1: profileUser.address_line1 || "",
+              address_line2: profileUser.address_line2 || "",
+              city: profileUser.city || "",
+              state: profileUser.state || "",
+              postal_code: profileUser.postal_code || "",
+              country: profileUser.country || ""
+            });
+          }
+        } catch (profileError) {
+          console.log("Profile endpoint not available, using basic data");
+        }
         
         console.log("✅ User data loaded:", {
           name: `${user.first_name} ${user.last_name}`,
           email: user.email,
           role: user.role,
-          hasAddress: !!(user.address_line1 && user.city)
         });
       }
     } catch (error) {
       console.error("❌ Error fetching user data:", error);
-      toast.error("Failed to load profile data");
+      
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
+        window.location.href = `${frontendUrl}/login?type=admin`;
+      } else {
+        toast.error("Failed to load profile data");
+      }
     } finally {
       setIsLoading(false);
     }

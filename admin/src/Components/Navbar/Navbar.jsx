@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 function Navbar({ collapsed, toggleSidebar }) {
   const { themeToggle } = useContext(ThemeContext);
-  const { adminData, logout } = useAdmin();
+  const { adminData, logout, refreshAdminData } = useAdmin();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,22 +103,19 @@ function Navbar({ collapsed, toggleSidebar }) {
   const fetchAdminData = async () => {
     setIsLoadingProfile(true);
     try {
-      // Just call the endpoint - userAuth middleware handles token extraction
-      const response = await axios.get(`${backendUrl}/auth/profile`, {
-        withCredentials: true, // This sends the cookie with JWT token
-      });
-
-      if (response.data.success) {
-        console.log("✅ Admin profile loaded:", response.data.user);
+      // Use the admin context to refresh data
+      const isAuth = await refreshAdminData();
+      if (isAuth) {
+        console.log("✅ Admin profile loaded from context");
       }
     } catch (error) {
       console.error("❌ Profile fetch failed:", error);
 
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
         // Token invalid/expired - redirect to login
         const frontendUrl =
           import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
-        window.location.href = `${frontendUrl}/login?type=seller`;
+        window.location.href = `${frontendUrl}/login?type=admin`;
       }
     } finally {
       setIsLoadingProfile(false);
@@ -252,9 +249,13 @@ function Navbar({ collapsed, toggleSidebar }) {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchAdminData();
+    if (adminData) {
+      setIsLoadingProfile(false);
+    } else {
+      fetchAdminData();
+    }
     fetchNotifications();
-  }, []);
+  }, [adminData]);
 
   // Handle theme toggle function
   const handleThemeToggle = () => {

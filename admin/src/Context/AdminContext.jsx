@@ -1,121 +1,171 @@
-import { createContext, useState, useEffect, useContext } from "react";
-import axios from "axios";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
-export const AdminContext = createContext();
-
-export const AdminContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"; // ADD THIS LINE
-  
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Always true to prevent redirect
-  const [adminData, setAdminData] = useState(null);
-  const [loading, setLoading] = useState(false); // Always false to prevent loading
-
-  // Check auth status when the app loads
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      // First check if we have stored admin data
-      const storedAdminData = localStorage.getItem("adminData");
-      const token = localStorage.getItem("adminToken") || localStorage.getItem("userToken");
-      
-      if (!token) {
-        console.log('❌ No admin token found');
-        setLoading(false);
-        return;
-      }
-
-      // If we have stored admin data, use it temporarily
-      if (storedAdminData) {
-        try {
-          const parsedData = JSON.parse(storedAdminData);
-          if (parsedData.role === 'admin') {
-            setAdminData(parsedData);
-            setIsLoggedIn(true);
-          }
-        } catch (error) {
-          console.error('Error parsing stored admin data:', error);
-        }
-      }
-
-      try {
-        console.log('🔐 Verifying admin authentication...');
-        console.log('🌐 Backend URL:', backendUrl);
-        
-        // Use GET method instead of POST and remove trailing slash
-        const response = await axios.get(
-          `${backendUrl}/auth/is-auth`, // Now backendUrl is defined
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            withCredentials: true,
-          }
-        );
-
-        if (response.data.success && response.data.user.role === 'admin') {
-          console.log('✅ Admin authenticated:', response.data.user.email);
-          setIsLoggedIn(true);
-          setAdminData(response.data.user);
-          
-          // Update stored data
-          localStorage.setItem('adminData', JSON.stringify(response.data.user));
-          localStorage.setItem('adminToken', token);
-          
-          // Update axios default header
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        } else if (response.data.success && response.data.user.role !== 'admin') {
-          console.log('❌ User is not admin, role:', response.data.user.role);
-          logout();
-        } else {
-          console.log('❌ Admin auth failed');
-          logout();
-        }
-      } catch (error) {
-        console.error("❌ Admin authentication check failed:", error);
-        
-        // If we had stored data but verification failed, still show error
-        if (storedAdminData) {
-          console.log("Session may have expired, but continuing with stored data");
-        } else {
-          logout();
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, [backendUrl]); // Add backendUrl to dependency array
-
-  const logout = () => {
-    setIsLoggedIn(false);
-    setAdminData(null);
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminData");
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("userData");
-    
-    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
-    window.location.href = `${frontendUrl}/login?type=seller`;
-  };
-
-  const value = {
-    backendUrl, // Add this to the context value
-    isLoggedIn,
-    setIsLoggedIn,
-    adminData,
-    setAdminData,
-    loading,
-    logout,
-  };
-
-  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
-};
+const AdminContext = createContext();
 
 export const useAdmin = () => {
   const context = useContext(AdminContext);
   if (!context) {
-    throw new Error('useAdmin must be used within AdminContextProvider');
+    throw new Error('useAdmin must be used within an AdminProvider');
   }
   return context;
 };
+
+export const AdminProvider = ({ children }) => {
+  const [adminData, setAdminData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
+  // Check if admin is authenticated
+  const checkAuth = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔐 Checking admin authentication...');
+
+      const response = await axios.post(
+        `${backendUrl}/auth/is-admin`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        console.log('✅ Admin authenticated:', response.data.user);
+        setAdminData(response.data.user);
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        console.log('❌ Admin authentication failed');
+        setAdminData(null);
+        setIsAuthenticated(false);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Auth check error:', error);
+      setAdminData(null);
+      setIsAuthenticated(false);
+      
+      // If it's a 401/403, redirect to login
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+        window.location.href = `${frontendUrl}/login?type=admin&redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Login function
+  const login = async (email, password) => {
+    try {
+      console.log('🔐 Admin login attempt...');
+      
+      const response = await axios.post(
+        `${backendUrl}/auth/login`,
+        { email, password },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const user = response.data.user;
+        
+        // Check if user is admin
+        if (user.role !== 'admin') {
+          toast.error('Access denied. Admin privileges required.');
+          return { success: false, message: 'Access denied. Admin privileges required.' };
+        }
+
+        console.log('✅ Admin login successful:', user);
+        setAdminData(user);
+        setIsAuthenticated(true);
+        
+        toast.success('Login successful!');
+        return { success: true, user };
+      } else {
+        toast.error(response.data.message || 'Login failed');
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      toast.error(errorMessage);
+      return { success: false, message: errorMessage };
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      console.log('🚪 Admin logout...');
+      
+      await axios.post(
+        `${backendUrl}/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+      
+      setAdminData(null);
+      setIsAuthenticated(false);
+      
+      console.log('✅ Admin logout successful');
+      
+      // Redirect to frontend login with admin type
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+      window.location.href = `${frontendUrl}/login?type=admin`;
+      
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      // Even if logout fails on backend, clear local state and redirect
+      setAdminData(null);
+      setIsAuthenticated(false);
+      
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+      window.location.href = `${frontendUrl}/login?type=admin`;
+    }
+  };
+
+  // Refresh admin data
+  const refreshAdminData = async () => {
+    return await checkAuth();
+  };
+
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const value = {
+    adminData,
+    isLoading,
+    isAuthenticated,
+    login,
+    logout,
+    checkAuth,
+    refreshAdminData,
+  };
+
+  return (
+    <AdminContext.Provider value={value}>
+      {children}
+    </AdminContext.Provider>
+  );
+};
+
+// Export the provider with the expected name
+export const AdminContextProvider = AdminProvider;
+
+export default AdminContext;

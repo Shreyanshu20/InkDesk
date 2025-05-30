@@ -583,7 +583,7 @@ router.post('/is-admin', async (req, res) => {
         if (!token && req.headers.authorization) {
             const authHeader = req.headers.authorization;
             if (authHeader.startsWith('Bearer ')) {
-                token = authHeader.substring(7); // Remove 'Bearer ' prefix
+                token = authHeader.substring(7);
                 console.log('🎫 Found token in Authorization header');
             }
         }
@@ -655,7 +655,7 @@ router.post('/is-admin', async (req, res) => {
         
         res.status(500).json({
             success: false,
-            message: "Error checking admin authentication"
+            message: "Error checking authentication"
         });
     }
 });

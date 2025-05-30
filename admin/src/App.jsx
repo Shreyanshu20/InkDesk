@@ -17,6 +17,7 @@ import Users from "./Components/Users/Users";
 import Banners from "./Components/Banners/Banners";
 import BannerForm from "./Components/Banners/components/BannerForm";
 import Reviews from "./Components/Reviews/Reviews";
+import Settings from "./Components/Settings/Settings";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -105,12 +106,13 @@ function App() {
 
           {/* Reviews routes */}
           <Route path="reviews" element={<Reviews />} />
+
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Catch all - redirect to admin */}
         <Route path="*" element={<RedirectToAdmin />} />
       </Routes>
-      {/* REMOVED </Router> - it's already in main.jsx */}
     </AdminContextProvider>
   );
 }
