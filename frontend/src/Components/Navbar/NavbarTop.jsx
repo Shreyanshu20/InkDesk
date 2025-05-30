@@ -130,7 +130,7 @@ function NavbarTop() {
           className="flex items-center lg:justify-start lg:w-auto w-full justify-center"
         >
           <img
-            src="/src/assets/brandlogo.png"
+            src="/brandlogo.png"
             alt="InkDesk Logo"
             className="h-7 lg:h-8 w-auto object-contain"
           />
