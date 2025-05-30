@@ -19,8 +19,7 @@ function Hero() {
             id: banner._id,
             tagline: banner.tagline || "FEATURED",
             title: banner.title,
-            subtitle: banner.subtitle || "",
-            description: banner.description || banner.subtitle || banner.title,
+            subtitle: banner.subtitle || banner.description || "",
             buttonText: banner.buttonText || "Shop Now",
             buttonLink: banner.url || "/shop",
             imageUrl: banner.image,
@@ -35,10 +34,9 @@ function Hero() {
               id: 1,
               tagline: "NEW ARRIVALS",
               title: "Summer Reading Collection",
-              subtitle: "Adventure Awaits",
-              description: "Discover thrilling tales perfect for your summer adventures!",
+              subtitle: "Discover thrilling tales perfect for your summer adventures!",
               buttonText: "Explore Collection",
-              buttonLink: "/shop/summer",
+              buttonLink: "/shop",
               imageUrl: "/src/assets/hero1.webp",
               imageAlt: "Summer adventure book collection",
               textPosition: "center"
@@ -102,27 +100,22 @@ function Hero() {
     switch (position) {
       case 'left':
         return {
-          container: "justify-start items-center pl-6 md:pl-12 lg:pl-16",
-          content: "text-left max-w-lg",
-          overlay: "bg-gradient-to-r from-black/70 via-black/40 to-transparent"
+          container: "justify-start items-center pl-8 md:pl-16",
+          content: "text-left max-w-lg"
         };
       case 'right':
         return {
-          container: "justify-end items-center pr-6 md:pr-12 lg:pr-16",
-          content: "text-right max-w-lg",
-          overlay: "bg-gradient-to-l from-black/70 via-black/40 to-transparent"
+          container: "justify-end items-center pr-8 md:pr-16",
+          content: "text-right max-w-lg"
         };
       case 'center':
       default:
         return {
           container: "justify-center items-center",
-          content: "text-center max-w-2xl",
-          overlay: "bg-black/50"
+          content: "text-center max-w-2xl"
         };
     }
   };
-
-  const positionClasses = getPositionClasses(currentSlideData.textPosition);
 
   return (
     <section className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
@@ -142,47 +135,47 @@ function Hero() {
               className="w-full h-full object-cover"
             />
             
-            {/* Dark Overlay for text readability */}
-            <div className={`absolute inset-0 ${getPositionClasses(slide.textPosition).overlay}`}></div>
+            {/* Dark Overlay */}
+            <div className="absolute inset-0 bg-black/40"></div>
 
             {/* Content Container */}
             <div className={`absolute inset-0 flex px-4 sm:px-6 lg:px-8 ${getPositionClasses(slide.textPosition).container}`}>
               <div className={`${getPositionClasses(slide.textPosition).content} z-10`}>
-                {/* Tagline */}
-                {slide.tagline && (
-                  <div className="mb-4">
-                    <span className="inline-block px-4 py-2 bg-primary text-white text-sm font-semibold rounded-full shadow-lg">
-                      {slide.tagline}
-                    </span>
+                
+                {/* Content Box */}
+                <div className="bg-white/50 backdrop-blur-sm rounded-md p-6 md:p-8 shadow-xl">
+                  
+                  {/* Tagline */}
+                  {slide.tagline && (
+                    <div className="mb-4">
+                      <span className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full">
+                        {slide.tagline}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Title */}
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                    {slide.title}
+                  </h1>
+                  
+                  {/* Subtitle */}
+                  {slide.subtitle && (
+                    <p className="text-gray-600 text-sm md:text-base mb-6 leading-relaxed">
+                      {slide.subtitle}
+                    </p>
+                  )}
+                  
+                  {/* CTA Button */}
+                  <div className="flex justify-center gap-3">
+                    <a
+                      href={slide.buttonLink}
+                      className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 inline-flex items-center"
+                    >
+                      <span>{slide.buttonText}</span>
+                      <i className="fas fa-arrow-right ml-2"></i>
+                    </a>
                   </div>
-                )}
-                
-                {/* Main Title */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
-                  {slide.title}
-                </h1>
-                
-                {/* Subtitle */}
-                {slide.subtitle && (
-                  <h2 className="text-lg md:text-xl lg:text-2xl text-white/95 font-medium mb-4 drop-shadow-md">
-                    {slide.subtitle}
-                  </h2>
-                )}
-                
-                {/* Description */}
-                <p className="text-base md:text-lg text-white/90 mb-6 leading-relaxed drop-shadow-md">
-                  {slide.description}
-                </p>
-                
-                {/* CTA Button */}
-                <div className="flex gap-3">
-                  <a
-                    href={slide.buttonLink}
-                    className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 inline-flex items-center shadow-lg hover:shadow-xl"
-                  >
-                    <span>{slide.buttonText}</span>
-                    <i className="fas fa-arrow-right ml-2"></i>
-                  </a>
                 </div>
               </div>
             </div>
@@ -195,18 +188,18 @@ function Hero() {
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition-all duration-300 z-20 backdrop-blur-sm"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full transition-all duration-200 z-20 shadow-md"
             aria-label="Previous slide"
           >
-            <i className="fas fa-chevron-left text-lg"></i>
+            <i className="fas fa-chevron-left"></i>
           </button>
           
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition-all duration-300 z-20 backdrop-blur-sm"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full transition-all duration-200 z-20 shadow-md"
             aria-label="Next slide"
           >
-            <i className="fas fa-chevron-right text-lg"></i>
+            <i className="fas fa-chevron-right"></i>
           </button>
         </>
       )}
@@ -218,10 +211,10 @@ function Hero() {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              className={`w-3 h-3 rounded-full transition-all duration-200 ${
                 index === currentSlide
-                  ? "bg-white shadow-lg"
-                  : "bg-white/50 hover:bg-white/75"
+                  ? "bg-primary shadow-md"
+                  : "bg-white/70 hover:bg-white/90"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />

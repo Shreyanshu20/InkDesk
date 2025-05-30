@@ -63,7 +63,7 @@ function Details({
 
                 {/* Stock status overlay */}
                 {(product.product_stock <= 0 || product.stock <= 0) && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <div className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">
                       Out of Stock
                     </div>

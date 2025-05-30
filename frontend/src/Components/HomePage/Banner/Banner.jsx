@@ -47,7 +47,7 @@ function Banner() {
   const defaultBanner = {
     title: "Get 10% Off Your First Order!",
     subtitle: "Join our newsletter and receive an exclusive discount code.",
-    buttonText: "Get My Discount",
+    buttonText: "Get Discount",
     image: "/src/assets/banner.webp"
   };
 
@@ -60,23 +60,24 @@ function Banner() {
         backgroundImage: `linear-gradient(135deg, #667eea 0%, #764ba2 100%), url(${banner.image})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundBlendMode: 'overlay'
+        backgroundBlendMode: 'overlay',
+        backdropFilter: 'blur(5px)',
       }}
     >
-      <div className="max-w-3xl mx-auto text-center">
-        <div className="bg-white/95 p-8 md:p-12 rounded-2xl shadow-lg">
+      <div className="max-w-3xl mx-auto text-center text-text">
+        <div className="bg-gray-50 dark:bg-gray-800 p-8 md:p-12 rounded-2xl shadow-lg">
           {/* Icon */}
           <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-white rounded-full mb-4">
             <i className="fas fa-tags"></i>
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-900">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-text">
             {banner.title}
           </h2>
           
           {/* Subtitle */}
-          <p className="text-gray-600 text-base md:text-lg mb-6">
+          <p className="text-text text-base md:text-lg mb-6">
             {banner.subtitle}
           </p>
 
@@ -86,7 +87,7 @@ function Banner() {
               <input
                 type="email"
                 placeholder="Enter your email address"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-500 text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
@@ -96,7 +97,7 @@ function Banner() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+              className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70 whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>
@@ -104,7 +105,7 @@ function Banner() {
                   Please wait...
                 </>
               ) : (
-                banner.buttonText || "Get My Discount"
+                banner.buttonText || "Get Discount"
               )}
             </button>
           </form>

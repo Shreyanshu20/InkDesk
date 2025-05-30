@@ -59,7 +59,7 @@ function Newsletter() {
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       } : {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'linear-gradient(135deg,rgb(234, 102, 102) 0%,rgb(162, 75, 75) 100%)',
       }}
     >
       <div className="max-w-2xl mx-auto text-center">
@@ -97,7 +97,7 @@ function Newsletter() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+            className="bg-accent hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
           >
             {isSubmitting ? (
               <>

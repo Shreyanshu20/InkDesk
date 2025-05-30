@@ -449,15 +449,16 @@ function Banners() {
         key: "banner",
         label: "Banner",
         sortable: false,
-        width: "250px",
+        width: "280px", // Fixed width to force wrapping
         customRenderer: (banner) => (
-          <div className="flex items-center">
-            <div className="h-10 w-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 mr-3 flex-shrink-0">
+          <div className="flex items-start gap-2 py-2 w-full max-w-xs"> {/* Added max-w-xs */}
+            {/* Thumbnail */}
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 border border-gray-200 dark:border-gray-600">
               {banner.image ? (
                 <img
                   src={banner.image}
                   alt={banner.title}
-                  className="h-full w-full object-cover"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.nextSibling.style.display = "flex";
@@ -465,28 +466,85 @@ function Banners() {
                 />
               ) : null}
               <div
-                className={`h-full w-full ${
+                className={`w-full h-full ${
                   banner.image ? "hidden" : "flex"
                 } items-center justify-center`}
               >
-                <i className="fas fa-image text-gray-400 text-sm"></i>
+                <i className="fas fa-image text-gray-400 text-xs"></i>
               </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-gray-900 dark:text-white truncate text-sm">
-                {banner.title || "Untitled Banner"}
+
+            {/* Content - Force text wrapping */}
+            <div className="flex-1 min-w-0 space-y-1 overflow-hidden"> {/* Added overflow-hidden */}
+              {/* Title - Force wrap to multiple lines */}
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                <div 
+                  className="text-wrap" // Custom class for wrapping
+                  style={{ 
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    wordBreak: 'break-word',
+                    maxWidth: '180px' // Force width constraint
+                  }}
+                  title={banner.title}
+                >
+                  {banner.title || "Untitled Banner"}
+                </div>
               </div>
+
+              {/* Subtitle - Force wrap */}
               {banner.subtitle && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {banner.subtitle}
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div 
+                    className="text-wrap"
+                    style={{ 
+                      whiteSpace: 'normal',
+                      wordWrap: 'break-word',
+                      wordBreak: 'break-word',
+                      maxWidth: '180px'
+                    }}
+                    title={banner.subtitle}
+                  >
+                    {banner.subtitle}
+                  </div>
                 </div>
               )}
+
+              {/* URL - Force wrap with break-all for URLs */}
               {banner.url && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 truncate mt-1">
-                  <i className="fas fa-external-link-alt mr-1"></i>
-                  {banner.url.length > 20
-                    ? banner.url.substring(0, 20) + "..."
-                    : banner.url}
+                <div className="text-xs text-blue-600 dark:text-blue-400">
+                  <div className="flex items-start gap-1"> {/* Changed to items-start */}
+                    <i className="fas fa-external-link-alt flex-shrink-0 mt-0.5"></i>
+                    <span 
+                      className="text-wrap-url min-w-0 flex-1"
+                      style={{ 
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-all',
+                        overflowWrap: 'anywhere',
+                        maxWidth: '160px'
+                      }}
+                      title={banner.url}
+                    >
+                      {banner.url}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Button Text - Force wrap */}
+              {banner.buttonText && (
+                <div className="text-xs text-gray-400 dark:text-gray-500">
+                  <span 
+                    className="text-wrap"
+                    style={{ 
+                      whiteSpace: 'normal',
+                      wordWrap: 'break-word',
+                      wordBreak: 'break-word',
+                      maxWidth: '180px'
+                    }}
+                  >
+                    CTA: "{banner.buttonText}"
+                  </span>
                 </div>
               )}
             </div>

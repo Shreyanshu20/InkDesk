@@ -13,11 +13,11 @@ function HomePage() {
     <main id="main-content">
       <Hero />
       <Categories />
-      <Badges />
-      {/* <Products /> */}
+      <Products />
       <Banner />
       <Advertisement />
       <Blogs />
+      <Badges />
       <Newsletter />
     </main>
   );
