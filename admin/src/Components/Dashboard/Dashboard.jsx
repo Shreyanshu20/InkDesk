@@ -6,6 +6,7 @@ import TopProducts from "./components/TopProducts";
 import LowStockAlerts from "./components/LowStockAlerts";
 import RecentOrders from "./components/RecentOrders";
 import RecentActivity from "./components/RecentActivity";
+import axios from "axios";
 
 function Dashboard() {
   const [timeRange, setTimeRange] = useState("weekly");
