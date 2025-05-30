@@ -10,7 +10,7 @@ const app = express();
 // Middleware
 console.log('Adding middleware...');
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -174,9 +174,9 @@ app.get('/debug/routes', (req, res) => {
       });
     }
   });
-  res.json({ 
+  res.json({
     totalRoutes: routes.length,
-    routes 
+    routes
   });
 });
 
@@ -200,7 +200,7 @@ app.use('*', (req, res) => {
     availableRoutes: {
       auth: [
         'POST /auth/register',
-        'POST /auth/login', 
+        'POST /auth/login',
         'POST /auth/logout'
       ],
       products: [

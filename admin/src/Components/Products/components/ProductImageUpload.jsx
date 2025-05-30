@@ -63,7 +63,7 @@ function ProductImageUpload({
       console.log("📤 Uploading files:", files.map((f) => f.name));
 
       const response = await axios.post(
-        `${API_BASE_URL}/api/upload/product-images`,
+        `${API_BASE_URL}/upload/product-images`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -140,7 +140,7 @@ function ProductImageUpload({
 
         try {
           const deleteResponse = await axios.delete(
-            `${API_BASE_URL}/api/upload/product-images/${encodeURIComponent(
+            `${API_BASE_URL}/upload/product-images/${encodeURIComponent(
               imageToRemove.public_id
             )}`,
             {

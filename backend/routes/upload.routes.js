@@ -19,7 +19,19 @@ const upload = multer({
   }
 });
 
+// Test route
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Upload routes are working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Upload image endpoint
 router.post('/image', userAuth, upload.single('image'), uploadController.uploadImage);
+
+router.post('/product-images', userAuth, upload.array('images', 6), uploadController.uploadProductImages);
+router.delete('/product-images/:publicId', userAuth, uploadController.deleteProductImage);
 
 module.exports = router;
