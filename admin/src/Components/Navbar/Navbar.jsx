@@ -177,7 +177,7 @@ function Navbar({ collapsed, toggleSidebar }) {
 
     setIsLoggingOut(true);
     try {
-      toast.info("Logging out...");
+      // Remove the toast.info here to prevent double toast
       await logout(); // This will handle the redirect
     } catch (error) {
       console.error("Logout failed:", error);

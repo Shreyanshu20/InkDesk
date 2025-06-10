@@ -127,7 +127,7 @@ export const AdminProvider = ({ children }) => {
       localStorage.clear();
       sessionStorage.clear();
       
-      // Force redirect to frontend with a clean slate
+      // Force redirect to frontend with a clean slate - NO TOAST HERE
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
       window.location.replace(`${frontendUrl}/`);
       

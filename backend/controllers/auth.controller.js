@@ -11,6 +11,31 @@ const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// Set cookie with environment-aware settings
+const setCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.cookie('userToken', token, {
+    httpOnly: true,
+    secure: isProduction, // Only secure in production
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for production cross-domain
+    domain: isProduction ? undefined : undefined // Let browser handle domain
+  });
+};
+
+// Clear cookie with environment-aware settings
+const clearCookie = (res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.clearCookie('userToken', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    domain: isProduction ? undefined : undefined
+  });
+};
+
 module.exports.register = async (req, res) => {
     console.log('📝 Register request received:', req.body);
 
@@ -81,13 +106,7 @@ module.exports.register = async (req, res) => {
         );
 
         // Set cookie
-        res.cookie('userToken', token, {
-            httpOnly: true,
-            secure: true, // Always true for production
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: 'none', // Required for cross-domain cookies
-            domain: undefined // Let browser handle domain automatically
-        });
+        setCookie(res, token);
 
         const otp = generateOTP();
         const expiry = Date.now() + 10 * 60 * 1000;
@@ -200,13 +219,7 @@ module.exports.login = async (req, res) => {
         );
 
         console.log('🍪 Setting cookie...');
-        res.cookie('userToken', token, {
-            httpOnly: true,
-            secure: true, // Always true for production
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: 'none', // Required for cross-domain cookies
-            domain: undefined // Let browser handle domain automatically
-        });
+        setCookie(res, token);
 
         console.log('✅ Login successful for:', email);
         res.json({
@@ -237,12 +250,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
     try {
-        res.clearCookie('userToken', {
-            httpOnly: true,
-            secure: true, // Always true for production
-            sameSite: 'none', // Required for cross-domain cookies
-            domain: undefined // Let browser handle domain automatically
-        });
+        clearCookie(res);
         return res.json({
             success: true,
             message: "User logged out successfully",
@@ -878,12 +886,7 @@ module.exports.deleteAccount = async (req, res) => {
 
         await User.findByIdAndDelete(userId);
 
-        res.clearCookie('userToken', {
-            httpOnly: true,
-            secure: true, // Always true for production
-            sameSite: 'none', // Required for cross-domain cookies
-            domain: undefined // Let browser handle domain automatically
-        });
+        clearCookie(res);
 
         return res.status(200).json({
             success: true,
