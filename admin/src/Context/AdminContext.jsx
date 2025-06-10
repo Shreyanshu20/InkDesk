@@ -55,7 +55,7 @@ export const AdminProvider = ({ children }) => {
       // If it's a 401/403, redirect to login
       if (error.response?.status === 401 || error.response?.status === 403) {
         const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-        window.location.href = `${frontendUrl}/login?type=admin&redirect=${encodeURIComponent(window.location.pathname)}`;
+        window.location.href = `${frontendUrl}`;
       }
       
       return false;
@@ -123,9 +123,13 @@ export const AdminProvider = ({ children }) => {
       
       console.log('✅ Admin logout successful');
       
-      // Redirect to frontend login with admin type
+      // Clear ALL authentication data from storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Force redirect to frontend with a clean slate
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-      window.location.href = `${frontendUrl}/login?type=admin`;
+      window.location.replace(`${frontendUrl}/`);
       
     } catch (error) {
       console.error('❌ Logout error:', error);
@@ -133,8 +137,12 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
+      // Clear ALL authentication data
+      localStorage.clear();
+      sessionStorage.clear();
+      
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-      window.location.href = `${frontendUrl}/login?type=admin`;
+      window.location.replace(`${frontendUrl}/`);
     }
   };
 

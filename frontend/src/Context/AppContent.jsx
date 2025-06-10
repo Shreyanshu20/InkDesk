@@ -4,7 +4,7 @@ import axios from "axios";
 export const AppContent = createContext();
 
 export const AppContentProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL; // Updated to match your backend
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // Initialize state from localStorage if available
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -36,9 +36,52 @@ export const AppContentProvider = ({ children }) => {
     }
   }, [userData]);
 
+  // Add storage event listener to detect when admin clears storage
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      // If localStorage is completely cleared (like admin logout does)
+      if (e.key === null || e.key === "isLoggedIn" || e.key === "userData") {
+        console.log("🔄 Storage cleared, re-checking auth...");
+        // Force clear frontend auth state
+        setIsLoggedIn(false);
+        setUserData(null);
+        setLoading(false);
+      }
+    };
+
+    // Listen for storage events
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check if storage was cleared manually (for same-tab clearing)
+    const checkStorageCleared = () => {
+      if (!localStorage.getItem("isLoggedIn") && !localStorage.getItem("userData") && isLoggedIn) {
+        console.log("🔄 Storage manually cleared, updating auth state...");
+        setIsLoggedIn(false);
+        setUserData(null);
+      }
+    };
+
+    // Check storage state periodically for same-tab changes
+    const interval = setInterval(checkStorageCleared, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [isLoggedIn]);
+
   // Check auth status when the app loads
   useEffect(() => {
     const checkAuthStatus = async () => {
+      // If no localStorage data exists, don't even try to authenticate
+      if (!localStorage.getItem("isLoggedIn") && !localStorage.getItem("userData")) {
+        console.log("🚫 No stored auth data, skipping auth check");
+        setIsLoggedIn(false);
+        setUserData(null);
+        setLoading(false);
+        return;
+      }
+
       if (!userData) {
         setLoading(true);
       }
@@ -56,11 +99,19 @@ export const AppContentProvider = ({ children }) => {
           setIsLoggedIn(true);
           setUserData(response.data.user);
         } else {
+          // Clear state if auth check fails
           setIsLoggedIn(false);
           setUserData(null);
+          localStorage.removeItem("isLoggedIn");
+          localStorage.removeItem("userData");
         }
       } catch (error) {
         console.log("Authentication check failed or not authenticated");
+        // Clear state on auth failure
+        setIsLoggedIn(false);
+        setUserData(null);
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userData");
       } finally {
         setLoading(false);
       }

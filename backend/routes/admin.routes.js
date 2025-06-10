@@ -1,17 +1,13 @@
-// Add these routes if they don't exist
-
 const express = require('express');
 const router = express.Router();
 const { userAuth } = require('../middleware/userAuth');
 
-// Import existing models (using your actual model names)
 const Product = require('../models/product.model');
 const Order = require('../models/order.model');
 const User = require('../models/User.model');
 const Category = require('../models/category.model');
 const Review = require('../models/review.model');
 
-// Import product controller functions
 const {
   getAdminProducts,
   getAdminStats,
@@ -22,7 +18,6 @@ const {
   bulkDeleteProducts
 } = require('../controllers/product.controller');
 
-// Import orders controller functions
 const {
   getAdminOrders,
   getAdminOrderStats,
@@ -31,7 +26,6 @@ const {
   deleteAdminOrder
 } = require('../controllers/orders.controller');
 
-// Apply auth middleware to all admin routes
 router.use(userAuth);
 
 // ========== PRODUCT MANAGEMENT ROUTES ==========
@@ -256,7 +250,7 @@ router.get('/reviews', async (req, res) => {
     // Add search filter
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      
+
       // Find users matching search terms
       const matchingUsers = await User.find({
         $or: [
@@ -265,15 +259,15 @@ router.get('/reviews', async (req, res) => {
           { email: searchRegex }
         ]
       }).select('_id');
-      
+
       // Find products matching search terms
       const matchingProducts = await Product.find({
         product_name: searchRegex
       }).select('_id');
-      
+
       const matchingUserIds = matchingUsers.map(u => u._id);
       const matchingProductIds = matchingProducts.map(p => p._id);
-      
+
       query.$or = [
         { comment: searchRegex },
         { user_id: { $in: matchingUserIds } },
@@ -332,30 +326,30 @@ router.get('/reviews', async (req, res) => {
 router.delete('/reviews/:id', async (req, res) => {
   try {
     const reviewId = req.params.id;
-    
+
     console.log('🗑️ Admin deleting review:', reviewId);
-    
+
     const review = await Review.findById(reviewId);
-    
+
     if (!review) {
       return res.status(404).json({
         success: false,
         message: 'Review not found'
       });
     }
-    
+
     const productId = review.product_id;
-    
+
     await Review.findByIdAndDelete(reviewId);
-    
+
     // Update product rating after deletion
     try {
       const reviews = await Review.find({ product_id: productId });
-      
+
       if (reviews.length > 0) {
         const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
         const avgRating = Math.round((totalRating / reviews.length) * 10) / 10;
-        
+
         await Product.findByIdAndUpdate(productId, {
           product_rating: avgRating,
           review_count: reviews.length
@@ -369,9 +363,9 @@ router.delete('/reviews/:id', async (req, res) => {
     } catch (updateError) {
       console.log('⚠️ Error updating product rating:', updateError.message);
     }
-    
+
     console.log(`✅ Deleted review ${reviewId}`);
-    
+
     res.json({
       success: true,
       message: 'Review deleted successfully'
@@ -460,7 +454,7 @@ router.get('/orders/stats', async (req, res) => {
     };
 
     // Calculate average order value
-    const completedOrders = allOrders.filter(o => 
+    const completedOrders = allOrders.filter(o =>
       o.status !== 'cancelled' && o.total_amount > 0
     );
     if (completedOrders.length > 0) {
@@ -623,18 +617,18 @@ router.get('/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
     console.log('👤 Getting user:', userId);
-    
+
     const user = await User.findById(userId).lean();
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-    
+
     console.log('✅ Found user:', user.email);
-    
+
     res.json({
       success: true,
       user
@@ -648,21 +642,5 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
-// Get all orders with pagination and filters (existing route)
-router.get('/orders', async (req, res) => {
-  // ... existing code ...
-});
-
-// Get order by ID (existing route - AFTER stats route)
-router.get('/orders/:id', async (req, res) => {
-  // ... existing code ...
-});
-
-// Get all reviews with pagination and filters (existing route)
-router.get('/reviews', async (req, res) => {
-  // ... existing code ...
-});
-
-// All other existing routes...
 
 module.exports = router;

@@ -14,34 +14,37 @@ function EmailVerify() {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState("");
-  
+
   // Simple ref to prevent duplicate sends
   const hasSentOTP = useRef(false);
 
   // Create refs for inputs
   const inputRefs = useRef(
-    Array(6).fill(0).map(() => React.createRef())
+    Array(6)
+      .fill(0)
+      .map(() => React.createRef())
   );
 
   // Simple function to send OTP
   const sendOTP = async () => {
     if (hasSentOTP.current) return;
-    
+
     hasSentOTP.current = true;
     setResendDisabled(true);
     setCountdown(60);
 
     try {
       const response = await axios.post(
-        `${backendUrl}/auth/send-otp`,
-        {},
+        `${backendUrl}/auth/sendVerificationEmail`,
         { withCredentials: true }
       );
 
       if (response.data.success) {
         toast.success("Verification code sent to your email");
       } else {
-        toast.error(response.data.message || "Failed to send verification code");
+        toast.error(
+          response.data.message || "Failed to send verification code"
+        );
         hasSentOTP.current = false;
         setResendDisabled(false);
         setCountdown(0);
@@ -55,28 +58,6 @@ function EmailVerify() {
     }
   };
 
-  // Get email and send OTP on page load
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const emailParam = params.get("email");
-
-    let emailToUse = "";
-    
-    if (emailParam) {
-      emailToUse = emailParam;
-    } else if (userData?.email) {
-      emailToUse = userData.email;
-    } else {
-      toast.error("No email provided for verification");
-      navigate("/login");
-      return;
-    }
-
-    setEmail(emailToUse);
-    
-    // Send OTP immediately
-    sendOTP();
-  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -140,7 +121,7 @@ function EmailVerify() {
 
     try {
       const response = await axios.post(
-        `${backendUrl}/auth/verify-account`,
+        `${backendUrl}/auth/verifyAccount`,
         { otp: otpValue },
         { withCredentials: true }
       );
@@ -156,8 +137,22 @@ function EmailVerify() {
         }
 
         setTimeout(() => {
-          navigate("/");
-        }, 1500);
+          if (userData.role === "admin") {
+            // Use environment variable for admin panel URL
+            const adminUrl =
+              import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
+
+            console.log("🔄 Redirecting admin to:", adminUrl);
+            toast.success(
+              `Welcome ${userData.first_name}! Redirecting to admin panel...`
+            );
+
+            // Redirect to admin panel with proper token
+            window.location.href = adminUrl;
+          } else {
+            navigate("/");
+          }
+        }, 1000);
       } else {
         toast.error(response.data.message || "Verification failed");
       }

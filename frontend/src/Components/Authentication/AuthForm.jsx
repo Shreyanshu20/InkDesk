@@ -150,9 +150,7 @@ function AuthForm() {
             // Redirect to email verification with auto-send OTP
             setTimeout(() => {
               navigate(
-                `/verify-email?email=${encodeURIComponent(
-                  formData.email
-                )}&autoSend=true`
+                `/verify-email`
               );
             }, 1500);
           } else {
@@ -163,6 +161,7 @@ function AuthForm() {
           const loginData = {
             email: formData.email,
             password: formData.password,
+            role: userType === "seller" ? "admin" : "user",
           };
 
           const response = await axios.post(
@@ -185,8 +184,14 @@ function AuthForm() {
               // For admin/seller, also store admin-specific token and data
               if (response.data.user.role === "admin") {
                 localStorage.setItem("adminToken", response.data.token);
-                localStorage.setItem("adminData", JSON.stringify(response.data.user));
-                console.log("🔑 Admin token and data stored for:", response.data.user.email);
+                localStorage.setItem(
+                  "adminData",
+                  JSON.stringify(response.data.user)
+                );
+                console.log(
+                  "🔑 Admin token and data stored for:",
+                  response.data.user.email
+                );
               }
             }
 
@@ -207,10 +212,13 @@ function AuthForm() {
             setTimeout(() => {
               if (response.data.user.role === "admin") {
                 // Use environment variable for admin panel URL
-                const adminUrl = import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
+                const adminUrl =
+                  import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
 
                 console.log("🔄 Redirecting admin to:", adminUrl);
-                toast.success(`Welcome ${response.data.user.first_name}! Redirecting to admin panel...`);
+                toast.success(
+                  `Welcome ${response.data.user.first_name}! Redirecting to admin panel...`
+                );
 
                 // Redirect to admin panel with proper token
                 window.location.href = adminUrl;

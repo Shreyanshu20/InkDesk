@@ -6,10 +6,18 @@ const { transporter } = require('../config/nodemailer');
 const { profileChangeEmailTemplate } = require('../config/profileEmailTemplates');
 const { authEmailTemplates } = require('../config/authEmailTemplates');
 
+// Generate OTP
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 module.exports.register = async (req, res) => {
+    console.log('📝 Register request received:', req.body);
+
     const { first_name, last_name, email, password, role } = req.body;
 
     if (!first_name || !last_name || !email || !password) {
+        console.log('❌ Missing required fields');
         return res.status(400).json({
             success: false,
             message: "Please fill all the fields"
@@ -17,114 +25,194 @@ module.exports.register = async (req, res) => {
     }
 
     try {
+        console.log('🔍 Checking if user exists:', email);
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
+            console.log('❌ User already exists:', email);
             return res.status(400).json({
                 success: false,
                 message: "User already exists"
             });
         }
 
+        console.log('🔒 Hashing password...');
         const hashPassword = await bcrypt.hash(password, 10);
 
+        console.log('👤 Creating new user...');
         const newUser = new User({
             first_name,
             last_name,
             email,
             password: hashPassword,
-            role
+            role: role,
+            isAccountVerified: false,
+            status: "active"
         });
 
-        await newUser.save();
+        const savedUser = await newUser.save();
+        console.log('✅ User created successfully:', savedUser._id);
 
-        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        //account creation email
+        try {
+            const welcomeEmail = authEmailTemplates.welcomeEmail(newUser);
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL || 'noreply@inkdesk.com',
+                to: newUser.email,
+                subject: welcomeEmail.subject,
+                html: welcomeEmail.html,
+                text: welcomeEmail.text
+            };
 
-        res.cookie('token', token, {
+            await transporter.sendMail(mailOptions);
+        } catch (err) {
+            console.log('Welcome email error:', err);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send welcome email"
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: savedUser._id, email: savedUser.email },
+            process.env.JWT_SECRET_USER,
+            { expiresIn: '7d' }
+        );
+
+        // Set cookie
+        res.cookie('userToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
         });
 
-        // Send welcome email with beautiful template
+        const otp = generateOTP();
+        const expiry = Date.now() + 10 * 60 * 1000;
+        newUser.verify_Otp = otp;
+        newUser.verify_Otp_expiry = expiry;
+        await newUser.save();
+
         try {
-            const welcomeTemplate = authEmailTemplates.welcomeEmail(newUser);
+            const otpTemplate = authEmailTemplates.verificationOtp(newUser, otp);
             const mailOptions = {
-                from: process.env.SENDER_EMAIL,
-                to: email,
-                subject: welcomeTemplate.subject,
-                html: welcomeTemplate.html,
-                text: welcomeTemplate.text
+                from: process.env.SENDER_EMAIL || 'noreply@inkdesk.com',
+                to: newUser.email,
+                subject: otpTemplate.subject,
+                html: otpTemplate.html,
+                text: otpTemplate.text
             };
 
             await transporter.sendMail(mailOptions);
         } catch (emailError) {
-            console.log('Welcome email error:', emailError);
-            // Don't fail registration if email fails
+            console.log('OTP email error:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send OTP email"
+            });
         }
 
-        return res.json({
+        res.status(201).json({
             success: true,
-            message: "User registered successfully",
+            message: "User registered successfully! Please check your email for verification.",
+            token: token,
+            user: {
+                id: savedUser._id,
+                first_name: savedUser.first_name,
+                last_name: savedUser.last_name,
+                email: savedUser.email,
+                role: savedUser.role,
+                isAccountVerified: savedUser.isAccountVerified,
+                phone: savedUser.phone,
+                status: savedUser.status
+            }
         });
 
     } catch (err) {
-        return res.status(500).json({
+        console.error('❌ Registration error:', err);
+        res.status(500).json({
             success: false,
-            message: err.message
+            message: "Internal server error",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
 
 module.exports.login = async (req, res) => {
-    const { email, password } = req.body;
+    console.log('🔐 Login request received:', { email: req.body.email });
+
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
+        console.log('❌ Missing email or password');
         return res.status(400).json({
             success: false,
-            message: "Please fill all the fields"
+            message: "Please provide email and password"
         });
     }
 
     try {
+        console.log('🔍 Looking for user:', email);
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(400).json({
+            console.log('❌ User not found:', email);
+            return res.status(401).json({
                 success: false,
-                message: "Invalid credentials"
+                message: "Invalid email or password"
             });
         }
 
+        if (role !== user.role) {
+            console.log('❌ User role mismatch:', user.role, 'expected:', role);
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Incorrect user role"
+            });
+        }
+
+        console.log('🔒 Comparing passwords...');
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(400).json({
+            console.log('❌ Password mismatch for:', email);
+            return res.status(401).json({
                 success: false,
-                message: "Invalid credentials"
+                message: "Invalid email or password"
+            });
+        }
+
+        console.log('🎫 Generating JWT token...');
+        if (!process.env.JWT_SECRET_USER) {
+            console.error('❌ JWT_SECRET_USER not defined in environment variables');
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error"
             });
         }
 
         const token = jwt.sign(
-            {
-                id: user._id,
-                role: user.role || 'user'
-            },
-            process.env.JWT_SECRET,
+            { userId: user._id, email: user.email },
+            process.env.JWT_SECRET_USER,
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, {
+        console.log('🍪 Setting cookie...');
+        res.cookie('userToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
         });
 
-        return res.json({
+        console.log('✅ Login successful for:', email);
+        res.json({
             success: true,
             message: "Login successful",
+            token: token,
             user: {
                 id: user._id,
                 first_name: user.first_name,
@@ -132,22 +220,28 @@ module.exports.login = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 isAccountVerified: user.isAccountVerified,
+                phone: user.phone,
+                status: user.status
             }
         });
+
     } catch (err) {
-        return res.status(500).json({
+        console.error('❌ Login error:', err);
+        res.status(500).json({
             success: false,
-            message: err.message
+            message: "Internal server error",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
 
 module.exports.logout = async (req, res) => {
     try {
-        res.clearCookie('token', {
+        res.clearCookie('userToken', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
         });
         return res.json({
             success: true,
@@ -180,17 +274,16 @@ module.exports.sendVerificationEmail = async (req, res) => {
             });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otp = generateOTP();
         const expiry = Date.now() + 10 * 60 * 1000;
         user.verify_Otp = otp;
         user.verify_Otp_expiry = expiry;
         await user.save();
 
-        // Send OTP with beautiful template
         try {
             const otpTemplate = authEmailTemplates.verificationOtp(user, otp);
             const mailOptions = {
-                from: process.env.SENDER_EMAIL,
+                from: process.env.SENDER_EMAIL || 'noreply@inkdesk.com',
                 to: user.email,
                 subject: otpTemplate.subject,
                 html: otpTemplate.html,
@@ -261,11 +354,10 @@ module.exports.verifyAccount = async (req, res) => {
 
         await user.save();
 
-        // Send verification success email with beautiful template
         try {
             const successTemplate = authEmailTemplates.verificationSuccess(user);
             const mailOptions = {
-                from: process.env.SENDER_EMAIL,
+                from: process.env.SENDER_EMAIL || 'noreply@inkdesk.com',
                 to: user.email,
                 subject: successTemplate.subject,
                 html: successTemplate.html,
@@ -275,7 +367,6 @@ module.exports.verifyAccount = async (req, res) => {
             await transporter.sendMail(mailOptions);
         } catch (emailError) {
             console.log('Verification success email error:', emailError);
-            // Don't fail verification if email fails
         }
 
         return res.json({
@@ -311,17 +402,16 @@ module.exports.sendResetPasswordEmail = async (req, res) => {
             });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otp = generateOTP();
         const expiry = Date.now() + 10 * 60 * 1000;
         user.forget_password_otp = otp;
         user.forget_password_otp_expiry = expiry;
         await user.save();
 
-        // Send forgot password email with beautiful template
         try {
             const forgotTemplate = authEmailTemplates.forgotPassword(user, otp);
             const mailOptions = {
-                from: process.env.SENDER_EMAIL,
+                from: process.env.EMAIL_FROM || 'noreply@inkdesk.com',
                 to: user.email,
                 subject: forgotTemplate.subject,
                 html: forgotTemplate.html,
@@ -392,7 +482,7 @@ module.exports.resetPassword = async (req, res) => {
         await user.save();
 
         const mailOptions = {
-            from: process.env.SENDER_EMAIL,
+            from: process.env.EMAIL_FROM || 'noreply@inkdesk.com',
             to: user.email,
             subject: 'Password Reset Successful',
             text: `Hello ${user.first_name},\n\nYour password has been reset successfully.\n\nBest regards,\nInkDesk Team`
@@ -415,34 +505,89 @@ module.exports.resetPassword = async (req, res) => {
 
 module.exports.isAuth = async (req, res) => {
     try {
-        const userId = req.userId;
+        console.log('🔐 Auth check request received');
+        console.log('🍪 Cookies:', req.cookies);
+        console.log('🎫 Authorization header:', req.headers.authorization);
+
+        // Check for token in cookies first, then Authorization header
+        let token = req.cookies.userToken || req.cookies.token;
+
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+                console.log('🎫 Found token in Authorization header');
+            }
+        }
+
+        if (!token) {
+            console.log('❌ No token found in cookies or headers');
+            return res.status(401).json({
+                success: false,
+                message: "No authentication token provided"
+            });
+        }
+
+        console.log('🎫 Verifying token...');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_USER);
+        console.log('✅ Token verified, user ID:', decoded.userId || decoded.id);
+
+        const userId = decoded.userId || decoded.id;
         const user = await User.findById(userId).select('-password -verify_Otp -forget_password_otp');
 
         if (!user) {
+            console.log('❌ User not found for ID:', userId);
             return res.status(404).json({
                 success: false,
                 message: "User not found"
             });
         }
 
-        return res.json({
+        // Check if this is an admin check request
+        const isAdminCheck = req.path === '/is-admin';
+        if (isAdminCheck && user.role !== 'admin') {
+            console.log('❌ User is not admin, role:', user.role);
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Admin privileges required."
+            });
+        }
+
+        console.log('✅ User authenticated:', user.email);
+        res.json({
             success: true,
             user: {
                 id: user._id,
                 first_name: user.first_name,
                 last_name: user.last_name,
                 email: user.email,
-                phone: user.phone,
                 role: user.role,
                 isAccountVerified: user.isAccountVerified,
+                phone: user.phone,
                 status: user.status,
                 createdAt: user.createdAt
             }
         });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Auth check error:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid token"
+            });
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: "Token expired"
+            });
+        }
+
+        res.status(500).json({
             success: false,
-            message: "Authentication check failed"
+            message: "Error checking authentication"
         });
     }
 };
@@ -514,18 +659,10 @@ module.exports.updateUserProfile = async (req, res) => {
     const { first_name, last_name, phone } = req.body;
     const userId = req.userId;
 
-    if (!first_name || !last_name || !phone) {
+    if (!first_name || !last_name) {
         return res.status(400).json({
             success: false,
-            message: "Please fill all required fields (first name, last name, phone)"
-        });
-    }
-
-    const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
-    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-        return res.status(400).json({
-            success: false,
-            message: "Please enter a valid phone number"
+            message: "First name and last name are required"
         });
     }
 
@@ -541,7 +678,7 @@ module.exports.updateUserProfile = async (req, res) => {
 
         user.first_name = first_name.trim();
         user.last_name = last_name.trim();
-        user.phone = phone.trim();
+        user.phone = phone ? phone.trim() : "";
 
         await user.save();
 
@@ -553,7 +690,7 @@ module.exports.updateUserProfile = async (req, res) => {
             });
 
             const mailOptions = {
-                from: process.env.SENDER_EMAIL,
+                from: process.env.EMAIL_FROM || 'noreply@inkdesk.com',
                 to: user.email,
                 subject: emailTemplate.subject,
                 html: emailTemplate.html,
@@ -598,31 +735,6 @@ module.exports.updateUserAddress = async (req, res) => {
             });
         }
 
-        if (country === "India") {
-            const indiaPostalRegex = /^[1-9][0-9]{5}$/;
-            if (!indiaPostalRegex.test(postal_code)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid postal code for India. Please enter a 6-digit postal code."
-                });
-            }
-        } else if (country === "United States") {
-            const usPostalRegex = /^\d{5}(-\d{4})?$/;
-            if (!usPostalRegex.test(postal_code)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid postal code for United States. Use format: 12345 or 12345-6789"
-                });
-            }
-        } else {
-            if (postal_code.length < 3 || postal_code.length > 10) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Postal code must be between 3 and 10 characters"
-                });
-            }
-        }
-
         const user = await User.findById(userId).populate('address_details');
         if (!user) {
             return res.status(404).json({
@@ -648,56 +760,18 @@ module.exports.updateUserAddress = async (req, res) => {
 
         if (user.address_details && user.address_details.length > 0) {
             const existingAddress = user.address_details[0];
-
             if (existingAddress && existingAddress._id) {
-                const updatedAddress = await Address.findByIdAndUpdate(
+                savedAddress = await Address.findByIdAndUpdate(
                     existingAddress._id,
                     addressData,
                     { new: true, runValidators: true }
                 );
-
-                if (updatedAddress) {
-                    savedAddress = updatedAddress;
-                } else {
-                    const newAddress = new Address(addressData);
-                    savedAddress = await newAddress.save();
-                    user.address_details = [savedAddress._id];
-                    await user.save();
-                }
-            } else {
-                const newAddress = new Address(addressData);
-                savedAddress = await newAddress.save();
-                user.address_details = [savedAddress._id];
-                await user.save();
             }
         } else {
             const newAddress = new Address(addressData);
             savedAddress = await newAddress.save();
             user.address_details = [savedAddress._id];
             await user.save();
-        }
-
-        try {
-            const emailTemplate = profileChangeEmailTemplate(user, 'address', {
-                address_line1: savedAddress.address_line_1,
-                address_line2: savedAddress.address_line_2,
-                city: savedAddress.city,
-                state: savedAddress.state,
-                postal_code: savedAddress.postal_code,
-                country: savedAddress.country
-            });
-
-            const mailOptions = {
-                from: process.env.SENDER_EMAIL,
-                to: user.email,
-                subject: emailTemplate.subject,
-                html: emailTemplate.html,
-                text: emailTemplate.text
-            };
-
-            await transporter.sendMail(mailOptions);
-        } catch (emailError) {
-            // Email error handling without exposing to user
         }
 
         return res.status(200).json({
@@ -749,26 +823,9 @@ module.exports.changePassword = async (req, res) => {
             });
         }
 
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
-
-        try {
-            const emailTemplate = profileChangeEmailTemplate(user, 'password');
-
-            const mailOptions = {
-                from: process.env.SENDER_EMAIL,
-                to: user.email,
-                subject: emailTemplate.subject,
-                html: emailTemplate.html,
-                text: emailTemplate.text
-            };
-
-            await transporter.sendMail(mailOptions);
-        } catch (emailError) {
-            // Email error handling without exposing to user
-        }
 
         return res.status(200).json({
             success: true,
@@ -812,22 +869,6 @@ module.exports.deleteAccount = async (req, res) => {
         }
 
         try {
-            const emailTemplate = profileChangeEmailTemplate(user, 'account_deleted');
-
-            const mailOptions = {
-                from: process.env.SENDER_EMAIL,
-                to: user.email,
-                subject: emailTemplate.subject,
-                html: emailTemplate.html,
-                text: emailTemplate.text
-            };
-
-            await transporter.sendMail(mailOptions);
-        } catch (emailError) {
-            // Email error handling without exposing to user
-        }
-
-        try {
             if (user.address_details && user.address_details.length > 0) {
                 await Address.deleteMany({ _id: { $in: user.address_details } });
             }
@@ -837,10 +878,10 @@ module.exports.deleteAccount = async (req, res) => {
 
         await User.findByIdAndDelete(userId);
 
-        res.clearCookie('token', {
+        res.clearCookie('userToken', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
         });
 
         return res.status(200).json({
