@@ -83,10 +83,10 @@ module.exports.register = async (req, res) => {
         // Set cookie
         res.cookie('userToken', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Always true for production
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            sameSite: 'none', // Required for cross-domain cookies
+            domain: undefined // Let browser handle domain automatically
         });
 
         const otp = generateOTP();
@@ -202,10 +202,10 @@ module.exports.login = async (req, res) => {
         console.log('🍪 Setting cookie...');
         res.cookie('userToken', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Always true for production
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            sameSite: 'none', // Required for cross-domain cookies
+            domain: undefined // Let browser handle domain automatically
         });
 
         console.log('✅ Login successful for:', email);
@@ -239,9 +239,9 @@ module.exports.logout = async (req, res) => {
     try {
         res.clearCookie('userToken', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            secure: true, // Always true for production
+            sameSite: 'none', // Required for cross-domain cookies
+            domain: undefined // Let browser handle domain automatically
         });
         return res.json({
             success: true,
@@ -880,8 +880,9 @@ module.exports.deleteAccount = async (req, res) => {
 
         res.clearCookie('userToken', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+            secure: true, // Always true for production
+            sameSite: 'none', // Required for cross-domain cookies
+            domain: undefined // Let browser handle domain automatically
         });
 
         return res.status(200).json({
