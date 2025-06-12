@@ -12,9 +12,9 @@ const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
     'http://localhost:5173',
-    'http://localhost:5174',  // Remove /admin
+    'http://localhost:5174/admin', 
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com',  // Remove /admin
+    'https://inkdesk-admin.onrender.com/admin',
     'https://inkdesk-backend.onrender.com'
   ];
 
