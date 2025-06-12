@@ -7,14 +7,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 
-// CORS Configuration - Updated to handle production domains
+// CORS Configuration - Fixed URLs
 const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
     'http://localhost:5173',
-    'http://localhost:5174/admin',
+    'http://localhost:5174',  // Remove /admin
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com/admin',
+    'https://inkdesk-admin.onrender.com',  // Remove /admin
     'https://inkdesk-backend.onrender.com'
   ];
 
@@ -34,6 +34,7 @@ app.use(cors({
     const allowedOrigins = getAllowedOrigins();
 
     console.log('🔍 Request from origin:', origin || 'no origin');
+    console.log('📋 Allowed origins:', allowedOrigins);
 
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) {
@@ -41,53 +42,29 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       console.log('✅ CORS allowed for origin:', origin);
       callback(null, true);
     } else {
       console.log('❌ CORS blocked origin:', origin);
-      console.log('📋 Allowed origins:', allowedOrigins);
+      console.log('📋 Expected one of:', allowedOrigins);
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
     'X-Requested-With',
     'Accept',
-    'Origin',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
+    'Origin'
   ],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 // Handle preflight requests explicitly
 app.options('*', cors());
-
-// Additional CORS headers for browsers that need them
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = getAllowedOrigins();
-
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('🔧 Handling preflight request for:', req.path);
-    return res.status(200).end();
-  }
-
-  next();
-});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
