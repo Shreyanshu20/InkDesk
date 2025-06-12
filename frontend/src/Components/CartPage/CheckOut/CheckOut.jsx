@@ -116,7 +116,10 @@ const CheckOut = () => {
     quantity: item.quantity,
     totalPrice: (item.product_id?.product_price || 0) * item.quantity,
     image: item.product_id?.product_images?.[0]
-      ? item.product_id.product_images[0].startsWith("http")
+      ? (typeof item.product_id.product_images[0] === 'string' 
+        ? item.product_id.product_images[0] 
+        : item.product_id.product_images[0]?.url || ''
+      ).startsWith('http')
         ? item.product_id.product_images[0]
         : `${backendUrl}${item.product_id.product_images[0]}`
       : "https://placehold.co/120x160?text=No+Image",

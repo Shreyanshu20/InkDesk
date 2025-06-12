@@ -1,61 +1,37 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import axios from "axios";
-import { AppContent } from "../../../Context/AppContent.jsx";
-import { useWishlist } from "../../../Context/WishlistContext.jsx"; // Import WishlistContext
+import { AppContent } from "../../../Context/AppContent";
+import { useCart } from "../../../Context/CartContext"; 
+import { useWishlist } from "../../../Context/WishlistContext";
 import StarRating from "../../Common/StarRating";
 import PriceDisplay from "../../Common/PriceDisplay";
 import Button from "../../Common/Button";
 
 const Products = ({ products, formatPrice }) => {
-  const { backendUrl, isLoggedIn } = useContext(AppContent);
-
-  // Use WishlistContext instead of local state
+  const { isLoggedIn } = useContext(AppContent);
+  const { addToCart } = useCart(); 
   const {
+    isInWishlist,
     addToWishlist,
     removeFromWishlist,
-    isInWishlist,
     loading: wishlistLoading,
   } = useWishlist();
 
-  const addToCart = async (e, productId) => {
+  // Memoize the handleAddToCart to prevent unnecessary re-renders
+  const handleAddToCart = useMemo(() => async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!isLoggedIn) {
-      toast.info("Please login to add items to cart");
+      toast.error("Please login to add items to cart");
       return;
     }
 
-    try {
-      const response = await axios.post(
-        `${backendUrl}/cart/add`,
-        {
-          product_id: productId,
-          quantity: 1,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+    // Use CartContext addToCart which handles UI updates
+    await addToCart(productId, 1);
+  }, [isLoggedIn, addToCart]);
 
-      if (response.data.success) {
-        toast.success("Product added to cart successfully!");
-      } else {
-        toast.error(response.data.message || "Failed to add product to cart");
-      }
-    } catch (error) {
-      console.error("Add to cart error:", error);
-      if (error.response?.status === 401) {
-        toast.error("Please login to add items to cart");
-      } else {
-        toast.error("Failed to add product to cart. Please try again.");
-      }
-    }
-  };
-
-  // Simplified toggleWishlist using WishlistContext
   const toggleWishlist = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -75,10 +51,10 @@ const Products = ({ products, formatPrice }) => {
       }
     } catch (error) {
       console.error("Wishlist toggle error:", error);
-      // WishlistContext handles toast messages, so no need to add them here
     }
   };
 
+  // Fixed discount calculation - use the same logic as your working version
   const calculateDiscount = (price, discountPercentage) => {
     if (!discountPercentage) return 0;
     return Math.round(discountPercentage);
@@ -102,17 +78,19 @@ const Products = ({ products, formatPrice }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map((product) => {
+        // FIXED: Use product.product_discount (like in your working version) 
+        // instead of product.discount_percentage
         const discount = calculateDiscount(
           product.product_price,
-          product.product_discount
+          product.product_discount // CHANGED: back to product_discount
         );
         const inStock = product.product_stock > 0;
+        // FIXED: Use the same discount calculation as your working version
         const discountedPrice =
           discount > 0
             ? product.product_price - product.product_price * (discount / 100)
             : product.product_price;
 
-        // Use WishlistContext to check if product is in wishlist
         const productInWishlist = isInWishlist(product._id);
 
         return (
@@ -122,10 +100,17 @@ const Products = ({ products, formatPrice }) => {
                 {/* Product Image - Fixed Height */}
                 <div className="relative aspect-square bg-gray-50 flex-shrink-0">
                   <img
-                    src={product.product_image || "/api/placeholder/300/300"}
+                    src={
+                      product.product_image ||
+                      product.product_images?.[0] ||
+                      "https://placehold.co/300x400?text=No+Image"
+                    }
                     alt={product.product_name}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
+                    onError={(e) => {
+                      e.target.src = "https://placehold.co/300x400?text=No+Image";
+                    }}
                   />
 
                   {/* Discount Badge */}
@@ -216,7 +201,7 @@ const Products = ({ products, formatPrice }) => {
                 className="absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
                 variant="primary"
                 size="icon"
-                onClick={(e) => addToCart(e, product._id)}
+                onClick={(e) => handleAddToCart(e, product._id)} // CHANGED: use handleAddToCart
                 aria-label="Add to cart"
               >
                 <i className="fas fa-shopping-cart text-sm"></i>

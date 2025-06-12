@@ -19,8 +19,8 @@ function NavbarTop() {
 
   const { theme, themeToggle } = useTheme();
   const { isLoggedIn, userData, logout, backendUrl } = useContext(AppContent);
-  const { getCartItemCount } = useCart(); // ADD ONLY getCartItemCount
   const { getWishlistItemCount } = useWishlist(); // ADD ONLY THIS LINE
+  const { getCartItemCount } = useCart();
   const navigate = useNavigate();
   const { processVoiceCommand } = useVoiceSearch();
 

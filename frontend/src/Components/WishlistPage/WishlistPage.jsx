@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { AppContent } from "../../Context/AppContent";
+import { useCart } from "../../Context/CartContext"; // ADD THIS
 import WishlistItem from "./WishlistItem";
 import WishlistEmpty from "./WishlistEmpty";
 import WishlistSkeleton from "./WishlistSkeleton";
@@ -10,6 +11,7 @@ import PageHeader from "../Common/PageHeader";
 
 function WishlistPage() {
   const { backendUrl, isLoggedIn, userData } = useContext(AppContent);
+  const { addToCart } = useCart(); // ADD THIS - use CartContext
   const navigate = useNavigate();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,40 +102,16 @@ function WishlistPage() {
     }
   };
 
-  const addToCart = async (product, quantity = 1) => {
+  // REPLACE the existing addToCart function with this:
+  const handleAddToCart = async (product, quantity = 1) => {
     if (!isLoggedIn) {
       toast.info("Please login to add items to cart");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${backendUrl}/cart/add`,
-        {
-          product_id: product.id,
-          quantity: quantity,
-        },
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (response.data.success) {
-        toast.success("Product added to cart successfully!");
-        return true;
-      } else {
-        toast.error(response.data.message || "Failed to add product to cart");
-        return false;
-      }
-    } catch (error) {
-      console.error("Add to cart error:", error);
-      if (error.response?.status === 401) {
-        toast.error("Please login to add items to cart");
-      } else {
-        toast.error("Failed to add product to cart. Please try again.");
-      }
       return false;
     }
+
+    // Use CartContext addToCart which handles UI updates
+    const result = await addToCart(product.id, quantity);
+    return result; // CartContext already shows success/error toasts and updates cart count
   };
 
   // ADD BUY NOW HANDLER
@@ -202,6 +180,7 @@ function WishlistPage() {
     }
   };
 
+  // UPDATE moveAllToCart function to use CartContext:
   const moveAllToCart = async () => {
     if (!isLoggedIn) {
       toast.info("Please login to add items to cart");
@@ -223,7 +202,7 @@ function WishlistPage() {
     try {
       let addedCount = 0;
       const addPromises = inStockItems.map(async (item) => {
-        const success = await addToCart(item, 1);
+        const success = await handleAddToCart(item, 1); // Use handleAddToCart instead
         if (success) {
           addedCount++;
           // Remove from wishlist after successful cart addition
@@ -366,7 +345,7 @@ function WishlistPage() {
                     key={item.id} 
                     item={item} 
                     onRemove={removeFromWishlist}
-                    onAddToCart={addToCart}
+                    onAddToCart={handleAddToCart} // CHANGED: use handleAddToCart
                     onBuyNow={handleBuyNow}
                     formatPrice={formatPrice}
                   />
