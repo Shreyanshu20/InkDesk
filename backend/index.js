@@ -7,20 +7,28 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 
-// CORS Configuration - Fixed URLs
+// CORS Configuration - Allow BOTH base domain and /admin path
 const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
     'http://localhost:5173',
-    'http://localhost:5174/admin', 
+    'http://localhost:5174',  // Base localhost admin
+    'http://localhost:5174/admin',  // Admin path
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com/admin',
+    'https://inkdesk-admin.onrender.com',  // Base admin domain (THIS IS WHAT WE NEED)
+    'https://inkdesk-admin.onrender.com/admin',  // Admin path (keep this for redirects)
     'https://inkdesk-backend.onrender.com'
   ];
 
   // Add environment URLs if they exist
   if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
-  if (process.env.ADMIN_URL) origins.push(process.env.ADMIN_URL);
+  if (process.env.ADMIN_URL) {
+    origins.push(process.env.ADMIN_URL);
+    // Also add the base domain if ADMIN_URL contains /admin
+    if (process.env.ADMIN_URL.includes('/admin')) {
+      origins.push(process.env.ADMIN_URL.replace('/admin', ''));
+    }
+  }
 
   return [...new Set(origins)]; // Remove duplicates
 };
