@@ -48,16 +48,6 @@ const ProductsPage = () => {
       console.log("🔍 Fetching products...");
       console.log("Backend URL:", backendUrl);
 
-      // Test if backend is reachable first
-      try {
-        await axios.get(`${backendUrl}/health`);
-        console.log("✅ Backend health check passed");
-      } catch (healthError) {
-        console.error("❌ Backend health check failed:", healthError);
-        toast.error("Backend server is not running. Please start the server.");
-        return;
-      }
-
       const url = `${backendUrl}/products`;
       const params = new URLSearchParams();
 
