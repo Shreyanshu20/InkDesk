@@ -10,11 +10,12 @@ const app = express();
 // CORS Configuration - Updated to handle production domains
 const getAllowedOrigins = () => {
   const origins = [
-    'http://localhost:3000',
+    'http://localhost:5000',
     'http://localhost:5173',
-    'http://localhost:5174',
+    'http://localhost:5174/admin',
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com'
+    'https://inkdesk-admin.onrender.com/admin',
+    'https://inkdesk-backend.onrender.com'
   ];
 
   // Add environment URLs if they exist
@@ -31,15 +32,15 @@ console.log('📋 Allowed origins:', getAllowedOrigins());
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = getAllowedOrigins();
-    
+
     console.log('🔍 Request from origin:', origin || 'no origin');
-    
+
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) {
       console.log('✅ Allowing request with no origin');
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log('✅ CORS allowed for origin:', origin);
       callback(null, true);
@@ -70,21 +71,21 @@ app.options('*', cors());
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = getAllowedOrigins();
-  
+
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
-  
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     console.log('🔧 Handling preflight request for:', req.path);
     return res.status(200).end();
   }
-  
+
   next();
 });
 
@@ -98,19 +99,7 @@ mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Health check route with CORS info
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'InkDesk API is running!',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    cors: {
-      allowedOrigins: getAllowedOrigins(),
-      requestOrigin: req.headers.origin || 'no origin'
-    }
-  });
-});
+app.use('/health', require('./routes/health.routes'));
 
 // Test CORS route
 app.get('/test-cors', (req, res) => {
@@ -142,7 +131,7 @@ try {
   const authRoutes = require('./routes/auth.routes.js');
   app.use('/auth', authRoutes);
   console.log('✅ Auth routes loaded at /auth');
-  
+
   // Log available auth routes for debugging
   console.log('📋 Available auth routes:');
   console.log('  POST /auth/register');

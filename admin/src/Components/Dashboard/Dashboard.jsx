@@ -33,65 +33,69 @@ function Dashboard() {
   // API base URL - Vite uses import.meta.env instead of process.env
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Fetch dashboard statistics
+  // Enhanced fetch with better error handling
+  const fetchWithErrorHandling = async (url, options = {}) => {
+    try {
+      console.log(`🌐 Fetching: ${url}`);
+      
+      const response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+
+      console.log(`📡 Response status: ${response.status} for ${url}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Success fetching ${url}`);
+      return data;
+    } catch (error) {
+      console.error(`❌ Network error for ${url}:`, error);
+      throw error;
+    }
+  };
+
+  // Update fetchDashboardStats with better error handling
   const fetchDashboardStats = async () => {
     try {
-      // Remove token-based auth, rely on cookies
-      const headers = {
-        "Content-Type": "application/json",
-      };
+      console.log(`🔍 Backend URL: ${API_BASE_URL}`);
+      
+      // Test backend connectivity first
+      const healthCheck = await fetchWithErrorHandling(`${API_BASE_URL}/health`);
+      console.log('🏥 Backend health check:', healthCheck);
 
-      // Fetch all statistics in parallel with cookies
-      const [usersStats, ordersStats, productsStats, reviewsStats] =
-        await Promise.all([
-          fetch(`${API_BASE_URL}/admin/users/stats`, { 
-            headers,
-            credentials: 'include' // Use cookies
-          }),
-          fetch(`${API_BASE_URL}/admin/orders/stats`, { 
-            headers,
-            credentials: 'include' // Use cookies
-          }),
-          fetch(`${API_BASE_URL}/admin/products/stats`, { 
-            headers,
-            credentials: 'include' // Use cookies
-          }),
-          fetch(`${API_BASE_URL}/admin/reviews/stats`, { 
-            headers,
-            credentials: 'include' // Use cookies
-          }),
-        ]);
-
-      const [usersData, ordersData, productsData, reviewsData] =
-        await Promise.all([
-          usersStats.json(),
-          ordersStats.json(),
-          productsStats.json(),
-          reviewsStats.json(),
-        ]);
+      // Fetch all statistics in parallel
+      const [usersStats, ordersStats, productsStats, reviewsStats] = await Promise.allSettled([
+        fetchWithErrorHandling(`${API_BASE_URL}/admin/users/stats`),
+        fetchWithErrorHandling(`${API_BASE_URL}/admin/orders/stats`),
+        fetchWithErrorHandling(`${API_BASE_URL}/admin/products/stats`),
+        fetchWithErrorHandling(`${API_BASE_URL}/admin/reviews/stats`),
+      ]);
 
       return {
-        users: usersData.success
-          ? usersData.stats
+        users: usersStats.status === 'fulfilled' && usersStats.value.success
+          ? usersStats.value.stats
           : { total: 0, recentUsers: 0 },
-        orders: ordersData.success
-          ? ordersData.stats
-          : {
-              total: 0,
-              totalRevenue: 0,
-              averageOrderValue: 0,
-              recentOrders: 0,
-            },
-        products: productsData.success
-          ? productsData.stats
+        orders: ordersStats.status === 'fulfilled' && ordersStats.value.success
+          ? ordersStats.value.stats
+          : { total: 0, totalRevenue: 0, averageOrderValue: 0, recentOrders: 0 },
+        products: productsStats.status === 'fulfilled' && productsStats.value.success
+          ? productsStats.value.stats
           : { totalProducts: 0, activeProducts: 0, outOfStockProducts: 0 },
-        reviews: reviewsData.success
-          ? reviewsData.stats
+        reviews: reviewsStats.status === 'fulfilled' && reviewsStats.value.success
+          ? reviewsStats.value.stats
           : { totalReviews: 0, averageRating: 0, recentReviews: 0 },
       };
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-      throw error;
+      console.error("❌ Error fetching dashboard stats:", error);
+      throw new Error(`Backend connection failed: ${error.message}`);
     }
   };
 
@@ -254,200 +258,61 @@ function Dashboard() {
     setError(null);
 
     try {
-      // For development: use mock data if API fails
-      const isDevelopment = import.meta.env.DEV;
+      console.log('🚀 Loading dashboard data...');
+      console.log('🔧 Environment:', {
+        isDev: import.meta.env.DEV,
+        backendUrl: API_BASE_URL,
+        mode: import.meta.env.MODE
+      });
 
-      if (isDevelopment) {
-        // Mock data for development - Updated with realistic INR values
-        const mockStats = {
-          users: { total: 156, recentUsers: 12 },
-          orders: {
-            total: 89,
-            totalRevenue: 720000, // ₹7.2 Lakhs
-            averageOrderValue: 8090, // ₹8,090 average
-            recentOrders: 8,
-          },
-          products: {
-            totalProducts: 450,
-            activeProducts: 425,
-            outOfStockProducts: 25,
-          },
-          reviews: { totalReviews: 234, averageRating: 4.3, recentReviews: 15 },
-        };
+      // Always try to fetch real data first
+      const stats = await fetchDashboardStats();
+      const recentOrders = await fetchRecentOrders();
+      const lowStockProducts = await fetchLowStockProducts();
 
-        const mockRecentOrders = [
-          {
-            id: "ORD001",
-            customer: "Rajesh Kumar",
-            date: "Dec 15, 10:30 AM",
-            amount: "₹12,850",
-            status: "Processing",
-          },
-          {
-            id: "ORD002",
-            customer: "Priya Sharma",
-            date: "Dec 15, 09:45 AM",
-            amount: "₹6,650",
-            status: "Shipped",
-          },
-          {
-            id: "ORD003",
-            customer: "Amit Patel",
-            date: "Dec 14, 04:20 PM",
-            amount: "₹15,200",
-            status: "Delivered",
-          },
-          {
-            id: "ORD004",
-            customer: "Sneha Gupta",
-            date: "Dec 14, 02:15 PM",
-            amount: "₹4,890",
-            status: "Pending",
-          },
-          {
-            id: "ORD005",
-            customer: "Vikram Singh",
-            date: "Dec 14, 11:30 AM",
-            amount: "₹9,150",
-            status: "Processing",
-          },
-        ];
+      // Fetch more orders for analytics
+      const allOrdersData = await fetchWithErrorHandling(
+        `${API_BASE_URL}/admin/orders?page=1&limit=100`
+      );
+      const allOrders = allOrdersData.success ? allOrdersData.orders : [];
 
-        const mockLowStockProducts = [
-          { id: "1", name: "Apsara Non-Dust Eraser", stock: 8, threshold: 10 },
-          {
-            id: "2",
-            name: "Pilot Frixion Light Erasable Highlighter",
-            stock: 6,
-            threshold: 10,
-          },
-          {
-            id: "3",
-            name: "Luxor Hi-Liter Fluorescent Markers",
-            stock: 9,
-            threshold: 10,
-          },
-          {
-            id: "4",
-            name: "Navneet Youva Spiral Notebook A4",
-            stock: 4,
-            threshold: 10,
-          },
-          {
-            id: "5",
-            name: "Staedtler Mars Plastic Eraser",
-            stock: 0,
-            threshold: 10,
-          },
-        ];
+      // Generate derived data
+      const topProducts = generateTopProducts(allOrders);
+      const recentActivity = generateRecentActivity(recentOrders, stats);
 
-        const mockTopProducts = [
-          {
-            id: 1,
-            name: "Faber-Castell 2B Pencils Pack",
-            sales: 45,
-            revenue: 18000, // ₹18,000
-          },
-          {
-            id: 2,
-            name: "Classmate 6 Subject Notebook Pack",
-            sales: 38,
-            revenue: 22800, // ₹22,800
-          },
-          {
-            id: 3,
-            name: "Parker Jotter Ballpoint Pen",
-            sales: 32,
-            revenue: 32000, // ₹32,000
-          },
-          {
-            id: 4,
-            name: "Pilot V5 Hi-Tecpoint Pen Pack",
-            sales: 28,
-            revenue: 16800, // ₹16,800
-          },
-          {
-            id: 5,
-            name: "Moleskine Classic Hardcover Notebook",
-            sales: 15,
-            revenue: 26250, // ₹26,250
-          },
-        ];
+      setDashboardData({
+        stats,
+        recentOrders,
+        lowStockProducts,
+        topProducts,
+        recentActivity,
+      });
 
-        const mockRecentActivity = [
-          {
-            id: "1",
-            type: "order",
-            message: "New order ORD001 received from Rajesh Kumar - ₹12,850",
-            time: "Dec 15, 10:30 AM",
-          },
-          {
-            id: "2",
-            type: "user",
-            message: "12 new users registered this week",
-            time: "This week",
-          },
-          {
-            id: "3",
-            type: "product",
-            message: "25 products are out of stock - potential revenue loss ₹45,000",
-            time: "Current",
-          },
-          {
-            id: "4",
-            type: "review",
-            message: "15 new reviews received this week - Avg rating: 4.3★",
-            time: "This week",
-          },
-          {
-            id: "5",
-            type: "order",
-            message: "Order ORD003 delivered successfully - ₹15,200",
-            time: "Dec 14, 04:20 PM",
-          },
-        ];
+      console.log('✅ Dashboard data loaded successfully');
 
-        setDashboardData({
-          stats: mockStats,
-          recentOrders: mockRecentOrders,
-          lowStockProducts: mockLowStockProducts,
-          topProducts: mockTopProducts,
-          recentActivity: mockRecentActivity,
-        });
-      } else {
-        // Production: fetch real data
-        const stats = await fetchDashboardStats();
-        const recentOrders = await fetchRecentOrders();
-        const lowStockProducts = await fetchLowStockProducts();
-
-        // Fetch more orders for analytics (optional)
-        const allOrdersResponse = await fetch(
-          `${API_BASE_URL}/admin/orders?page=1&limit=100`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: 'include' // Use cookies
-          }
-        );
-        const allOrdersData = await allOrdersResponse.json();
-        const allOrders = allOrdersData.success ? allOrdersData.orders : [];
-
-        // Generate derived data
-        const topProducts = generateTopProducts(allOrders);
-        const recentActivity = generateRecentActivity(recentOrders, stats);
-
-        setDashboardData({
-          stats,
-          recentOrders,
-          lowStockProducts,
-          topProducts,
-          recentActivity,
-        });
-      }
     } catch (error) {
-      console.error("Error loading dashboard data:", error);
-      setError("Failed to load dashboard data. Please try again.");
+      console.error("❌ Error loading dashboard data:", error);
+      
+      // Determine error type
+      let errorMessage = "Failed to load dashboard data.";
+      
+      if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        errorMessage = "Cannot connect to server. Please check your internet connection.";
+      } else if (error.message.includes('CORS')) {
+        errorMessage = "Server configuration error. Please contact support.";
+      } else if (error.message.includes('401') || error.message.includes('403')) {
+        errorMessage = "Authentication expired. Please log in again.";
+      }
+      
+      setError(errorMessage);
+      
+      // Redirect to login if auth error
+      if (error.message.includes('401') || error.message.includes('403')) {
+        setTimeout(() => {
+          const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+          window.location.href = `${frontendUrl}/login?type=admin`;
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
