@@ -12,9 +12,9 @@ const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
     'http://localhost:5173',
-    'http://localhost:5174/admin', 
+    'http://localhost:5174/admin',  // Admin base URL
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com/admin',
+    'https://inkdesk-admin.onrender.com/admin',  // Admin base URL (this is what we need)
     'https://inkdesk-backend.onrender.com'
   ];
 
@@ -29,6 +29,7 @@ const getAllowedOrigins = () => {
 console.log('🌐 Configuring CORS...');
 console.log('📋 Allowed origins:', getAllowedOrigins());
 
+// Simplified CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = getAllowedOrigins();
@@ -76,7 +77,8 @@ mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-app.use('/health', require('./routes/health.routes'));
+// Remove the health check route - it's causing CORS issues
+// app.use('/health', require('./routes/health.routes'));
 
 // Test CORS route
 app.get('/test-cors', (req, res) => {

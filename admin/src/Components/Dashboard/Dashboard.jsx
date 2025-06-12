@@ -62,14 +62,14 @@ function Dashboard() {
     }
   };
 
-  // Update fetchDashboardStats with better error handling
+  // Update fetchDashboardStats - REMOVE health check
   const fetchDashboardStats = async () => {
     try {
       console.log(`🔍 Backend URL: ${API_BASE_URL}`);
       
-      // Test backend connectivity first
-      const healthCheck = await fetchWithErrorHandling(`${API_BASE_URL}/health`);
-      console.log('🏥 Backend health check:', healthCheck);
+      // Remove this health check - it's causing CORS issues
+      // const healthCheck = await fetchWithErrorHandling(`${API_BASE_URL}/health`);
+      // console.log('🏥 Backend health check:', healthCheck);
 
       // Fetch all statistics in parallel
       const [usersStats, ordersStats, productsStats, reviewsStats] = await Promise.allSettled([
