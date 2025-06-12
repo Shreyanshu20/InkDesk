@@ -14,6 +14,7 @@ const getAllowedOrigins = () => {
     'http://localhost:5173',
     'http://localhost:5174/admin',  // Admin base URL
     'https://inkdesk-frontend.onrender.com',
+    'https://inkdesk-admin.onrender.com',
     'https://inkdesk-admin.onrender.com/admin',  // Admin base URL (this is what we need)
     'https://inkdesk-backend.onrender.com'
   ];
