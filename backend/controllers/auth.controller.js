@@ -11,17 +11,20 @@ const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Set cookie with production-ready settings
+// Set cookie with production-ready settings for cross-domain
 const setCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   res.cookie('userToken', token, {
     httpOnly: true,
-    secure: true, // Always true for production HTTPS
+    secure: true, // Must be true for SameSite=None
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'none', // CRITICAL for cross-domain
-    domain: undefined // Let browser handle domain
+    sameSite: 'none', // CRITICAL: Allows cross-domain cookie
+    domain: undefined, // Let browser handle domain
+    path: '/' // Ensure cookie is available for all paths
   });
   
-  console.log('🍪 Cookie set with production settings');
+  console.log(`🍪 Cookie set with cross-domain settings: secure=true, sameSite=none`);
 };
 
 // Clear cookie with same settings
@@ -30,10 +33,11 @@ const clearCookie = (res) => {
     httpOnly: true,
     secure: true,
     sameSite: 'none',
-    domain: undefined
+    domain: undefined,
+    path: '/'
   });
   
-  console.log('🗑️ Cookie cleared');
+  console.log('🗑️ Cookie cleared with cross-domain settings');
 };
 
 module.exports.register = async (req, res) => {

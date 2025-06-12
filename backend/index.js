@@ -37,7 +37,7 @@ const getAllowedOrigins = () => {
 console.log('🌐 Configuring CORS...');
 console.log('📋 Allowed origins:', getAllowedOrigins());
 
-// Simplified CORS configuration
+// Enhanced CORS configuration for cross-domain cookies
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = getAllowedOrigins();
@@ -60,20 +60,41 @@ app.use(cors({
       callback(new Error(`CORS policy blocked origin: ${origin}`));
     }
   },
-  credentials: true,
+  credentials: true, // CRITICAL: Must be true for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
     'X-Requested-With',
     'Accept',
-    'Origin'
+    'Origin',
+    'Cookie' // Explicitly allow Cookie header
   ],
-  exposedHeaders: ['Set-Cookie']
+  exposedHeaders: ['Set-Cookie'], // Expose Set-Cookie header
+  optionsSuccessStatus: 200 // For legacy browser support
 }));
 
-// Handle preflight requests explicitly
-app.options('*', cors());
+// Add specific middleware to handle cookies properly
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Vary', 'Origin'); // Important for caching
+  }
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cookie');
+    res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
