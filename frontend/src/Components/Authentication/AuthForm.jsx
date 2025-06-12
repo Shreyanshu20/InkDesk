@@ -137,7 +137,7 @@ function AuthForm() {
           if (response.data.success) {
             toast.success("Registration successful! Please verify your email.");
 
-            // Set user data from registration
+            // Set user data in context - no localStorage
             setIsLoggedIn(true);
             setUserData({
               email: formData.email,
@@ -147,17 +147,14 @@ function AuthForm() {
               isAccountVerified: false,
             });
 
-            // Redirect to email verification with auto-send OTP
             setTimeout(() => {
-              navigate(
-                `/verify-email`
-              );
+              navigate(`/verify-email`);
             }, 1500);
           } else {
             toast.error(response.data.message || "Registration failed");
           }
         } else {
-          // Login logic
+          // Login logic - REMOVE ALL localStorage operations
           const loginData = {
             email: formData.email,
             password: formData.password,
@@ -173,27 +170,9 @@ function AuthForm() {
           if (response.data.success) {
             toast.success("Login successful!");
 
-            // Set user data from login response
+            // Set user data in context ONLY - no localStorage
             setIsLoggedIn(true);
             setUserData(response.data.user);
-
-            // Store token in localStorage for cross-domain auth
-            if (response.data.token) {
-              localStorage.setItem("userToken", response.data.token);
-
-              // For admin/seller, also store admin-specific token and data
-              if (response.data.user.role === "admin") {
-                localStorage.setItem("adminToken", response.data.token);
-                localStorage.setItem(
-                  "adminData",
-                  JSON.stringify(response.data.user)
-                );
-                console.log(
-                  "🔑 Admin token and data stored for:",
-                  response.data.user.email
-                );
-              }
-            }
 
             // Check if user needs email verification
             if (!response.data.user.isAccountVerified) {
@@ -211,7 +190,6 @@ function AuthForm() {
             // Redirect based on user role
             setTimeout(() => {
               if (response.data.user.role === "admin") {
-                // Use environment variable for admin panel URL
                 const adminUrl =
                   import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
 
@@ -220,7 +198,7 @@ function AuthForm() {
                   `Welcome ${response.data.user.first_name}! Redirecting to admin panel...`
                 );
 
-                // Redirect to admin panel with proper token
+                // Redirect to admin panel - cookie will handle auth
                 window.location.href = adminUrl;
               } else {
                 navigate("/");

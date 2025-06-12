@@ -17,23 +17,25 @@ const setCookie = (res, token) => {
   
   res.cookie('userToken', token, {
     httpOnly: true,
-    secure: isProduction, // Only secure in production
+    secure: true, // Always true for production HTTPS
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: isProduction ? 'none' : 'lax', // 'none' for production cross-domain
-    domain: isProduction ? undefined : undefined // Let browser handle domain
+    sameSite: 'none', // Required for cross-domain cookies
+    domain: undefined // Let browser handle domain automatically
   });
+  
+  console.log(`🍪 Cookie set with settings: secure=${true}, sameSite=none`);
 };
 
 // Clear cookie with environment-aware settings
 const clearCookie = (res) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
   res.clearCookie('userToken', {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    domain: isProduction ? undefined : undefined
+    secure: true,
+    sameSite: 'none',
+    domain: undefined
   });
+  
+  console.log('🗑️ Cookie cleared');
 };
 
 module.exports.register = async (req, res) => {
@@ -218,14 +220,13 @@ module.exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        console.log('🍪 Setting cookie...');
+        // Set cookie ONLY - no localStorage involvement
         setCookie(res, token);
 
         console.log('✅ Login successful for:', email);
         res.json({
             success: true,
             message: "Login successful",
-            token: token,
             user: {
                 id: user._id,
                 first_name: user.first_name,
@@ -236,6 +237,7 @@ module.exports.login = async (req, res) => {
                 phone: user.phone,
                 status: user.status
             }
+            // Remove token from response - it's in cookie now
         });
 
     } catch (err) {

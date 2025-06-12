@@ -19,17 +19,17 @@ export const AdminProvider = ({ children }) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-  // Check if admin is authenticated
+  // Check if admin is authenticated - ONLY via cookies
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      console.log('🔐 Checking admin authentication...');
+      console.log('🔐 Checking admin authentication via cookies...');
 
       const response = await axios.post(
         `${backendUrl}/auth/is-admin`,
         {},
         {
-          withCredentials: true,
+          withCredentials: true, // This uses cookies ONLY
           headers: {
             'Content-Type': 'application/json',
           },
@@ -37,7 +37,7 @@ export const AdminProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-        console.log('✅ Admin authenticated:', response.data.user);
+        console.log('✅ Admin authenticated via cookie:', response.data.user);
         setAdminData(response.data.user);
         setIsAuthenticated(true);
         return true;
@@ -52,10 +52,9 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
-      // If it's a 401/403, redirect to login
       if (error.response?.status === 401 || error.response?.status === 403) {
         const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-        window.location.href = `${frontendUrl}`;
+        window.location.href = `${frontendUrl}/login?type=admin`;
       }
       
       return false;
@@ -64,7 +63,7 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Login function
+  // Login function - ONLY set cookies, no localStorage
   const login = async (email, password) => {
     try {
       console.log('🔐 Admin login attempt...');
@@ -83,10 +82,9 @@ export const AdminProvider = ({ children }) => {
       if (response.data.success) {
         const user = response.data.user;
         
-        // Check if user is admin
         if (user.role !== 'admin') {
           toast.error('Access denied. Admin privileges required.');
-          return { success: false, message: 'Access denied. Admin privileges required.' };
+          return { success: false, message: 'Access denied' };
         }
 
         console.log('✅ Admin login successful:', user);
@@ -94,7 +92,7 @@ export const AdminProvider = ({ children }) => {
         setIsAuthenticated(true);
         
         toast.success('Login successful!');
-        return { success: true, user };
+        return { success: true };
       } else {
         toast.error(response.data.message || 'Login failed');
         return { success: false, message: response.data.message };
@@ -107,7 +105,7 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - ONLY clear cookies, no localStorage
   const logout = async () => {
     try {
       console.log('🚪 Admin logout...');
@@ -121,13 +119,9 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
-      console.log('✅ Admin logout successful');
+      console.log('✅ Admin logout successful - cookie cleared by server');
       
-      // Clear ALL authentication data from storage
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Force redirect to frontend with a clean slate - NO TOAST HERE
+      // Force redirect to frontend - cookie is already cleared by server
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
       window.location.replace(`${frontendUrl}/`);
       
@@ -137,18 +131,9 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
-      // Clear ALL authentication data
-      localStorage.clear();
-      sessionStorage.clear();
-      
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
       window.location.replace(`${frontendUrl}/`);
     }
-  };
-
-  // Refresh admin data
-  const refreshAdminData = async () => {
-    return await checkAuth();
   };
 
   // Check auth on mount
@@ -163,7 +148,7 @@ export const AdminProvider = ({ children }) => {
     login,
     logout,
     checkAuth,
-    refreshAdminData,
+    refreshAdminData: checkAuth,
   };
 
   return (
