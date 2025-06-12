@@ -28,23 +28,38 @@ function Dashboard() {
     lowStockProducts: [],
     topProducts: [],
     recentActivity: [],
+    salesData: {
+      daily: {
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        data: [0, 0, 0, 0, 0, 0, 0],
+      },
+      weekly: {
+        labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+        data: [0, 0, 0, 0],
+      },
+      monthly: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        data: [0, 0, 0, 0, 0, 0],
+      },
+    },
   });
 
   // API base URL - Vite uses import.meta.env instead of process.env
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const API_BASE_URL =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // Enhanced fetch with better error handling
   const fetchWithErrorHandling = async (url, options = {}) => {
     try {
       console.log(`🌐 Fetching: ${url}`);
-      
+
       const response = await fetch(url, {
         ...options,
-        credentials: 'include',
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        }
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
       });
 
       console.log(`📡 Response status: ${response.status} for ${url}`);
@@ -66,32 +81,42 @@ function Dashboard() {
   const fetchDashboardStats = async () => {
     try {
       console.log(`🔍 Backend URL: ${API_BASE_URL}`);
-      
+
       // Remove this health check - it's causing CORS issues
       // const healthCheck = await fetchWithErrorHandling(`${API_BASE_URL}/health`);
       // console.log('🏥 Backend health check:', healthCheck);
 
       // Fetch all statistics in parallel
-      const [usersStats, ordersStats, productsStats, reviewsStats] = await Promise.allSettled([
-        fetchWithErrorHandling(`${API_BASE_URL}/admin/users/stats`),
-        fetchWithErrorHandling(`${API_BASE_URL}/admin/orders/stats`),
-        fetchWithErrorHandling(`${API_BASE_URL}/admin/products/stats`),
-        fetchWithErrorHandling(`${API_BASE_URL}/admin/reviews/stats`),
-      ]);
+      const [usersStats, ordersStats, productsStats, reviewsStats] =
+        await Promise.allSettled([
+          fetchWithErrorHandling(`${API_BASE_URL}/admin/users/stats`),
+          fetchWithErrorHandling(`${API_BASE_URL}/admin/orders/stats`),
+          fetchWithErrorHandling(`${API_BASE_URL}/admin/products/stats`),
+          fetchWithErrorHandling(`${API_BASE_URL}/admin/reviews/stats`),
+        ]);
 
       return {
-        users: usersStats.status === 'fulfilled' && usersStats.value.success
-          ? usersStats.value.stats
-          : { total: 0, recentUsers: 0 },
-        orders: ordersStats.status === 'fulfilled' && ordersStats.value.success
-          ? ordersStats.value.stats
-          : { total: 0, totalRevenue: 0, averageOrderValue: 0, recentOrders: 0 },
-        products: productsStats.status === 'fulfilled' && productsStats.value.success
-          ? productsStats.value.stats
-          : { totalProducts: 0, activeProducts: 0, outOfStockProducts: 0 },
-        reviews: reviewsStats.status === 'fulfilled' && reviewsStats.value.success
-          ? reviewsStats.value.stats
-          : { totalReviews: 0, averageRating: 0, recentReviews: 0 },
+        users:
+          usersStats.status === "fulfilled" && usersStats.value.success
+            ? usersStats.value.stats
+            : { total: 0, recentUsers: 0 },
+        orders:
+          ordersStats.status === "fulfilled" && ordersStats.value.success
+            ? ordersStats.value.stats
+            : {
+                total: 0,
+                totalRevenue: 0,
+                averageOrderValue: 0,
+                recentOrders: 0,
+              },
+        products:
+          productsStats.status === "fulfilled" && productsStats.value.success
+            ? productsStats.value.stats
+            : { totalProducts: 0, activeProducts: 0, outOfStockProducts: 0 },
+        reviews:
+          reviewsStats.status === "fulfilled" && reviewsStats.value.success
+            ? reviewsStats.value.stats
+            : { totalReviews: 0, averageRating: 0, recentReviews: 0 },
       };
     } catch (error) {
       console.error("❌ Error fetching dashboard stats:", error);
@@ -108,26 +133,36 @@ function Dashboard() {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: 'include' // Use cookies
+          credentials: "include",
         }
       );
 
       const data = await response.json();
       if (data.success) {
-        return data.orders.map((order) => ({
-          id: order.order_number || order._id,
-          customer: order.user_id
-            ? `${order.user_id.first_name} ${order.user_id.last_name}`
-            : "Unknown Customer",
-          date: new Date(order.createdAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          amount: `₹${order.total_amount.toLocaleString()}`,
-          status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
-        }));
+        return data.orders.map((order) => {
+          // Debug each order's amount
+          console.log(
+            `Recent Order ${order.order_number || order._id}: Amount = ${
+              order.total_amount
+            }`
+          );
+
+          return {
+            id: order.order_number || order._id,
+            customer: order.user_id
+              ? `${order.user_id.first_name} ${order.user_id.last_name}`
+              : "Unknown Customer",
+            date: new Date(order.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            amount: `₹${(order.total_amount || 0).toLocaleString()}`, // Ensure proper formatting
+            status:
+              order.status.charAt(0).toUpperCase() + order.status.slice(1),
+          };
+        });
       }
       return [];
     } catch (error) {
@@ -145,7 +180,7 @@ function Dashboard() {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: 'include' // Use cookies
+          credentials: "include", // Use cookies
         }
       );
 
@@ -252,33 +287,189 @@ function Dashboard() {
     return activities.slice(0, 6); // Limit to 6 activities
   };
 
+  // Generate real sales data from orders
+  const generateSalesData = (orders) => {
+    console.log("📊 Generating sales data from orders:", orders.length);
+
+    if (!orders || orders.length === 0) {
+      console.log("⚠️ No orders found, using default sales data");
+      return {
+        daily: {
+          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          data: [0, 0, 0, 0, 0, 0, 0],
+        },
+        weekly: {
+          labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+          data: [0, 0, 0, 0],
+        },
+        monthly: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          data: [0, 0, 0, 0, 0, 0],
+        },
+      };
+    }
+
+    const now = new Date();
+
+    // Generate daily data (last 7 days)
+    const dailyData = [];
+    const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+
+      const dayRevenue = orders
+        .filter((order) => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= dayStart && orderDate <= dayEnd;
+        })
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+      dailyData.push(dayRevenue);
+    }
+
+    // Generate weekly data (last 4 weeks)
+    const weeklyData = [];
+    const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const weekRevenue = orders
+        .filter((order) => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= weekStart && orderDate <= weekEnd;
+        })
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+      weeklyData.push(weekRevenue);
+    }
+
+    // Generate monthly data (last 6 months)
+    const monthlyData = [];
+    const monthlyLabels = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(
+        now.getFullYear(),
+        now.getMonth() - i + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
+      const monthName = monthStart.toLocaleDateString("en-US", {
+        month: "short",
+      });
+      monthlyLabels.push(monthName);
+
+      const monthRevenue = orders
+        .filter((order) => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= monthStart && orderDate <= monthEnd;
+        })
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+      monthlyData.push(monthRevenue);
+    }
+
+    const salesData = {
+      daily: {
+        labels: dailyLabels,
+        data: dailyData,
+      },
+      weekly: {
+        labels: weeklyLabels,
+        data: weeklyData,
+      },
+      monthly: {
+        labels: monthlyLabels,
+        data: monthlyData,
+      },
+    };
+
+    console.log("📈 Generated sales data:", salesData);
+    return salesData;
+  };
+
   // Load all dashboard data
   const loadDashboardData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      console.log('🚀 Loading dashboard data...');
-      console.log('🔧 Environment:', {
+      console.log("🚀 Loading dashboard data...");
+      console.log("🔧 Environment:", {
         isDev: import.meta.env.DEV,
         backendUrl: API_BASE_URL,
-        mode: import.meta.env.MODE
+        mode: import.meta.env.MODE,
       });
 
-      // Always try to fetch real data first
+      // Fetch stats first (but we'll override revenue calculation)
       const stats = await fetchDashboardStats();
-      const recentOrders = await fetchRecentOrders();
-      const lowStockProducts = await fetchLowStockProducts();
 
-      // Fetch more orders for analytics
+      // Fetch ALL orders to calculate accurate revenue
+      console.log("💰 Fetching all orders for revenue calculation...");
       const allOrdersData = await fetchWithErrorHandling(
-        `${API_BASE_URL}/admin/orders?page=1&limit=100`
+        `${API_BASE_URL}/admin/orders?page=1&limit=1000` // Get more orders for accurate calculation
       );
       const allOrders = allOrdersData.success ? allOrdersData.orders : [];
+
+      // Calculate REAL revenue from actual orders
+      const calculatedRevenue = allOrders.reduce((total, order) => {
+        const orderAmount = order.total_amount || 0;
+        console.log(
+          `Order ${order.order_number || order._id}: ₹${orderAmount}`
+        );
+        return total + orderAmount;
+      }, 0);
+
+      const calculatedAverage =
+        allOrders.length > 0 ? calculatedRevenue / allOrders.length : 0;
+
+      // Count recent orders (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentOrdersCount = allOrders.filter((order) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= sevenDaysAgo;
+      }).length;
+
+      // Override stats with REAL calculated values
+      stats.orders = {
+        total: allOrders.length,
+        totalRevenue: calculatedRevenue,
+        averageOrderValue: calculatedAverage,
+        recentOrders: recentOrdersCount,
+      };
+
+      console.log("💰 Revenue Calculation Results:");
+      console.log(`📊 Total Orders: ${allOrders.length}`);
+      console.log(`💵 Total Revenue: ₹${calculatedRevenue.toLocaleString()}`);
+      console.log(`📈 Average Order Value: ₹${calculatedAverage.toFixed(2)}`);
+      console.log(`🕐 Recent Orders (7 days): ${recentOrdersCount}`);
+
+      // Fetch other data
+      const recentOrders = await fetchRecentOrders();
+      const lowStockProducts = await fetchLowStockProducts();
 
       // Generate derived data
       const topProducts = generateTopProducts(allOrders);
       const recentActivity = generateRecentActivity(recentOrders, stats);
+      const realSalesData = generateSalesData(allOrders); // ADD THIS - Generate real sales data
 
       setDashboardData({
         stats,
@@ -286,30 +477,39 @@ function Dashboard() {
         lowStockProducts,
         topProducts,
         recentActivity,
+        salesData: realSalesData, // ADD THIS - Include real sales data
       });
 
-      console.log('✅ Dashboard data loaded successfully');
-
+      console.log("✅ Dashboard data loaded successfully");
+      console.log("💰 Final revenue in dashboard:", stats.orders.totalRevenue);
     } catch (error) {
       console.error("❌ Error loading dashboard data:", error);
-      
+
       // Determine error type
       let errorMessage = "Failed to load dashboard data.";
-      
-      if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
-        errorMessage = "Cannot connect to server. Please check your internet connection.";
-      } else if (error.message.includes('CORS')) {
+
+      if (
+        error.message.includes("NetworkError") ||
+        error.message.includes("fetch")
+      ) {
+        errorMessage =
+          "Cannot connect to server. Please check your internet connection.";
+      } else if (error.message.includes("CORS")) {
         errorMessage = "Server configuration error. Please contact support.";
-      } else if (error.message.includes('401') || error.message.includes('403')) {
+      } else if (
+        error.message.includes("401") ||
+        error.message.includes("403")
+      ) {
         errorMessage = "Authentication expired. Please log in again.";
       }
-      
+
       setError(errorMessage);
-      
+
       // Redirect to login if auth error
-      if (error.message.includes('401') || error.message.includes('403')) {
+      if (error.message.includes("401") || error.message.includes("403")) {
         setTimeout(() => {
-          const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+          const frontendUrl =
+            import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
           window.location.href = `${frontendUrl}/login?type=admin`;
         }, 2000);
       }
@@ -352,7 +552,7 @@ function Dashboard() {
 
   // Enhanced format currency function
   const formatCurrency = (amount) => {
-    return `₹${amount.toLocaleString('en-IN')}`;
+    return `₹${amount.toLocaleString("en-IN")}`;
   };
 
   // Format currency for charts (shorter format for better display)
@@ -449,7 +649,7 @@ function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <SalesChart
-          salesData={salesData}
+          salesData={dashboardData.salesData} // CHANGED: Use real sales data
           timeRange={timeRange}
           setTimeRange={setTimeRange}
         />

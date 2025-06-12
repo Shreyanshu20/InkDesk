@@ -55,28 +55,32 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
       }
 
       const ctx = chartRef.current.getContext("2d");
+      
+      // Check if all data is zero
+      const hasData = salesData[timeRange].data.some(value => value > 0);
+      
       chartInstance.current = new Chart(ctx, {
         type: "line",
         data: {
           labels: salesData[timeRange].labels,
           datasets: [
             {
-              label: "Sales",
+              label: "Sales Revenue",
               data: salesData[timeRange].data,
               fill: true,
               backgroundColor: isDarkMode
-                ? "rgba(59, 130, 246, 0.2)" // Blue for better visibility in dark mode
+                ? "rgba(59, 130, 246, 0.2)"
                 : "rgba(59, 130, 246, 0.1)",
               borderColor: isDarkMode
-                ? "rgba(59, 130, 246, 1)" // Bright blue in dark mode
+                ? "rgba(59, 130, 246, 1)"
                 : "rgb(59, 130, 246)",
               tension: 0.4,
               pointBackgroundColor: isDarkMode ? "#ffffff" : "rgb(59, 130, 246)",
               pointBorderColor: isDarkMode ? "rgba(59, 130, 246, 1)" : "#fff",
               pointHoverBackgroundColor: "#ffffff",
               pointHoverBorderColor: "rgb(59, 130, 246)",
-              pointRadius: 6,
-              pointHoverRadius: 8,
+              pointRadius: hasData ? 6 : 4, // Smaller points if no data
+              pointHoverRadius: hasData ? 8 : 6,
               borderWidth: isDarkMode ? 3 : 2.5,
             },
           ],
@@ -122,7 +126,7 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
               displayColors: false,
               callbacks: {
                 label: function (context) {
-                  return `Sales: ${formatFullCurrency(context.parsed.y)}`;
+                  return `Revenue: ${formatFullCurrency(context.parsed.y)}`;
                 },
               },
             },
@@ -130,6 +134,8 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
           scales: {
             y: {
               beginAtZero: true,
+              // Set a minimum range even if all values are 0
+              suggestedMax: hasData ? undefined : 1000,
               grid: {
                 display: true,
                 color: isDarkMode
@@ -189,12 +195,15 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
     };
   }, [timeRange, salesData, isDarkMode]);
 
-  // Calculate total and stats for current timeRange
+  // Update the sales summary calculations
   const currentData = salesData[timeRange].data;
   const totalSales = currentData.reduce((sum, value) => sum + value, 0);
-  const averageSales = Math.round(totalSales / currentData.length);
-  const highestSales = Math.max(...currentData);
-  const lowestSales = Math.min(...currentData);
+  const averageSales = currentData.length > 0 ? Math.round(totalSales / currentData.length) : 0;
+  const highestSales = currentData.length > 0 ? Math.max(...currentData) : 0;
+  const lowestSales = currentData.length > 0 ? Math.min(...currentData) : 0;
+
+  // Add a "No Data" message when there are no sales
+  const hasAnySales = totalSales > 0;
 
   return (
     <div className="bg-background p-6 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg border border-gray-200 dark:border-gray-800 lg:col-span-2">
@@ -206,6 +215,11 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             <span className="font-semibold text-primary">
               {formatFullCurrency(totalSales)}
             </span>
+            {!hasAnySales && (
+              <span className="ml-2 text-orange-600 dark:text-orange-400">
+                • No sales data yet
+              </span>
+            )}
           </p>
         </div>
         <div className="flex space-x-2">
@@ -251,19 +265,34 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
           </div>
         ) : null}
+        
+        {!hasAnySales && !isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <i className="fas fa-chart-line text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
+              No Sales Data Available
+            </h3>
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              Sales data will appear here once you have orders with revenue.
+            </p>
+          </div>
+        )}
+        
         <canvas
           ref={chartRef}
           className={`
             ${
               isLoading
                 ? "opacity-0"
-                : "opacity-100 transition-opacity duration-500"
+                : hasAnySales 
+                  ? "opacity-100 transition-opacity duration-500"
+                  : "opacity-20 transition-opacity duration-500"
             }
           `}
         ></canvas>
       </div>
 
-      {/* Sales Summary */}
+      {/* Sales Summary - show even with zero data */}
       <div className="mt-6 grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center">
           <p className="text-xs text-text/70 uppercase tracking-wide font-medium">
