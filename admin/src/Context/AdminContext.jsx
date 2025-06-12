@@ -52,9 +52,11 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
+      // Only redirect on 401/403, not on network errors
       if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('🔄 Redirecting to frontend login...');
         const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-        window.location.href = `${frontendUrl}/login?type=admin`;
+        window.location.href = `${frontendUrl}/login?type=admin&redirect=admin`;
       }
       
       return false;
@@ -70,7 +72,11 @@ export const AdminProvider = ({ children }) => {
       
       const response = await axios.post(
         `${backendUrl}/auth/login`,
-        { email, password },
+        { 
+          email, 
+          password,
+          role: 'admin' // Explicitly set role for admin login
+        },
         {
           withCredentials: true,
           headers: {
@@ -105,7 +111,7 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Logout function - ONLY clear cookies, no localStorage
+  // Logout function - ONLY clear cookies
   const logout = async () => {
     try {
       console.log('🚪 Admin logout...');
@@ -121,7 +127,7 @@ export const AdminProvider = ({ children }) => {
       
       console.log('✅ Admin logout successful - cookie cleared by server');
       
-      // Force redirect to frontend - cookie is already cleared by server
+      // Force redirect to frontend
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
       window.location.replace(`${frontendUrl}/`);
       

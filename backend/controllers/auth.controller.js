@@ -11,22 +11,20 @@ const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Set cookie with environment-aware settings
+// Set cookie with production-ready settings
 const setCookie = (res, token) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
   res.cookie('userToken', token, {
     httpOnly: true,
     secure: true, // Always true for production HTTPS
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'none', // Required for cross-domain cookies
-    domain: undefined // Let browser handle domain automatically
+    sameSite: 'none', // CRITICAL for cross-domain
+    domain: undefined // Let browser handle domain
   });
   
-  console.log(`🍪 Cookie set with settings: secure=${true}, sameSite=none`);
+  console.log('🍪 Cookie set with production settings');
 };
 
-// Clear cookie with environment-aware settings
+// Clear cookie with same settings
 const clearCookie = (res) => {
   res.clearCookie('userToken', {
     httpOnly: true,
@@ -194,23 +192,13 @@ module.exports.login = async (req, res) => {
             });
         }
 
-        console.log('🔒 Comparing passwords...');
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            console.log('❌ Password mismatch for:', email);
+        if (!isPasswordValid) {
+            console.log('❌ Invalid password for user:', email);
             return res.status(401).json({
                 success: false,
                 message: "Invalid email or password"
-            });
-        }
-
-        console.log('🎫 Generating JWT token...');
-        if (!process.env.JWT_SECRET_USER) {
-            console.error('❌ JWT_SECRET_USER not defined in environment variables');
-            return res.status(500).json({
-                success: false,
-                message: "Server configuration error"
             });
         }
 
@@ -220,10 +208,10 @@ module.exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Set cookie ONLY - no localStorage involvement
+        // Set cookie with production settings
         setCookie(res, token);
 
-        console.log('✅ Login successful for:', email);
+        console.log('✅ Login successful for:', email, 'Role:', user.role);
         res.json({
             success: true,
             message: "Login successful",
@@ -237,15 +225,13 @@ module.exports.login = async (req, res) => {
                 phone: user.phone,
                 status: user.status
             }
-            // Remove token from response - it's in cookie now
         });
 
     } catch (err) {
         console.error('❌ Login error:', err);
         res.status(500).json({
             success: false,
-            message: "Internal server error",
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+            message: "Internal server error"
         });
     }
 };

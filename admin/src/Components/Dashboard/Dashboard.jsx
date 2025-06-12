@@ -33,27 +33,33 @@ function Dashboard() {
   // API base URL - Vite uses import.meta.env instead of process.env
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Get auth token from localStorage
-  const getAuthToken = () => {
-    return localStorage.getItem("adminToken") || localStorage.getItem("token");
-  };
-
   // Fetch dashboard statistics
   const fetchDashboardStats = async () => {
     try {
-      const token = getAuthToken();
+      // Remove token-based auth, rely on cookies
       const headers = {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       };
 
-      // Fetch all statistics in parallel
+      // Fetch all statistics in parallel with cookies
       const [usersStats, ordersStats, productsStats, reviewsStats] =
         await Promise.all([
-          fetch(`${API_BASE_URL}/admin/users/stats`, { headers }),
-          fetch(`${API_BASE_URL}/admin/orders/stats`, { headers }),
-          fetch(`${API_BASE_URL}/admin/products/stats`, { headers }),
-          fetch(`${API_BASE_URL}/admin/reviews/stats`, { headers }),
+          fetch(`${API_BASE_URL}/admin/users/stats`, { 
+            headers,
+            credentials: 'include' // Use cookies
+          }),
+          fetch(`${API_BASE_URL}/admin/orders/stats`, { 
+            headers,
+            credentials: 'include' // Use cookies
+          }),
+          fetch(`${API_BASE_URL}/admin/products/stats`, { 
+            headers,
+            credentials: 'include' // Use cookies
+          }),
+          fetch(`${API_BASE_URL}/admin/reviews/stats`, { 
+            headers,
+            credentials: 'include' // Use cookies
+          }),
         ]);
 
       const [usersData, ordersData, productsData, reviewsData] =
@@ -92,14 +98,13 @@ function Dashboard() {
   // Fetch recent orders
   const fetchRecentOrders = async () => {
     try {
-      const token = getAuthToken();
       const response = await fetch(
         `${API_BASE_URL}/admin/orders?page=1&limit=5&sortBy=createdAt&order=desc`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          credentials: 'include' // Use cookies
         }
       );
 
@@ -130,24 +135,22 @@ function Dashboard() {
   // Fetch low stock products
   const fetchLowStockProducts = async () => {
     try {
-      const token = getAuthToken();
       const response = await fetch(
         `${API_BASE_URL}/admin/products?page=1&limit=50&sortBy=product_stock&order=asc`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          credentials: 'include' // Use cookies
         }
       );
 
       const data = await response.json();
       if (data.success) {
-        // Filter products with stock <= 10 (you can adjust this threshold)
         const lowStockThreshold = 10;
         return data.products
           .filter((product) => product.product_stock <= lowStockThreshold)
-          .slice(0, 5) // Get top 5 low stock items
+          .slice(0, 5)
           .map((product) => ({
             id: product._id,
             name: product.product_name,
@@ -418,14 +421,13 @@ function Dashboard() {
         const lowStockProducts = await fetchLowStockProducts();
 
         // Fetch more orders for analytics (optional)
-        const token = getAuthToken();
         const allOrdersResponse = await fetch(
           `${API_BASE_URL}/admin/orders?page=1&limit=100`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
+            credentials: 'include' // Use cookies
           }
         );
         const allOrdersData = await allOrdersResponse.json();
