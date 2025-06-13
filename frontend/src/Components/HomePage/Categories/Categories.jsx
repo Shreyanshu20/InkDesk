@@ -7,127 +7,191 @@ function Categories() {
       id: 1,
       title: "Stationery",
       products: "120+ products",
-      image: "stationery.jpg",
-      icon: "fas fa-pen",
-      color: "bg-blue-200",
-      description: "Notebooks, pens, pencils & writing essentials",
+      image: "sat.jpg",
       link: "/shop/category/stationery",
     },
     {
       id: 2,
-      title: "Office Supplies",
+      title: "Office Supplies", 
       products: "85+ products",
-      image: "officesupplies.webp", // Office desk with supplies
-      icon: "fas fa-briefcase",
-      color: "bg-green-200",
-      description: "Organizers, folders, desk accessories & more",
+      image: "officeSupplies.jpg",
       link: "/shop/category/office-supplies",
     },
     {
       id: 3,
       title: "Art Supplies",
-      products: "95+ products",
-      image:
-        "art.jpg", // Art brushes and paints
-      icon: "fas fa-palette",
-      color: "bg-purple-200",
-      description: "Paints, brushes, canvases & artistic tools",
+      products: "95+ products", 
+      image: "artSupplies.jpg",
       link: "/shop/category/art-supplies",
     },
     {
       id: 4,
       title: "Craft Materials",
       products: "75+ products",
-      image:
-        "craft.jpg", // Craft supplies and materials
-      icon: "fas fa-cut",
-      color: "bg-pink-200",
-      description: "Paper, glue, scissors & DIY craft essentials",
+      image: "craft.jpg", 
       link: "/shop/category/craft-materials",
     },
   ];
 
   return (
-    <section className="bg-background text-text py-16 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+    <section className="bg-background text-text py-8 px-4">
+      <div className="max-w-7xl mx-auto h-full">
+        {/* Section Header - Compact */}
+        <div className="text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">
             Shop by Category
           </h2>
-          <div className="w-24 h-1 bg-primary mx-auto mb-4"></div>
-          <p className="text-lg max-w-2xl mx-auto">
-            Discover our comprehensive collection organized into four main
-            categories
-          </p>
+          <div className="w-16 h-0.5 bg-primary mx-auto"></div>
         </div>
 
-        {/* 4 Categories Grid - Perfect Squares */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Categories Grid - Exact Reference Layout */}
+        <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-3 h-[70vh]">
+          
+          {/* Large Left Card - Spans 2 rows */}
+          <Link
+            to={categories[0].link}
+            className="group relative col-span-2 row-span-2 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            <img
+              src={categories[0].image}
+              alt={categories[0].title}
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            
+            {/* Content - Left Aligned like reference */}
+            <div className="group absolute p-4 bottom-6 left-6 text-white">
+              <p className="text-sm font-medium text-white/90 mb-2 uppercase tracking-wide group-hover:scale-103 transition-all duration-300">
+                {categories[0].products}
+              </p>
+              <h3 className="text-3xl font-bold mb-4 leading-tight group-hover:scale-103 transition-all duration-300">
+                {categories[0].title}
+              </h3>
+              <div className="border-2 border-white/80 group-hover:bg-white group-hover:text-black px-4 py-2 rounded-full inline-flex items-center group-hover:scale-103 transition-all duration-300">
+                <span className="font-medium text-sm mr-2">
+                  Shop Now
+                </span>
+                <i className="fas fa-arrow-right text-sm"></i>
+              </div>
+            </div>
+          </Link>
+
+          {/* Top Right Card */}
+          <Link
+            to={categories[1].link}
+            className="group relative col-span-2 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            <img
+              src={categories[1].image}
+              alt={categories[1].title}
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            
+            <div className="absolute p-2 bottom-4 left-4 text-white">
+              <p className="text-xs font-medium text-white/90 mb-1 uppercase tracking-wide group-hover:scale-103 transition-all duration-300">
+                {categories[1].products}
+              </p>
+              <h3 className="text-2xl font-bold mb-3 leading-tight group-hover:scale-103 transition-all duration-300">
+                {categories[1].title}
+              </h3>
+              <div className="border-2 border-white/80 group-hover:bg-white group-hover:text-black px-4 py-2 rounded-full inline-flex items-center group-hover:scale-103 transition-all duration-300">
+                <span className="font-medium text-sm mr-2">
+                  Shop Now
+                </span>
+                <i className="fas fa-arrow-right text-sm"></i>
+              </div>
+            </div>
+          </Link>
+
+          {/* Bottom Left Card */}
+          <Link
+            to={categories[2].link}
+            className="group relative col-span-1 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            <img
+              src={categories[2].image}
+              alt={categories[2].title}
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            
+            <div className="absolute p-2 bottom-3 left-3 text-white">
+              <p className="text-xs font-medium text-white/90 mb-1 uppercase tracking-wide group-hover:scale-103 transition-all duration-300">
+                {categories[2].products}
+              </p>
+              <h3 className="text-xl font-bold mb-2 leading-tight group-hover:scale-103 transition-all duration-300">
+                {categories[2].title}
+              </h3>
+              <div className="border-2 border-white/80 group-hover:bg-white group-hover:text-black px-4 py-2 rounded-full inline-flex items-center group-hover:scale-103 transition-all duration-300">
+                <span className="font-medium text-sm mr-2">
+                  Shop Now
+                </span>
+                <i className="fas fa-arrow-right text-sm"></i>
+              </div>
+            </div>
+          </Link>
+
+          {/* Bottom Right Card */}
+          <Link
+            to={categories[3].link}
+            className="group relative col-span-1 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            <img
+              src={categories[3].image}
+              alt={categories[3].title}
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            
+            <div className="absolute p-2 bottom-3 left-3 text-white">
+              <p className="text-xs font-medium text-white/90 mb-1 uppercase tracking-wide group-hover:scale-103 transition-all duration-300">
+                {categories[3].products}
+              </p>
+              <h3 className="text-xl font-bold mb-2 leading-tight group-hover:scale-103 transition-all duration-300">
+                {categories[3].title}
+              </h3>
+              <div className="border-2 border-white/80 group-hover:bg-white group-hover:text-black px-4 py-2 rounded-full inline-flex items-center group-hover:scale-103 transition-all duration-300">
+                <span className="font-medium text-sm mr-2">
+                  Shop Now
+                </span>
+                <i className="fas fa-arrow-right text-sm"></i>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Responsive Mobile Layout */}
+        <div className="md:hidden grid grid-cols-1 gap-3">
           {categories.map((category) => (
             <Link
-              to={category.link}
               key={category.id}
-              className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+              to={category.link}
+              className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 h-50"
             >
-              {/* Square Container */}
-              <div className="aspect-square relative">
-                {/* Background Image */}
-                <div className="absolute inset-0">
-                  <img
-                    src={category.image}
-                    alt={category.title}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                    loading="lazy"
-                  />
+              <img
+                src={category.image}
+                alt={category.title}
+                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+              
+              <div className="absolute p-2 bottom-2 left-2 text-white">
+                <p className="text-xs font-medium text-white/90 mb-1 uppercase tracking-wide group-hover:scale-103 transition-all duration-300">
+                  {category.products}
+                </p>
+                <h3 className="text-lg font-bold mb-2 leading-tight group-hover:scale-103 transition-all duration-300">
+                  {category.title}
+                </h3>
+                <div className="border border-white/80 group-hover:bg-white group-hover:text-black px-4 py-2 rounded-full inline-flex items-center group-hover:scale-103 transition-all duration-300">
+                  <span className="font-medium text-xs mr-1">
+                    Shop Now
+                  </span>
+                  <i className="fas fa-arrow-right text-xs"></i>
                 </div>
-
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
-
-                {/* Icon in Top Corner */}
-                <div className="absolute top-4 right-4">
-                  <div className="w-12 h-12 bg-primary/50 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-102 transition-transform duration-300">
-                    <i className={`${category.icon} text-xl text-white`}></i>
-                  </div>
-                </div>
-
-                {/* Content at Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                  <h3 className="text-xl font-bold mb-2 leading-tight">
-                    {category.title}
-                  </h3>
-                  <p className="text-white/90 text-sm mb-2">
-                    {category.products}
-                  </p>
-                  <p className="text-white/80 text-xs mb-4 leading-relaxed">
-                    {category.description}
-                  </p>
-
-                  {/* Shop Now Button */}
-                  <div className="flex items-center text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
-                    <span className="mr-2">Explore</span>
-                    <i className="fas fa-arrow-right"></i>
-                  </div>
-                </div>
-
-                {/* Hover Effect Border */}
-                <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/50 rounded-2xl transition-all duration-300"></div>
               </div>
             </Link>
           ))}
-        </div>
-
-        {/* Call to Action */}
-        <div className="text-center mt-16">
-          <Link
-            to="/shop"
-            className="inline-flex items-center px-8 py-4 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition-colors duration-300 shadow-lg hover:shadow-xl transform hover:scale-102"
-          >
-            <i className="fas fa-shopping-bag mr-3"></i>
-            Shop All Products
-            <i className="fas fa-arrow-right ml-3"></i>
-          </Link>
         </div>
       </div>
     </section>

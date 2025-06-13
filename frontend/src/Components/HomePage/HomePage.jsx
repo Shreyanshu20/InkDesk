@@ -12,12 +12,12 @@ function HomePage() {
   return (
     <main id="main-content">
       <Hero />
+      <Badges />
       <Categories />
       <Products />
       <Banner />
       <Advertisement />
       <Blogs />
-      <Badges />
       <Newsletter />
     </main>
   );
