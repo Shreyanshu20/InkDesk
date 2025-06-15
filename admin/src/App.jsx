@@ -12,6 +12,8 @@ import Dashboard from "./Components/Dashboard/Dashboard";
 import Products from "./Components/Products/Products";
 import ProductForm from "./Components/Products/components/ProductForm";
 import Categories from "./Components/Categories/Categories";
+import CategoryForm from "./Components/Categories/components/CategoryForm";
+import CategoryDetails from "./Components/Categories/components/CategoryDetails";
 import Orders from "./Components/Orders/Orders";
 import Users from "./Components/Users/Users";
 import Banners from "./Components/Banners/Banners";
@@ -89,7 +91,12 @@ function App() {
           </Route>
 
           {/* Categories routes */}
-          <Route path="categories" element={<Categories />} />
+          <Route path="categories">
+            <Route index element={<Categories />} />
+            <Route path="add" element={<CategoryForm mode="add" />} />
+            <Route path="edit/:id" element={<CategoryForm mode="edit" />} />
+            <Route path="view/:id" element={<CategoryDetails />} />
+          </Route>
 
           {/* Orders routes */}
           <Route path="orders" element={<Orders />} />

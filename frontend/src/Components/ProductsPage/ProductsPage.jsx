@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { AppContent } from "../../Context/AppContent.jsx";
 import { useCategories } from "../../Context/CategoryContext.jsx";
-import SearchBar from "../Common/SearchBar";
 import FilterMenu from "./components/FilterMenu";
 import Sorting from "./components/Sorting";
 import Products from "./components/Products";
@@ -14,11 +13,15 @@ import PageHeader from "../Common/PageHeader";
 import Newsletter from "../HomePage/Newsletter/Newsletter";
 
 const ProductsPage = () => {
-  // Update the useParams to get subcategory
   const { category, subcategory } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { backendUrl } = useContext(AppContent);
   const { categories } = useCategories();
+
+  // Ref for products section
+  const productsEndRef = useRef(null);
+  const [showMobileControls, setShowMobileControls] = useState(true);
+  const [isNavbarSidebarOpen, setIsNavbarSidebarOpen] = useState(false);
 
   // States
   const [products, setProducts] = useState([]);
@@ -40,7 +43,56 @@ const ProductsPage = () => {
   // Available brands state
   const [availableBrands, setAvailableBrands] = useState([]);
 
-  // Fetch products from the backend
+  // Check for navbar mobile menu state
+  useEffect(() => {
+    const checkNavbarMobileMenu = () => {
+      // Look for the mobile menu sidebar element
+      const mobileMenuSidebar = document.querySelector('div[class*="translate-x-0"][class*="fixed"][class*="left-0"]');
+      const mobileMenuOverlay = document.querySelector('div[class*="bg-black/50"][class*="fixed"][class*="inset-0"]');
+      
+      // Check if mobile menu is open
+      const isOpen = (mobileMenuSidebar && !mobileMenuSidebar.classList.contains('-translate-x-full')) ||
+                    (mobileMenuOverlay && mobileMenuOverlay.style.display !== 'none');
+      
+      setIsNavbarSidebarOpen(isOpen);
+    };
+
+    // Check initially
+    checkNavbarMobileMenu();
+
+    // Create mutation observer to watch for DOM changes
+    const observer = new MutationObserver(() => {
+      checkNavbarMobileMenu();
+    });
+
+    // Watch the document body for changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Scroll handler to show/hide mobile controls
+  useEffect(() => {
+    const handleScroll = () => {
+      if (productsEndRef.current) {
+        const rect = productsEndRef.current.getBoundingClientRect();
+        const isVisible = rect.bottom > window.innerHeight;
+        setShowMobileControls(isVisible);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // All other functions remain exactly the same...
   const fetchProducts = async () => {
     setIsLoading(true);
 
@@ -51,7 +103,6 @@ const ProductsPage = () => {
       const url = `${backendUrl}/products`;
       const params = new URLSearchParams();
 
-      // Existing parameters
       params.append("page", currentPage);
       params.append("limit", productsPerPage);
 
@@ -63,42 +114,35 @@ const ProductsPage = () => {
         params.append("category", category);
       }
 
-      // ADD THIS: Add subcategory from URL params
       if (subcategory && subcategory !== "all") {
         const subcategoryName = subcategory.replace(/-/g, " ");
         params.append("subcategory", subcategoryName);
         console.log("🎯 Adding subcategory to query:", subcategoryName);
       }
 
-      // Add selected categories filter
       if (selectedCategories.length > 0) {
         selectedCategories.forEach((catId) => {
           params.append("selectedCategories", catId);
         });
       }
 
-      // Add selected brands filter
       if (selectedBrands.length > 0) {
         selectedBrands.forEach((brand) => {
           params.append("brand", brand);
         });
       }
 
-      // Price range filter
       if (priceRange[1] < 5000) {
         params.append("maxPrice", priceRange[1]);
       }
 
-      // Stock filter
       if (inStockOnly) {
         params.append("inStock", "true");
       }
 
-      // Add sorting
       if (sortOption !== "relevance") {
         const [field, order] = sortOption.split("-");
 
-        // Map frontend sort options to backend field names
         let backendField = field;
         if (field === "price") {
           backendField = "product_price";
@@ -154,7 +198,6 @@ const ProductsPage = () => {
     }
   };
 
-  // Fetch all brands for filter
   const fetchBrands = async () => {
     try {
       const url = `${backendUrl}/products/brands`;
@@ -178,7 +221,6 @@ const ProductsPage = () => {
     }
   };
 
-  // 1. Initial setup - runs once
   useEffect(() => {
     const searchQuery = searchParams.get("search") || "";
     setSearchTerm(searchQuery);
@@ -188,19 +230,15 @@ const ProductsPage = () => {
       setSortOption(sortParam);
     }
 
-    // Load all brands once
     fetchBrands();
   }, []);
 
-  // 2. Handle URL category changes
   useEffect(() => {
     if (!categories || categories.length === 0) return;
 
-    // Reset filters when category changes in URL
     setSelectedCategories([]);
     setCurrentPage(1);
 
-    // Handle category selection
     if (category && category !== "all") {
       const categoryObj = categories.find(
         (c) => c.category_name.toLowerCase().replace(/\s+/g, "-") === category
@@ -216,7 +254,6 @@ const ProductsPage = () => {
     }
   }, [category, subcategory, categories]);
 
-  // 3. Main fetch effect - fetch products when filters change
   useEffect(() => {
     if (categories.length > 0) {
       fetchProducts();
@@ -235,12 +272,10 @@ const ProductsPage = () => {
     searchParams,
   ]);
 
-  // 4. Reset page when parameters change
   useEffect(() => {
     setCurrentPage(1);
   }, [category, subcategory, searchTerm]);
 
-  // Toggle brand in selected brands
   const handleBrandToggle = (brand) => {
     console.log("Brand toggle called with:", brand);
     console.log("Current selected brands:", selectedBrands);
@@ -257,7 +292,6 @@ const ProductsPage = () => {
     setCurrentPage(1);
   };
 
-  // Toggle category in selected categories
   const handleCategoryToggle = (categoryId) => {
     console.log("Category toggle called with ID:", categoryId);
 
@@ -270,7 +304,6 @@ const ProductsPage = () => {
 
       console.log("New category selection:", newSelection);
 
-      // Update URL properly
       if (newSelection.length === 1 && categoryObj) {
         const categorySlug = categoryObj.category_name
           .toLowerCase()
@@ -287,23 +320,6 @@ const ProductsPage = () => {
     setCurrentPage(1);
   };
 
-  // Handle search input
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-
-    // Update URL params
-    setSearchParams((params) => {
-      if (value) {
-        params.set("search", value);
-      } else {
-        params.delete("search");
-      }
-      return params;
-    });
-  };
-
-  // Clear all filters
   const clearFilters = () => {
     setPriceRange([0, 5000]);
     setSelectedBrands([]);
@@ -314,7 +330,6 @@ const ProductsPage = () => {
     setSearchParams({});
   };
 
-  // Format price
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -326,12 +341,10 @@ const ProductsPage = () => {
   // Construct breadcrumbs
   const breadcrumbs = [{ label: "Shop", link: "/shop" }];
 
-  // Check for Browse All query parameters
   const featuredParam = searchParams.get("featured");
   const discountParam = searchParams.get("discount");
   const sortParam = searchParams.get("sort");
 
-  // Handle Browse All breadcrumbs
   if (featuredParam === "true") {
     breadcrumbs.push({ label: "Best Sellers" });
   } else if (discountParam === "true") {
@@ -341,7 +354,6 @@ const ProductsPage = () => {
   } else if (searchTerm) {
     breadcrumbs.push({ label: `Search: "${searchTerm}"` });
   } else if (category && category !== "all") {
-    // Regular category/subcategory breadcrumbs
     const categoryObj = categories.find(
       (c) => c.category_name.toLowerCase().replace(/\s+/g, "-") === category
     );
@@ -369,14 +381,11 @@ const ProductsPage = () => {
     breadcrumbs.push({ label: "All Products" });
   }
 
-  // Get title for the page
   const getPageTitle = () => {
-    // Check for Browse All query parameters first
     const featuredParam = searchParams.get("featured");
     const discountParam = searchParams.get("discount");
     const sortParam = searchParams.get("sort");
 
-    // Handle Browse All special pages
     if (featuredParam === "true") {
       return "Best Sellers";
     }
@@ -389,12 +398,10 @@ const ProductsPage = () => {
       return "New Arrivals";
     }
 
-    // Handle search results
     if (searchTerm) {
       return `Search Results for "${searchTerm}"`;
     }
 
-    // Handle subcategory pages
     if (subcategory) {
       const categoryObj = categories.find(
         (c) => c.category_name.toLowerCase().replace(/\s+/g, "-") === category
@@ -413,7 +420,6 @@ const ProductsPage = () => {
       }
     }
 
-    // Handle category pages
     if (category && category !== "all") {
       const categoryObj = categories.find(
         (c) => c.category_name.toLowerCase().replace(/\s+/g, "-") === category
@@ -424,11 +430,9 @@ const ProductsPage = () => {
       }
     }
 
-    // Default fallback
     return "All Products";
   };
 
-  // Sync filter menu with current URL category
   useEffect(() => {
     if (!categories || categories.length === 0) return;
 
@@ -438,7 +442,6 @@ const ProductsPage = () => {
       );
 
       if (categoryObj) {
-        // Only update if not already selected
         if (!selectedCategories.includes(categoryObj._id)) {
           setSelectedCategories([categoryObj._id]);
           console.log(
@@ -448,7 +451,6 @@ const ProductsPage = () => {
         }
       }
     } else {
-      // Clear selection if on all products page
       if (selectedCategories.length > 0) {
         setSelectedCategories([]);
         console.log("🔄 Cleared category filter for all products");
@@ -457,20 +459,59 @@ const ProductsPage = () => {
   }, [category, categories]);
 
   return (
-    <div className="bg-background text-text">
+    <div className="bg-background text-text min-h-screen">
       <PageHeader title={getPageTitle()} breadcrumbs={breadcrumbs} />
 
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 mb-10">
-        <div className="flex flex-col md:flex-row justify-center items-center md:items-center mb-6">
-          <SearchBar
-            searchTerm={searchTerm}
-            handleSearch={handleSearch}
-            placeholder="Search products..."
-            className="w-full md:w-auto md:min-w-[500px]"
-          />
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-6 md:pb-10">
+        
+        {/* Total Products Count - Top of page */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-center justify-between">
+            <p className="text-text/70 text-sm md:text-base">
+              <span className="font-medium text-text">{totalProducts}</span> {totalProducts === 1 ? "product" : "products"} found
+            </p>
+            
+            {/* Desktop Sorting - Moved to top right */}
+            <div className="hidden md:block">
+              <Sorting
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 mt-8">
+        {/* Fixed Mobile Controls - Hide when navbar sidebar is open */}
+        {showMobileControls && !isNavbarSidebarOpen && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-5 py-1 shadow-lg">
+            <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
+              <FilterMenu
+                categories={categories}
+                selectedCategories={selectedCategories}
+                handleCategoryToggle={handleCategoryToggle}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                availableBrands={availableBrands}
+                selectedBrands={selectedBrands}
+                handleBrandToggle={handleBrandToggle}
+                inStockOnly={inStockOnly}
+                setInStockOnly={setInStockOnly}
+                clearFilters={clearFilters}
+                formatPrice={formatPrice}
+                isMobile={true}
+              />
+              
+              <Sorting
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+                isMobile={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Layout */}
+        <div className="hidden md:flex gap-6">
           <FilterMenu
             categories={categories}
             selectedCategories={selectedCategories}
@@ -486,36 +527,74 @@ const ProductsPage = () => {
             formatPrice={formatPrice}
           />
 
-          <div className="flex-1 min-w-0">
-            <Sorting
-              totalProducts={totalProducts}
-              sortOption={sortOption}
-              setSortOption={setSortOption}
-            />
-
+          <div className="flex-1">
             {isLoading ? (
               <div className="h-96 flex justify-center items-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                  <p className="text-base text-text/70">Loading products...</p>
+                </div>
               </div>
             ) : filteredProducts.length === 0 ? (
               <NoProduct clearFilters={clearFilters} />
             ) : (
               <>
+                <div className="mb-8">
+                  <Products
+                    products={filteredProducts}
+                    formatPrice={formatPrice}
+                  />
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      setCurrentPage={setCurrentPage}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Products - Added bottom padding for fixed buttons */}
+        <div className="md:hidden pb-20">
+          {isLoading ? (
+            <div className="h-64 flex justify-center items-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                <p className="text-sm text-text/70">Loading...</p>
+              </div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <NoProduct clearFilters={clearFilters} />
+          ) : (
+            <>
+              <div className="mb-6">
                 <Products
                   products={filteredProducts}
                   formatPrice={formatPrice}
+                  isMobile={true}
                 />
+              </div>
 
-                {totalPages > 1 && (
+              {totalPages > 1 && (
+                <div className="flex justify-center mb-6" ref={productsEndRef}>
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
                     setCurrentPage={setCurrentPage}
                   />
-                )}
-              </>
-            )}
-          </div>
+                </div>
+              )}
+              
+              {/* Products end marker - if no pagination */}
+              {totalPages <= 1 && <div ref={productsEndRef}></div>}
+            </>
+          )}
         </div>
       </div>
 

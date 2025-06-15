@@ -107,6 +107,9 @@ function Hero() {
               }}
             />
 
+            {/* Dark overlay for better text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-transparent"></div>
+
             {/* Content positioned based on textPosition from backend */}
             <div
               className={`absolute inset-0 flex items-center px-8 lg:px-16 ${
@@ -124,24 +127,24 @@ function Hero() {
                     : "max-w-lg md:max-w-xl lg:max-w-2xl"
                 }`}
               >
-                {/* Title - Responsive text sizes */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight text-gray-700">
+                {/* Title with strong text shadow */}
+                <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight text-white drop-shadow-[2px_2px_2px_rgba(0,0,0,0.5)]">
                   {slide.title}
                 </h1>
 
-                {/* Subtitle - Responsive text sizes */}
+                {/* Subtitle with text shadow */}
                 {slide.subtitle && (
-                  <p className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 leading-relaxed text-gray-500">
+                  <p className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 leading-relaxed text-white/95 drop-shadow-[1px_1px_2px_rgba(0,0,0,0.4)]">
                     {slide.subtitle}
                   </p>
                 )}
 
-                {/* CTA Button - Responsive sizing */}
+                {/* CTA Button */}
                 {slide.buttonText && (
                   <div>
                     <Link
                       to={slide.buttonLink}
-                      className="inline-flex items-center bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-full font-bold text-sm md:text-lg transition-all duration-300 transform hover:scale-101 shadow-lg"
+                      className="inline-flex items-center bg-primary hover:bg-primary/90 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm md:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     >
                       <span>{slide.buttonText}</span>
                       <i className="fas fa-arrow-right ml-2 md:ml-3 transition-transform duration-300"></i>
@@ -154,12 +157,12 @@ function Hero() {
         ))}
       </div>
 
-      {/* Navigation Arrows - Responsive sizing for all screens */}
+      {/* Navigation Arrows */}
       {slides.length > 1 && (
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white/80 text-gray-700 px-2 py-4 md:py-10 rounded-r-md transition-all duration-300 z-20 hover:shadow-md"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4 md:py-10 rounded-r-md transition-all duration-300 z-20 hover:shadow-md"
             aria-label="Previous slide"
           >
             <i className="fas fa-chevron-left text-sm md:text-base"></i>
@@ -167,7 +170,7 @@ function Hero() {
 
           <button
             onClick={goToNext}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white/80 text-gray-700 px-2 py-4  md:py-10 rounded-l-md transition-all duration-300 z-20 hover:shadow-md"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4  md:py-10 rounded-l-md transition-all duration-300 z-20 hover:shadow-md"
             aria-label="Next slide"
           >
             <i className="fas fa-chevron-right text-sm md:text-base"></i>
@@ -175,17 +178,17 @@ function Hero() {
         </>
       )}
 
-      {/* Slide Indicators - Responsive sizing */}
+      {/* Slide Indicators */}
       {slides.length > 1 && (
-        <div className="absolute bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
+        <div className="absolute bottom-4 md:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
               className={`transition-all duration-300 ${
                 index === currentSlide
-                  ? "w-8 h-3 bg-primary rounded-full shadow-lg"
-                  : "w-3 h-3 bg-white/70 hover:bg-white/90 rounded-full"
+                  ? "w-8 h-2 bg-primary rounded-full shadow-lg"
+                  : "w-2 h-2 bg-white/70 hover:bg-white/90 rounded-full"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />

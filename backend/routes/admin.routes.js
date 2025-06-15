@@ -26,6 +26,19 @@ const {
   deleteAdminOrder
 } = require('../controllers/orders.controller');
 
+// Import category controller functions
+const {
+  getAdminCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getSubcategoriesByCategory,
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory
+} = require('../controllers/category.controller');
+
 router.use(userAuth);
 
 // ========== PRODUCT MANAGEMENT ROUTES ==========
@@ -38,178 +51,17 @@ router.delete('/products/:id', deleteProduct);
 router.post('/products/bulk-delete', bulkDeleteProducts);
 
 // ========== CATEGORY MANAGEMENT ROUTES ==========
-router.get('/categories', async (req, res) => {
-  try {
-    const { page = 1, limit = 10, search, sortBy, sortOrder } = req.query;
+router.get('/categories', getAdminCategories);
+router.get('/categories/:id', getCategoryById);
+router.post('/categories', createCategory);
+router.put('/categories/:id', updateCategory);
+router.delete('/categories/:id', deleteCategory);
 
-    let query = {};
-    if (search) {
-      query.category_name = { $regex: search, $options: 'i' };
-    }
-
-    let sort = { createdAt: -1 };
-    if (sortBy && sortOrder) {
-      const sortDirection = sortOrder === 'ascending' ? 1 : -1;
-      sort = { [sortBy]: sortDirection };
-    }
-
-    const categories = await Category.find(query)
-      .sort(sort)
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await Category.countDocuments(query);
-
-    res.json({
-      success: true,
-      categories,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalCategories: total,
-        hasNextPage: parseInt(page) < Math.ceil(total / limit),
-        hasPrevPage: parseInt(page) > 1
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch categories'
-    });
-  }
-});
-
-router.post('/categories', async (req, res) => {
-  try {
-    const { category_name, description } = req.body;
-
-    if (!category_name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category name is required'
-      });
-    }
-
-    // Check if category already exists
-    const existingCategory = await Category.findOne({
-      category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
-    });
-
-    if (existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category already exists'
-      });
-    }
-
-    const category = new Category({
-      category_name,
-      description: description || ''
-    });
-
-    await category.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Category created successfully',
-      category
-    });
-  } catch (error) {
-    console.error('Error creating category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create category'
-    });
-  }
-});
-
-router.put('/categories/:id', async (req, res) => {
-  try {
-    const { category_name, description } = req.body;
-
-    if (!category_name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category name is required'
-      });
-    }
-
-    // Check if another category with same name exists
-    const existingCategory = await Category.findOne({
-      _id: { $ne: req.params.id },
-      category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
-    });
-
-    if (existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category name already exists'
-      });
-    }
-
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      { category_name, description: description || '' },
-      { new: true, runValidators: true }
-    );
-
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Category updated successfully',
-      category
-    });
-  } catch (error) {
-    console.error('Error updating category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update category'
-    });
-  }
-});
-
-router.delete('/categories/:id', async (req, res) => {
-  try {
-    // Check if category is being used by any products
-    const productsUsingCategory = await Product.countDocuments({
-      category: req.params.id
-    });
-
-    if (productsUsingCategory > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete category. It is being used by ${productsUsingCategory} product(s).`
-      });
-    }
-
-    const category = await Category.findByIdAndDelete(req.params.id);
-
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Category deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete category'
-    });
-  }
-});
+// ========== SUBCATEGORY MANAGEMENT ROUTES ==========
+router.get('/categories/:categoryId/subcategories', getSubcategoriesByCategory);
+router.post('/subcategories', createSubcategory);
+router.put('/subcategories/:id', updateSubcategory);
+router.delete('/subcategories/:id', deleteSubcategory);
 
 // ========== ORDER MANAGEMENT ROUTES ==========
 router.get('/orders', getAdminOrders);
@@ -239,7 +91,7 @@ router.get('/reviews', async (req, res) => {
       sortOrder
     });
 
-    // Build query for ALL reviews (not filtered by seller)
+    // Build query
     let query = {};
 
     // Add rating filter
@@ -250,86 +102,69 @@ router.get('/reviews', async (req, res) => {
     // Add search filter
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-
-      // Find users matching search terms
-      const matchingUsers = await User.find({
-        $or: [
-          { first_name: searchRegex },
-          { last_name: searchRegex },
-          { email: searchRegex }
-        ]
-      }).select('_id');
-
-      // Find products matching search terms
-      const matchingProducts = await Product.find({
-        product_name: searchRegex
-      }).select('_id');
-
-      const matchingUserIds = matchingUsers.map(u => u._id);
-      const matchingProductIds = matchingProducts.map(p => p._id);
-
       query.$or = [
         { comment: searchRegex },
-        { user_id: { $in: matchingUserIds } },
-        { product_id: { $in: matchingProductIds } }
+        { 'user_id.first_name': searchRegex },
+        { 'user_id.last_name': searchRegex },
+        { 'product_id.product_name': searchRegex }
       ];
     }
 
-    // Build sort object
-    let sortObject = {};
-    sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    // Sort configuration
+    let sort = {};
+    if (sortBy && sortOrder) {
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sort.createdAt = -1; // Default sort
+    }
 
+    console.log('📝 Final query:', query);
+    console.log('📝 Sort config:', sort);
+
+    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    console.log('📊 Query:', JSON.stringify(query, null, 2));
-    console.log('🔄 Sort:', sortObject);
-
-    // Get ALL reviews with pagination
+    // Get reviews with populated data
     const reviews = await Review.find(query)
-      .populate('user_id', 'first_name last_name email avatar')
-      .populate('product_id', 'product_name product_image category')
-      .sort(sortObject)
-      .skip(skip)
+      .populate('user_id', 'first_name last_name email')
+      .populate('product_id', 'product_name')
+      .sort(sort)
       .limit(parseInt(limit))
-      .lean();
+      .skip(skip);
 
-    // Get total count
-    const totalReviews = await Review.countDocuments(query);
+    // Get total count for pagination
+    const total = await Review.countDocuments(query);
 
-    console.log(`📝 Found ${reviews.length} reviews of ${totalReviews} total`);
-
-    const pagination = {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(totalReviews / parseInt(limit)),
-      totalReviews,
-      hasNextPage: parseInt(page) < Math.ceil(totalReviews / parseInt(limit)),
-      hasPrevPage: parseInt(page) > 1
-    };
+    console.log(`📊 Found ${reviews.length} reviews out of ${total} total`);
 
     res.json({
       success: true,
-      reviews: reviews,
-      pagination
+      reviews,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalReviews: total,
+        hasNextPage: parseInt(page) < Math.ceil(total / parseInt(limit)),
+        hasPrevPage: parseInt(page) > 1
+      }
     });
 
   } catch (error) {
-    console.error('❌ Error fetching admin reviews:', error);
+    console.error('❌ Error fetching reviews:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch reviews',
-      error: error.message
+      message: 'Failed to fetch reviews'
     });
   }
 });
 
-// Delete review (admin can delete any review)
-router.delete('/reviews/:id', async (req, res) => {
+// Delete review
+router.delete('/reviews/:reviewId', async (req, res) => {
   try {
-    const reviewId = req.params.id;
+    const { reviewId } = req.params;
+    console.log('🗑️ Deleting review:', reviewId);
 
-    console.log('🗑️ Admin deleting review:', reviewId);
-
-    const review = await Review.findById(reviewId);
+    const review = await Review.findByIdAndDelete(reviewId);
 
     if (!review) {
       return res.status(404).json({
@@ -338,34 +173,7 @@ router.delete('/reviews/:id', async (req, res) => {
       });
     }
 
-    const productId = review.product_id;
-
-    await Review.findByIdAndDelete(reviewId);
-
-    // Update product rating after deletion
-    try {
-      const reviews = await Review.find({ product_id: productId });
-
-      if (reviews.length > 0) {
-        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-        const avgRating = Math.round((totalRating / reviews.length) * 10) / 10;
-
-        await Product.findByIdAndUpdate(productId, {
-          product_rating: avgRating,
-          review_count: reviews.length
-        });
-      } else {
-        await Product.findByIdAndUpdate(productId, {
-          product_rating: 0,
-          review_count: 0
-        });
-      }
-    } catch (updateError) {
-      console.log('⚠️ Error updating product rating:', updateError.message);
-    }
-
-    console.log(`✅ Deleted review ${reviewId}`);
-
+    console.log('✅ Review deleted successfully');
     res.json({
       success: true,
       message: 'Review deleted successfully'
@@ -396,15 +204,23 @@ router.get('/users/stats', async (req, res) => {
       admins: allUsers.filter(u => u.role === 'admin').length,
       users: allUsers.filter(u => u.role === 'user').length,
       // Additional useful stats
-      verifiedUsers: allUsers.filter(u => u.isAccountVerified === true).length,
-      recentUsers: allUsers.filter(u => {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        return new Date(u.createdAt) > oneWeekAgo;
-      }).length
+      verified: allUsers.filter(u => u.isAccountVerified === true).length,
+      unverified: allUsers.filter(u => u.isAccountVerified === false).length,
+      withPhone: allUsers.filter(u => u.phone && u.phone.trim() !== '').length,
+      withoutPhone: allUsers.filter(u => !u.phone || u.phone.trim() === '').length
     };
 
-    console.log('📈 User stats:', stats);
+    // Calculate registration trends (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const recentRegistrations = allUsers.filter(user => 
+      user.createdAt && new Date(user.createdAt) >= sevenDaysAgo
+    ).length;
+
+    stats.recentRegistrations = recentRegistrations;
+
+    console.log('📊 User stats calculated:', stats);
 
     res.json({
       success: true,
@@ -412,7 +228,7 @@ router.get('/users/stats', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching user stats:', error);
+    console.error('❌ Error getting user statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch user statistics'
@@ -420,91 +236,37 @@ router.get('/users/stats', async (req, res) => {
   }
 });
 
-// ========== ORDER STATISTICS ROUTE ==========
-router.get('/orders/stats', async (req, res) => {
-  try {
-    console.log('📊 Getting order statistics for admin');
-
-    // Get all orders (not paginated)
-    const allOrders = await Order.find({});
-
-    // Calculate basic stats
-    const stats = {
-      total: allOrders.length,
-      pending: allOrders.filter(o => o.status === 'pending').length,
-      processing: allOrders.filter(o => o.status === 'processing').length,
-      shipped: allOrders.filter(o => o.status === 'shipped').length,
-      delivered: allOrders.filter(o => o.status === 'delivered').length,
-      cancelled: allOrders.filter(o => o.status === 'cancelled').length,
-      // Additional useful stats
-      totalRevenue: allOrders
-        .filter(o => o.status !== 'cancelled')
-        .reduce((sum, order) => sum + (order.total_amount || 0), 0),
-      averageOrderValue: 0,
-      todaysOrders: allOrders.filter(o => {
-        const today = new Date();
-        const orderDate = new Date(o.createdAt);
-        return orderDate.toDateString() === today.toDateString();
-      }).length,
-      thisWeekOrders: allOrders.filter(o => {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        return new Date(o.createdAt) > oneWeekAgo;
-      }).length
-    };
-
-    // Calculate average order value
-    const completedOrders = allOrders.filter(o =>
-      o.status !== 'cancelled' && o.total_amount > 0
-    );
-    if (completedOrders.length > 0) {
-      stats.averageOrderValue = stats.totalRevenue / completedOrders.length;
-    }
-
-    console.log('📈 Order stats:', stats);
-
-    res.json({
-      success: true,
-      stats
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching order stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch order statistics'
-    });
-  }
-});
-
-// ========== REVIEW STATISTICS ROUTE ==========
+// Get review statistics  
 router.get('/reviews/stats', async (req, res) => {
   try {
-    console.log('📊 Getting review stats for admin');
+    console.log('📊 Getting review statistics for admin');
 
-    // Get ALL reviews (not filtered by seller)
     const allReviews = await Review.find({});
 
-    // Calculate stats
     const stats = {
-      totalReviews: allReviews.length,
-      averageRating: 0,
-      ratingBreakdown: {
-        5: allReviews.filter(r => r.rating === 5).length,
-        4: allReviews.filter(r => r.rating === 4).length,
-        3: allReviews.filter(r => r.rating === 3).length,
-        2: allReviews.filter(r => r.rating === 2).length,
-        1: allReviews.filter(r => r.rating === 1).length,
-      }
+      total: allReviews.length,
+      averageRating: allReviews.length > 0 ? 
+        (allReviews.reduce((sum, review) => sum + review.rating, 0) / allReviews.length).toFixed(1) : 0,
+      
+      // Rating distribution
+      fiveStars: allReviews.filter(r => r.rating === 5).length,
+      fourStars: allReviews.filter(r => r.rating === 4).length,
+      threeStars: allReviews.filter(r => r.rating === 3).length,
+      twoStars: allReviews.filter(r => r.rating === 2).length,
+      oneStar: allReviews.filter(r => r.rating === 1).length,
     };
 
-    // Calculate average rating
-    if (allReviews.length > 0) {
-      const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
-      stats.averageRating = Number((totalRating / allReviews.length).toFixed(1));
-    }
+    // Recent reviews (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const recentReviews = allReviews.filter(review => 
+      review.createdAt && new Date(review.createdAt) >= sevenDaysAgo
+    ).length;
 
-    console.log('📈 Review stats:', stats);
+    stats.recentReviews = recentReviews;
+
+    console.log('📊 Review stats calculated:', stats);
 
     res.json({
       success: true,
@@ -512,7 +274,7 @@ router.get('/reviews/stats', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching review stats:', error);
+    console.error('❌ Error getting review statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch review statistics'
@@ -520,7 +282,7 @@ router.get('/reviews/stats', async (req, res) => {
   }
 });
 
-// ========== EXISTING ROUTES (KEEP THESE AFTER STATS ROUTES) ==========
+// ========== EXISTING ROUTES (KEEP THESE AFTER STATS ROUTE) ==========
 
 // Get all users with pagination and filters (existing route)
 router.get('/users', async (req, res) => {
@@ -557,90 +319,55 @@ router.get('/users', async (req, res) => {
       query.$or = [
         { first_name: searchRegex },
         { last_name: searchRegex },
-        { email: searchRegex },
-        { phone: searchRegex }
+        { email: searchRegex }
       ];
     }
 
-    // Build sort object
-    let sortObject = {};
-    if (sortBy === 'name') {
-      sortObject.first_name = sortOrder === 'asc' ? 1 : -1;
+    // Sort configuration
+    let sort = {};
+    if (sortBy && sortOrder) {
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
     } else {
-      sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+      sort.createdAt = -1; // Default sort by creation date, newest first
     }
 
+    console.log('📝 Final query:', query);
+    console.log('📝 Sort config:', sort);
+
+    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    console.log('📊 Query:', JSON.stringify(query, null, 2));
-    console.log('🔄 Sort:', sortObject);
-
-    // Get users with pagination
+    // Get users
     const users = await User.find(query)
-      .select('-password -verify_Otp -forget_password_otp') // Exclude sensitive fields
-      .sort(sortObject)
-      .skip(skip)
+      .select('-password -verify_Otp -forget_password_otp -verify_Otp_expiry -forget_password_otp_expiry') // Exclude sensitive fields
+      .sort(sort)
       .limit(parseInt(limit))
-      .lean();
+      .skip(skip);
 
-    // Get total count
-    const totalUsers = await User.countDocuments(query);
+    // Get total count for pagination
+    const total = await User.countDocuments(query);
 
-    console.log(`👥 Found ${users.length} users of ${totalUsers} total`);
-
-    const pagination = {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(totalUsers / parseInt(limit)),
-      total: totalUsers,
-      hasNextPage: parseInt(page) < Math.ceil(totalUsers / parseInt(limit)),
-      hasPrevPage: parseInt(page) > 1
-    };
+    console.log(`📊 Found ${users.length} users out of ${total} total`);
 
     res.json({
       success: true,
-      users: users,
-      pagination
+      users,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalUsers: total,
+        hasNextPage: parseInt(page) < Math.ceil(total / parseInt(limit)),
+        hasPrevPage: parseInt(page) > 1
+      }
     });
 
   } catch (error) {
-    console.error('❌ Error fetching admin users:', error);
+    console.error('❌ Error fetching users:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch users',
-      error: error.message
+      message: 'Failed to fetch users'
     });
   }
 });
-
-// Get user by ID (existing route - AFTER stats route)
-router.get('/users/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-    console.log('👤 Getting user:', userId);
-
-    const user = await User.findById(userId).lean();
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    console.log('✅ Found user:', user.email);
-
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('❌ Error fetching user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user'
-    });
-  }
-});
-
 
 module.exports = router;

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 function PageHeader({ title, breadcrumbs }) {
   return (
-    <section className="relative py-16 md:py-15 bg-gradient-to-b from-accent/40 to-background/90">
+    <section className="relative py-6 md:py-15 bg-gradient-to-b from-accent/40 to-background/90">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-text mb-4 text-center">
@@ -37,7 +37,7 @@ function PageHeader({ title, breadcrumbs }) {
             </div>
           )}
 
-          <div className="h-1 w-24 bg-primary mx-auto mt-6"></div>
+          <div className="h-1 w-24 bg-primary mx-auto mt-4"></div>
         </div>
       </div>
     </section>

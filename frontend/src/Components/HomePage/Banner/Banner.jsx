@@ -48,7 +48,7 @@ function Banner() {
     title: "Get 10% Off Your First Order!",
     subtitle: "Join our newsletter and receive an exclusive discount code.",
     buttonText: "Get Discount",
-    image: "/src/assets/banner.webp"
+    image: "banner.webp"
   };
 
   const banner = bannerData || defaultBanner;

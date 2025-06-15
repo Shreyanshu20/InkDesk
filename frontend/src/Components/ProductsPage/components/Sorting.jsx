@@ -1,36 +1,97 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 
-const Sorting = ({ totalProducts, sortOption, setSortOption }) => {
+const Sorting = ({ sortOption, setSortOption, isMobile = false }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const sortRef = useRef(null);
+
+  const sortOptions = [
+    { value: "relevance", label: "Relevance" },
+    { value: "product_price-asc", label: "Price: Low to High" },
+    { value: "product_price-desc", label: "Price: High to Low" },
+    { value: "product_rating-desc", label: "Customer Rating" },
+    { value: "createdAt-desc", label: "Newest First" },
+    { value: "product_name-asc", label: "Name: A to Z" },
+    { value: "product_name-desc", label: "Name: Z to A" },
+  ];
+
+  const getCurrentSortLabel = () => {
+    const option = sortOptions.find((opt) => opt.value === sortOption);
+    return option ? option.label : "Sort";
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDropdown]);
+
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 text-text flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 p-4 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600">
-      <div className="mb-2 sm:mb-0">
-        <p className="text-text font-medium">
-          {totalProducts}{" "}
-          <span className="text-text/70">
-            {totalProducts === 1 ? "product" : "products"} found
+    <div className="relative" ref={sortRef}>
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className={`flex items-center justify-center gap-2 px-6 py-3 text-text rounded-xl transition-all duration-200 ${
+          isMobile ? "flex-1 font-semibold" : "min-w-40 font-medium"
+        }`}
+      >
+        {!isMobile && (
+          <span className="text-text/70 text-sm font-medium">Sort by:</span>
+        )}
+        <div className="flex items-center gap-2">
+          <i className="fas fa-sort text-sm text-primary"></i>
+          <span
+            className={`font-semibold ${
+              isMobile ? "uppercase text-sm tracking-wide" : ""
+            }`}
+          >
+            {isMobile ? "SORT" : getCurrentSortLabel()}
           </span>
-        </p>
-      </div>
+          <i
+            className={`fas fa-chevron-${
+              showDropdown ? "up" : "down"
+            } text-xs transition-transform duration-200 text-primary`}
+          ></i>
+        </div>
+      </button>
 
-      <div className="flex items-center gap-2">
-        <label htmlFor="sort" className="text-text text-sm whitespace-nowrap">
-          Sort by:
-        </label>
-        <select
-          id="sort"
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-          className="py-2 px-3 border border-gray-300 dark:border-gray-500 rounded-lg bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary text-text min-w-[160px]"
+      {showDropdown && (
+        <div
+          className={`absolute ${
+            isMobile ? "right-0 bottom-full mb-2" : "left-0 top-full mt-2"
+          } bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 ${
+            isMobile ? "min-w-48" : "min-w-52"
+          } animate-in slide-in-from-top-2 duration-200 overflow-hidden`}
         >
-          <option value="relevance">Relevance</option>
-          <option value="product_price-asc">Price: Low to High</option>
-          <option value="product_price-desc">Price: High to Low</option>
-          <option value="product_rating-desc">Customer Rating</option>
-          <option value="createdAt-desc">Newest First</option>
-          <option value="product_name-asc">Name: A to Z</option>
-          <option value="product_name-desc">Name: Z to A</option>
-        </select>
-      </div>
+          <div className="p-2">
+            {sortOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  setSortOption(option.value);
+                  setShowDropdown(false);
+                }}
+                className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors font-medium ${
+                  sortOption === option.value
+                    ? "bg-primary text-white shadow-sm"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-700 text-text"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

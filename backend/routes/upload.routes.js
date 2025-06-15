@@ -28,9 +28,18 @@ router.get('/test', (req, res) => {
   });
 });
 
-// Upload image endpoint
+// Upload single image endpoint (for categories)
 router.post('/image', userAuth, upload.single('image'), uploadController.uploadImage);
 
+// Category image upload routes
+router.post('/category-images', userAuth, upload.array('images', 1), uploadController.uploadCategoryImages);
+router.delete('/category-images/:publicId', userAuth, uploadController.deleteCategoryImage);
+
+// Subcategory image upload routes  
+router.post('/subcategory-images', userAuth, upload.array('images', 1), uploadController.uploadSubcategoryImages);
+router.delete('/subcategory-images/:publicId', userAuth, uploadController.deleteSubcategoryImage);
+
+// Upload product images
 router.post('/product-images', userAuth, upload.array('images', 6), uploadController.uploadProductImages);
 router.delete('/product-images/:publicId', userAuth, uploadController.deleteProductImage);
 

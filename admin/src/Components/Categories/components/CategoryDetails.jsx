@@ -2,48 +2,43 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import SubcategoryTable from "./SubcategoryTable";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function CategoryDetails() {
-  const { id } = useParams(); // This should get the ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const [category, setCategory] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  console.log("CategoryDetails ID from params:", id); // Debug log
+  const [showSubcategoryTable, setShowSubcategoryTable] = useState(false);
 
   useEffect(() => {
-    console.log("useEffect running with id:", id); // Debug log
     if (id) {
       fetchCategory(id);
     } else {
-      console.log("No ID found, redirecting..."); // Debug log
       navigate("/admin/categories");
     }
   }, [id, navigate]);
 
   const fetchCategory = async (categoryId) => {
     try {
-      console.log("Fetching category with ID:", categoryId);
       setIsLoading(true);
       
-      const response = await axios.get(`${API_BASE_URL}/categories/${categoryId}`);
-      console.log("Category API response:", response.data);
+      const response = await axios.get(`${API_BASE_URL}/admin/categories/${categoryId}`, {
+        withCredentials: true
+      });
       
       if (response.data.success && response.data.category) {
         const cat = response.data.category;
-        
-        // FIX: subcategories are stored as simple strings, not objects
-        const subcategoryNames = cat.subcategories || [];
-        
-        console.log("Subcategory names:", subcategoryNames);
         
         setCategory({
           id: cat._id,
           name: cat.category_name,
           image: cat.category_image || "",
-          subcategories: subcategoryNames, // Fixed this line
+          subcategories: cat.subcategories || [],
+          createdAt: cat.createdAt,
+          updatedAt: cat.updatedAt
         });
       } else {
         throw new Error("Category not found");
@@ -65,7 +60,7 @@ function CategoryDetails() {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
-        const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
+        const response = await axios.delete(`${API_BASE_URL}/admin/categories/${id}`, {
           withCredentials: true,
         });
         if (response.data.success) {
@@ -74,7 +69,8 @@ function CategoryDetails() {
         }
       } catch (error) {
         console.error("Error deleting category:", error);
-        toast.error("Failed to delete category");
+        const message = error.response?.data?.message || "Failed to delete category";
+        toast.error(message);
       }
     }
   };
@@ -137,17 +133,31 @@ function CategoryDetails() {
               <p className="text-gray-500 dark:text-gray-400 mt-1">
                 ID: {category.id}
               </p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <span>Created: {new Date(category.createdAt).toLocaleDateString()}</span>
+                <span>Updated: {new Date(category.updatedAt).toLocaleDateString()}</span>
+              </div>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-6 mb-6">
               {/* Subcategories Section */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Subcategories ({category.subcategories.length})
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Subcategories ({category.subcategories.length})
+                  </h3>
+                  <button
+                    onClick={() => setShowSubcategoryTable(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs flex items-center gap-1"
+                  >
+                    <i className="fas fa-cog"></i>
+                    Manage
+                  </button>
+                </div>
+                
                 {category.subcategories && category.subcategories.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {category.subcategories.map((subcategory, index) => (
+                    {category.subcategories.slice(0, 8).map((subcategory, index) => (
                       <div
                         key={subcategory._id || index}
                         className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
@@ -155,6 +165,11 @@ function CategoryDetails() {
                         {subcategory.subcategory_name}
                       </div>
                     ))}
+                    {category.subcategories.length > 8 && (
+                      <div className="bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
+                        +{category.subcategories.length - 8} more
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -182,6 +197,19 @@ function CategoryDetails() {
           </div>
         </div>
       </div>
+
+      {/* Subcategory Management Modal */}
+      {showSubcategoryTable && (
+        <SubcategoryTable
+          categoryId={category.id}
+          categoryName={category.name}
+          onClose={() => {
+            setShowSubcategoryTable(false);
+            // Refresh category data to get updated subcategories
+            fetchCategory(id);
+          }}
+        />
+      )}
     </div>
   );
 }

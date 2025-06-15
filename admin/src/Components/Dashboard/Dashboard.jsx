@@ -618,7 +618,7 @@ function Dashboard() {
 
         <StatCard
           title="Total Orders"
-          value={dashboardData.stats.orders.total.toLocaleString()}
+          value={(dashboardData.stats.orders.total || 0).toLocaleString()}
           change={`Avg: ${formatCurrency(
             Math.round(dashboardData.stats.orders.averageOrderValue || 0)
           )}`}
@@ -629,8 +629,8 @@ function Dashboard() {
 
         <StatCard
           title="Total Products"
-          value={dashboardData.stats.products.totalProducts.toLocaleString()}
-          change={`${dashboardData.stats.products.outOfStockProducts} out of stock`}
+          value={(dashboardData.stats.products.totalProducts || 0).toLocaleString()}
+          change={`${dashboardData.stats.products.outOfStockProducts || 0} out of stock`}
           icon="fas fa-box"
           iconBg="bg-secondary/10 dark:bg-secondary/20"
           iconColor="text-secondary"
@@ -638,8 +638,8 @@ function Dashboard() {
 
         <StatCard
           title="Total Users"
-          value={dashboardData.stats.users.total.toLocaleString()}
-          change={`${dashboardData.stats.users.recentUsers} new this week`}
+          value={(dashboardData.stats.users.total || 0).toLocaleString()}
+          change={`${dashboardData.stats.users.recentUsers || 0} new this week`}
           icon="fas fa-users"
           iconBg="bg-accent/10 dark:bg-accent/20"
           iconColor="text-accent"
@@ -670,7 +670,8 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Average Rating</p>
               <p className="text-2xl font-bold text-text">
-                {dashboardData.stats.reviews.averageRating.toFixed(1)}
+                {/* FIX: Convert to number first, then call toFixed */}
+                {Number(dashboardData.stats.reviews.averageRating || 0).toFixed(1)}
               </p>
             </div>
             <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full">
@@ -684,7 +685,7 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Total Reviews</p>
               <p className="text-2xl font-bold text-text">
-                {dashboardData.stats.reviews.totalReviews.toLocaleString()}
+                {(dashboardData.stats.reviews.totalReviews || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
@@ -698,7 +699,7 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Active Products</p>
               <p className="text-2xl font-bold text-text">
-                {dashboardData.stats.products.activeProducts.toLocaleString()}
+                {(dashboardData.stats.products.activeProducts || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
@@ -712,7 +713,7 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Stock Alerts</p>
               <p className="text-2xl font-bold text-text">
-                {dashboardData.lowStockProducts.length}
+                {(dashboardData.lowStockProducts || []).length}
               </p>
             </div>
             <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">

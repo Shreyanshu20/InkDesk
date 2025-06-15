@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import CategoryImageUpload from "./CategoryImageUpload";
+import SubcategoryTable from "./SubcategoryTable";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -22,6 +23,7 @@ function CategoryForm({ mode: propMode }) {
   const [formTouched, setFormTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [category, setCategory] = useState(null);
+  const [showSubcategoryTable, setShowSubcategoryTable] = useState(false);
 
   // Fetch category for editing
   useEffect(() => {
@@ -32,7 +34,9 @@ function CategoryForm({ mode: propMode }) {
 
   const fetchCategory = async (categoryId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/categories/${categoryId}`);
+      const response = await axios.get(`${API_BASE_URL}/admin/categories/${categoryId}`, {
+        withCredentials: true
+      });
       
       if (response.data.success && response.data.category) {
         const cat = response.data.category;
@@ -116,12 +120,12 @@ function CategoryForm({ mode: propMode }) {
 
       let response;
       if (mode === "add") {
-        response = await axios.post(`${API_BASE_URL}/categories`, categoryData, {
+        response = await axios.post(`${API_BASE_URL}/admin/categories`, categoryData, {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         });
       } else {
-        response = await axios.put(`${API_BASE_URL}/categories/${id}`, categoryData, {
+        response = await axios.put(`${API_BASE_URL}/admin/categories/${id}`, categoryData, {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         });
@@ -136,6 +140,14 @@ function CategoryForm({ mode: propMode }) {
       toast.error(`Failed to ${mode === "add" ? "create" : "update"} category`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseSubcategoryModal = () => {
+    setShowSubcategoryTable(false);
+    // Refresh category data to get updated subcategories
+    if (mode === "edit" && id) {
+      fetchCategory(id);
     }
   };
 
@@ -183,54 +195,100 @@ function CategoryForm({ mode: propMode }) {
                 )}
               </div>
 
-              {/* Subcategories */}
+              {/* Subcategories Section */}
               <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Subcategories
-                </label>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-text">
+                    Subcategories {mode === "edit" && category?.subcategories && 
+                      `(${category.subcategories.length})`}
+                  </label>
+                  {mode === "edit" && category && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSubcategoryTable(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs flex items-center gap-1"
+                    >
+                      <i className="fas fa-cog"></i>
+                      Manage
+                    </button>
+                  )}
+                </div>
                 
-                {/* Existing subcategories */}
-                {formData.subcategories.length > 0 && (
-                  <div className="mb-3 space-y-2">
-                    {formData.subcategories.map((sub, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
-                        <span className="text-sm text-text">{sub}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeSubcategory(index)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          <i className="fas fa-times"></i>
-                        </button>
+                {mode === "edit" && category?.subcategories ? (
+                  // Show existing subcategories for edit mode
+                  <div className="mb-4">
+                    {category.subcategories.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        {category.subcategories.slice(0, 6).map((subcategory, index) => (
+                          <div
+                            key={subcategory._id || index}
+                            className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            {subcategory.subcategory_name}
+                          </div>
+                        ))}
+                        {category.subcategories.length > 6 && (
+                          <div className="bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
+                            +{category.subcategories.length - 6} more
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">
+                        No subcategories found
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Click "Manage" button above for full subcategory management
+                    </p>
+                  </div>
+                ) : (
+                  // Show add subcategories interface for add mode
+                  <div>
+                    {/* Existing subcategories */}
+                    {formData.subcategories.length > 0 && (
+                      <div className="mb-3 space-y-2">
+                        {formData.subcategories.map((sub, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
+                            <span className="text-sm text-text">{sub}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeSubcategory(index)}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add new subcategory */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="newSubcategory"
+                        value={formData.newSubcategory}
+                        onChange={handleInputChange}
+                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        placeholder="Add subcategory"
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addSubcategory();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={addSubcategory}
+                        className="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                {/* Add new subcategory */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    name="newSubcategory"
-                    value={formData.newSubcategory}
-                    onChange={handleInputChange}
-                    className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Add subcategory"
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addSubcategory();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={addSubcategory}
-                    className="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90"
-                  >
-                    Add
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -273,6 +331,15 @@ function CategoryForm({ mode: propMode }) {
           </div>
         </form>
       </div>
+
+      {/* Subcategory Management Modal */}
+      {showSubcategoryTable && mode === "edit" && category && (
+        <SubcategoryTable
+          categoryId={category._id}
+          categoryName={category.category_name}
+          onClose={handleCloseSubcategoryModal}
+        />
+      )}
     </div>
   );
 }

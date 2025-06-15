@@ -8,7 +8,7 @@ import StarRating from "../../Common/StarRating";
 import PriceDisplay from "../../Common/PriceDisplay";
 import Button from "../../Common/Button";
 
-const Products = ({ products, formatPrice }) => {
+const Products = ({ products, formatPrice, isMobile = false }) => {
   const { isLoggedIn } = useContext(AppContent);
   const { addToCart } = useCart(); 
   const {
@@ -18,7 +18,6 @@ const Products = ({ products, formatPrice }) => {
     loading: wishlistLoading,
   } = useWishlist();
 
-  // Memoize the handleAddToCart to prevent unnecessary re-renders
   const handleAddToCart = useMemo(() => async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -28,7 +27,6 @@ const Products = ({ products, formatPrice }) => {
       return;
     }
 
-    // Use CartContext addToCart which handles UI updates
     await addToCart(productId, 1);
   }, [isLoggedIn, addToCart]);
 
@@ -54,7 +52,6 @@ const Products = ({ products, formatPrice }) => {
     }
   };
 
-  // Fixed discount calculation - use the same logic as your working version
   const calculateDiscount = (price, discountPercentage) => {
     if (!discountPercentage) return 0;
     return Math.round(discountPercentage);
@@ -62,9 +59,8 @@ const Products = ({ products, formatPrice }) => {
 
   if (!products || products.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {/* Loading skeleton */}
-        {Array.from({ length: 8 }).map((_, index) => (
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
+        {Array.from({ length: isMobile ? 4 : 8 }).map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="bg-gray-200 rounded-lg h-64 w-full mb-4"></div>
             <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -75,17 +71,147 @@ const Products = ({ products, formatPrice }) => {
     );
   }
 
+  // Mobile Layout (2 columns) - Image focused
+  if (isMobile) {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        {products.map((product) => {
+          const discount = calculateDiscount(
+            product.product_price,
+            product.product_discount
+          );
+          const inStock = product.product_stock > 0;
+          const discountedPrice =
+            discount > 0
+              ? product.product_price - product.product_price * (discount / 100)
+              : product.product_price;
+
+          const productInWishlist = isInWishlist(product._id);
+
+          return (
+            <div key={product._id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <Link to={`/shop/product/${product._id}`} className="block">
+                {/* Product Image - Made taller for mobile */}
+                <div className="relative bg-gray-100 dark:bg-gray-700" style={{ aspectRatio: '3/4' }}>
+                  <img
+                    src={
+                      product.product_image ||
+                      product.product_images?.[0] ||
+                      "https://placehold.co/300x400?text=No+Image"
+                    }
+                    alt={product.product_name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.src = "https://placehold.co/300x400?text=No+Image";
+                    }}
+                  />
+
+                  {/* Discount Badge */}
+                  {discount > 0 && (
+                    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      {discount}% OFF
+                    </span>
+                  )}
+
+                  {/* Always Visible Wishlist Button for Mobile */}
+                  <button
+                    onClick={(e) => toggleWishlist(e, product._id)}
+                    disabled={wishlistLoading}
+                    className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                      productInWishlist
+                        ? "bg-red-500 text-white"
+                        : "bg-white/90 text-gray-600 hover:text-red-500 hover:bg-white shadow-sm"
+                    } ${wishlistLoading ? "cursor-wait opacity-70" : ""}`}
+                    aria-label={
+                      productInWishlist
+                        ? "Remove from wishlist"
+                        : "Add to wishlist"
+                    }
+                  >
+                    <i className="fas fa-heart text-xs"></i>
+                  </button>
+
+                  {/* Out of Stock Overlay */}
+                  {!inStock && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
+                        Out of Stock
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+
+              {/* Product Info - Compact */}
+              <div className="p-2.5">
+                <Link to={`/shop/product/${product._id}`}>
+                  <h3 className="font-medium text-xs mb-1 line-clamp-2 text-text hover:text-primary transition-colors leading-tight">
+                    {product.product_name}
+                  </h3>
+                </Link>
+                
+                {/* Rating - Smaller */}
+                <div className="mb-1.5">
+                  <StarRating
+                    rating={product.product_rating || 0}
+                    size="xs"
+                    showText={false}
+                  />
+                </div>
+
+                {/* Price - Compact */}
+                <div className="mb-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold text-primary">
+                      {formatPrice(discountedPrice)}
+                    </span>
+                    {discount > 0 && (
+                      <span className="text-xs text-gray-500 line-through">
+                        {formatPrice(product.product_price)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Add to Cart Button - Smaller */}
+                {inStock ? (
+                  <button
+                    onClick={(e) => handleAddToCart(e, product._id)}
+                    className="w-full bg-primary text-white text-xs py-1.5 rounded-md hover:bg-primary/90 transition-colors font-medium"
+                  >
+                    <i className="fas fa-shopping-cart mr-1"></i>
+                    Add to Cart
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toast.info("We'll notify you when this product is back in stock!");
+                    }}
+                    className="w-full bg-gray-400 text-white text-xs py-1.5 rounded-md font-medium"
+                  >
+                    <i className="fas fa-bell mr-1"></i>
+                    Out of Stock
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Desktop Layout (unchanged)
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map((product) => {
-        // FIXED: Use product.product_discount (like in your working version) 
-        // instead of product.discount_percentage
         const discount = calculateDiscount(
           product.product_price,
-          product.product_discount // CHANGED: back to product_discount
+          product.product_discount
         );
         const inStock = product.product_stock > 0;
-        // FIXED: Use the same discount calculation as your working version
         const discountedPrice =
           discount > 0
             ? product.product_price - product.product_price * (discount / 100)
@@ -97,7 +223,7 @@ const Products = ({ products, formatPrice }) => {
           <div key={product._id} className="group relative h-full">
             <Link to={`/shop/product/${product._id}`} className="block h-full">
               <div className="bg-gray-50 dark:bg-gray-800 text-text rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:scale-[1.01] h-full flex flex-col group border-b-4 border-transparent hover:border-primary">
-                {/* Product Image - Fixed Height */}
+                {/* Product Image */}
                 <div className="relative aspect-square bg-gray-50 flex-shrink-0">
                   <img
                     src={
@@ -152,15 +278,13 @@ const Products = ({ products, formatPrice }) => {
                   </button>
                 </div>
 
-                {/* Product Info - Flexible Height with Fixed Structure */}
+                {/* Product Info */}
                 <div className="p-4 flex-1 flex flex-col justify-between min-h-[140px]">
                   <div className="flex-1">
-                    {/* Product Name - Fixed Height */}
                     <h3 className="font-medium mb-2 line-clamp-2 h-12 overflow-hidden leading-6">
                       {product.product_name}
                     </h3>
 
-                    {/* Brand - Fixed Height */}
                     <div className="h-5 mb-2">
                       {product.product_brand && (
                         <p className="text-xs text-text/70">
@@ -169,7 +293,6 @@ const Products = ({ products, formatPrice }) => {
                       )}
                     </div>
 
-                    {/* Rating - Fixed Height */}
                     <div className="mb-3 h-4">
                       <StarRating
                         rating={product.product_rating || 0}
@@ -179,7 +302,6 @@ const Products = ({ products, formatPrice }) => {
                     </div>
                   </div>
 
-                  {/* Price - Always at Bottom */}
                   <div className="mt-auto">
                     <PriceDisplay
                       price={discountedPrice}
@@ -195,13 +317,13 @@ const Products = ({ products, formatPrice }) => {
               </div>
             </Link>
 
-            {/* Add to Cart Button for in-stock OR Notify Button for out-of-stock */}
+            {/* Hover Add to Cart Button for Desktop */}
             {inStock ? (
               <Button
                 className="absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
                 variant="primary"
                 size="icon"
-                onClick={(e) => handleAddToCart(e, product._id)} // CHANGED: use handleAddToCart
+                onClick={(e) => handleAddToCart(e, product._id)}
                 aria-label="Add to cart"
               >
                 <i className="fas fa-shopping-cart text-sm"></i>

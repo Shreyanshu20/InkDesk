@@ -234,15 +234,6 @@ try {
   console.error('❌ Banner routes error:', error.message);
 }
 
-// Upload routes
-try {
-  const uploadRoutes = require('./routes/upload.routes');
-  app.use('/upload', uploadRoutes);
-  console.log('✅ Upload routes loaded at /upload');
-} catch (error) {
-  console.error('❌ Upload routes error:', error.message);
-}
-
 // Admin routes (should be last among functional routes)
 try {
   const adminRoutes = require('./routes/admin.routes');
