@@ -57,11 +57,11 @@ function Footer() {
                 <i className="fas fa-envelope mr-2"></i> support@inkdesk.com
               </p>
               <p className="mb-2">
-                <i className="fas fa-phone mr-2"></i> +1 (555) 123-4567
+                <i className="fas fa-phone mr-2"></i> +91 1234567890
               </p>
               <p>
-                <i className="fas fa-map-marker-alt mr-2"></i> 123 Stationery
-                St, Pen City, PC 12345
+                <i className="fas fa-map-marker-alt mr-2"></i> 221B, InkDesk
+                Street, Stationery City, IN
               </p>
             </div>
           </div>

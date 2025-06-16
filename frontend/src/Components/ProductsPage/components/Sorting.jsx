@@ -40,7 +40,7 @@ const Sorting = ({ sortOption, setSortOption, isMobile = false }) => {
     <div className="relative" ref={sortRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className={`flex items-center justify-center gap-2 px-6 py-3 text-text rounded-xl transition-all duration-200 ${
+        className={`flex items-center justify-center gap-2 px-6 py-3 text-text rounded-xl transition-all duration-300 md:border md:border-gray-200 md:dark:border-gray-800 hover:bg-gray-200 hover:dark:bg-gray-700 ${
           isMobile ? "flex-1 font-semibold" : "min-w-40 font-medium"
         }`}
       >

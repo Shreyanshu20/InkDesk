@@ -3,6 +3,7 @@ import { AppContent } from "../../Context/AppContent.jsx";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import MyOrdersSkeleton from "./MyOrdersSkeleton";
 
 function MyOrders() {
   const { userData, backendUrl } = useContext(AppContent);
@@ -145,28 +146,7 @@ function MyOrders() {
   const orderCounts = getOrderCounts();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 sm:p-8">
-            <div className="animate-pulse space-y-6">
-              <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 sm:w-1/3"></div>
-              <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 sm:w-1/2"></div>
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-6"
-                >
-                  <div className="h-4 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 sm:w-1/4 mb-4"></div>
-                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 sm:w-1/3 mb-2"></div>
-                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 sm:w-1/6"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <MyOrdersSkeleton />;
   }
 
   return (
@@ -450,13 +430,6 @@ function MyOrders() {
                             Cancel Order
                           </>
                         )}
-                      </button>
-                    )}
-
-                    {order.status === "delivered" && (
-                      <button className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-600 dark:text-green-400 font-semibold rounded-lg sm:rounded-xl transition-all duration-200 border-2 border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700 text-sm">
-                        <i className="fas fa-star mr-2"></i>
-                        Rate & Review
                       </button>
                     )}
                   </div>

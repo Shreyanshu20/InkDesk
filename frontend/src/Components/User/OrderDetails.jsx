@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppContent } from "../../Context/AppContent.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
+import OrderDetailsSkeleton from "./OrderDetailsSkeleton";
 
 function OrderDetails() {
   const { orderId } = useParams();
@@ -163,26 +164,7 @@ function OrderDetails() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-8">
-            <div className="animate-pulse space-y-6">
-              <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 sm:w-1/3"></div>
-              <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 sm:w-1/2"></div>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="h-16 sm:h-24 bg-gray-200 dark:bg-gray-700 rounded-xl"
-                  ></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <OrderDetailsSkeleton />;
   }
 
   if (!order) {
@@ -596,13 +578,6 @@ function OrderDetails() {
                 <i className="fas fa-file-pdf mr-2 sm:mr-3"></i>
                 Download Invoice
               </button>
-
-              {order.status === "delivered" && (
-                <button className="px-6 sm:px-8 py-3 sm:py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg sm:rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base">
-                  <i className="fas fa-star mr-2 sm:mr-3"></i>
-                  Rate & Review
-                </button>
-              )}
             </div>
           </div>
         </div>

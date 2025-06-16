@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import CategoriesSkeleton from "./CategoriesSkeleton";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -99,24 +100,7 @@ function Categories() {
 
   // Show loading state
   if (loading) {
-    return (
-      <section className="bg-background text-text py-8 px-4">
-        <div className="max-w-7xl mx-auto h-full">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">
-              Shop by Category
-            </h2>
-            <div className="w-24 h-1 bg-primary mx-auto mt-4"></div>
-          </div>
-          <div className="flex justify-center items-center h-[70vh]">
-            <div className="text-center">
-              <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
-              <p className="text-text/70">Loading categories...</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
+    return <CategoriesSkeleton />;
   }
 
   return (

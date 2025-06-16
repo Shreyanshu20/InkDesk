@@ -5,7 +5,6 @@ import { AppContent } from "../../../Context/AppContent";
 import { useCart } from "../../../Context/CartContext";
 import axios from "axios";
 
-// Import components
 import Products from "../../HomePage/Products/Products";
 import Newsletter from "../../HomePage/Newsletter/Newsletter";
 import Tabs from "./Tabs";
@@ -15,7 +14,7 @@ import Breadcrumb from "../../Common/Breadcrumb";
 import PageSkeleton from "./PageSkeleton";
 
 function ProductDetails() {
-  const { productId } = useParams();
+  const { productId } = useParams(); // This is correct - using productId
   const navigate = useNavigate();
   const { backendUrl, isLoggedIn } = useContext(AppContent);
   const { addToCart, isLoading: cartLoading } = useCart();
@@ -24,10 +23,8 @@ function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
-  const [featuredProducts, setFeaturedProducts] = useState([]);
 
   useEffect(() => {
-    // Reset state when product ID changes
     setLoading(true);
     setQuantity(1);
     setSelectedImage(0);
@@ -37,15 +34,13 @@ function ProductDetails() {
       try {
         setLoading(true);
 
-        // Fetch product details
         const productResponse = await axios.get(
-          `${backendUrl}/products/${productId}`
+          `${backendUrl}/products/${productId}` // Using productId here
         );
 
         if (productResponse.data.success) {
           const productData = productResponse.data.product;
 
-          // Transform backend data to match frontend expectations
           const transformedProduct = {
             id: productData._id,
             name: productData.product_name,
@@ -107,27 +102,32 @@ function ProductDetails() {
               productData.product_category,
               productData.product_subcategory,
             ].filter(Boolean),
-            
-            // UPDATED IMAGE HANDLING - Use backend product_images array
-            images: productData.product_images && productData.product_images.length > 0
-              ? productData.product_images.map(img => ({
-                  url: img.url,
-                  alt_text: img.alt_text || productData.product_name
-                }))
-              : productData.product_image
-                ? [{ 
-                    url: productData.product_image, 
-                    alt_text: productData.product_name 
-                  }]
-                : [{
-                    url: "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
-                    alt_text: "Product placeholder"
-                  }],
-                  
-            // Add backward compatibility fields
+
+            images:
+              productData.product_images &&
+              productData.product_images.length > 0
+                ? productData.product_images.map((img) => ({
+                    url: img.url,
+                    alt_text: img.alt_text || productData.product_name,
+                  }))
+                : productData.product_image
+                ? [
+                    {
+                      url: productData.product_image,
+                      alt_text: productData.product_name,
+                    },
+                  ]
+                : [
+                    {
+                      url: "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
+                      alt_text: "Product placeholder",
+                    },
+                  ],
+
             product_images: productData.product_images || [],
-            product_image: productData.product_image || productData.mainImage || "",
-            
+            product_image:
+              productData.product_image || productData.mainImage || "",
+
             placeholderImages: [
               "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
               "https://placehold.co/100x100/ff9d8a/ffffff?text=Thumb+1",
@@ -136,59 +136,11 @@ function ProductDetails() {
             ],
           };
 
-          console.log('✅ Product transformed with images:', transformedProduct.images?.length);
-          console.log('📸 Product images:', transformedProduct.images);
-
           setProduct(transformedProduct);
-
-          // Fetch related products
-          try {
-            const relatedResponse = await axios.get(
-              `${backendUrl}/products/${productId}/related?limit=4`
-            );
-            if (relatedResponse.data.success) {
-              const transformedRelated = relatedResponse.data.products.map(
-                (p) => ({
-                  id: p._id,
-                  name: p.product_name,
-                  author: p.product_brand || "Unknown Brand",
-                  price: parseFloat(p.product_price) || 0,
-                  originalPrice:
-                    parseFloat(p.product_price) +
-                    parseFloat(p.product_discount || 0),
-                  discount: p.product_discount
-                    ? Math.round(
-                        (parseFloat(p.product_discount) /
-                          parseFloat(p.product_price)) *
-                          100
-                      )
-                    : 0,
-                  image:
-                    p.product_image ||
-                    "https://placehold.co/300x400/ff9d8a/ffffff?text=Product",
-                  rating: parseFloat(p.product_rating) || 0,
-                  reviewCount: p.reviews?.length || 0,
-                  inStock: parseInt(p.product_stock) > 0,
-                })
-              );
-              setFeaturedProducts(transformedRelated);
-            }
-          } catch (relatedError) {
-            console.log(
-              "Could not fetch related products:",
-              relatedError.message
-            );
-            setFeaturedProducts([]);
-          }
         } else {
-          console.error(
-            "Failed to fetch product:",
-            productResponse.data.message
-          );
           setProduct(null);
         }
       } catch (error) {
-        console.error("Error fetching product:", error);
         setProduct(null);
       } finally {
         setLoading(false);
@@ -214,7 +166,6 @@ function ProductDetails() {
     }
   };
 
-  // FIX PRICE FORMATTING - Use INR consistently
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -223,11 +174,9 @@ function ProductDetails() {
     }).format(price || 0);
   };
 
-  // UPDATE this function for handling add to cart:
   const handleAddToCart = async () => {
     if (!product) return;
 
-    // Check authentication using isLoggedIn from AppContent
     if (!isLoggedIn) {
       toast.error("Please login to add items to cart");
       navigate("/login");
@@ -236,12 +185,10 @@ function ProductDetails() {
 
     const result = await addToCart(product.id, quantity);
     if (result.success) {
-      // Optionally reset quantity after adding
       setQuantity(1);
     }
   };
 
-  // Simple handleBuyNow function
   const handleBuyNow = async () => {
     if (!product) return;
 
@@ -251,7 +198,6 @@ function ProductDetails() {
       return;
     }
 
-    // Navigate to checkout with product data
     navigate("/checkout", {
       state: {
         buyNowMode: true,
@@ -309,13 +255,10 @@ function ProductDetails() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Breadcrumb */}
-
-      <div className="container mx-auto px-4 md:px-6 lg:px-20 py-4">
+      <div className="container mx-auto px-6 lg:px-20 py-4">
         <Breadcrumb items={breadcrumbItems} />
       </div>
 
-      {/* Main Product Section */}
       <Details
         product={product}
         selectedImage={selectedImage}
@@ -329,44 +272,18 @@ function ProductDetails() {
         cartLoading={cartLoading}
       />
 
-      {/* Tabbed Content Section */}
       <div className="bg-background py-8">
-        <div className="container mx-auto px-4 md:px-6 lg:px-20">
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
-            {/* Tabs */}
+        <div className="container mx-auto px-6 lg:px-20">
+          <div className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
             <Tabs
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               product={product}
             />
-
-            {/* Tab Content */}
             <TabsContent activeTab={activeTab} product={product} />
           </div>
         </div>
       </div>
-
-      {/* Featured Products */}
-      {featuredProducts.length > 0 && (
-        <section className="py-16 bg-background">
-          <div className="container mx-auto px-4 md:px-6 lg:px-20">
-            <div className="text-center mb-12">
-              <span className="text-primary/70 uppercase tracking-wider text-sm font-medium mb-2 inline-block">
-                <i className="fas fa-heart mr-2"></i>Recommended
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
-                You Might Also Like
-              </h2>
-              <div className="w-24 h-1 bg-primary mx-auto mb-6"></div>
-              <p className="text-text/70 max-w-2xl mx-auto">
-                Discover similar products that match your interests and
-                preferences
-              </p>
-            </div>
-            <Products products={featuredProducts} formatPrice={formatPrice} />
-          </div>
-        </section>
-      )}
 
       <Newsletter />
     </div>

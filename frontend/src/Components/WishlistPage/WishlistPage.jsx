@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { AppContent } from "../../Context/AppContent.jsx";
+import { useCart } from "../../Context/CartContext.jsx";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AppContent } from "../../Context/AppContent";
-import { useCart } from "../../Context/CartContext"; // ADD THIS
+import { toast } from "react-toastify";
 import WishlistItem from "./WishlistItem";
 import WishlistEmpty from "./WishlistEmpty";
 import WishlistSkeleton from "./WishlistSkeleton";
-import PageHeader from "../Common/PageHeader";
 
 function WishlistPage() {
   const { backendUrl, isLoggedIn, userData } = useContext(AppContent);
-  const { addToCart } = useCart(); // ADD THIS - use CartContext
+  const { addToCart } = useCart();
   const navigate = useNavigate();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +19,9 @@ function WishlistPage() {
   // Fetch wishlist data from backend
   useEffect(() => {
     if (isLoggedIn && !hasFetchedWishlist.current) {
-      hasFetchedWishlist.current = true;
       fetchWishlist();
+      hasFetchedWishlist.current = true;
     } else if (!isLoggedIn) {
-      setWishlistItems([]);
       setLoading(false);
     }
   }, [isLoggedIn]);
@@ -31,355 +29,191 @@ function WishlistPage() {
   const fetchWishlist = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Fetching wishlist from:", `${backendUrl}/wishlist`);
+
       const response = await axios.get(`${backendUrl}/wishlist`, {
         withCredentials: true,
       });
 
+      console.log("📊 Wishlist response:", response.data);
+
       if (response.data.success) {
-        // Transform backend data to match frontend expectations
-        const transformedItems = response.data.wishlist.map((item) => ({
-          id: item.product_id._id,
-          title: item.product_id.product_name,
-          imageUrl: item.product_id.product_image || "/api/placeholder/300/300",
-          price: item.product_id.product_price,
-          oldPrice: item.product_id.product_discount > 0 
-            ? item.product_id.product_price 
-            : null,
-          discountedPrice: item.product_id.product_discount > 0
-            ? item.product_id.product_price - (item.product_id.product_price * (item.product_id.product_discount / 100))
-            : item.product_id.product_price,
-          inStock: item.product_id.product_stock > 0,
-          stock: item.product_id.product_stock,
-          rating: item.product_id.product_rating || 0,
-          brand: item.product_id.product_brand || "",
-          dateAdded: new Date(item.createdAt || Date.now()).toISOString().split('T')[0],
-          discount: item.product_id.product_discount || 0,
-          // Keep original product data for cart operations
-          originalProduct: item.product_id
-        }));
-        
-        setWishlistItems(transformedItems);
+        setWishlistItems(response.data.wishlist || []);
+        console.log("✅ Wishlist items loaded:", response.data.wishlist?.length || 0);
       } else {
         toast.error(response.data.message || "Failed to fetch wishlist");
       }
     } catch (error) {
-      console.error("Error fetching wishlist:", error);
+      console.error("❌ Error fetching wishlist:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to view your wishlist");
+        navigate("/login");
       } else {
-        toast.error("Failed to load wishlist. Please try again.");
+        toast.error("Failed to load wishlist items");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const removeFromWishlist = async (itemId) => {
-    if (!isLoggedIn) {
-      toast.info("Please login to modify your wishlist");
-      return;
-    }
-
+  const removeFromWishlist = async (productId) => {
     try {
-      const response = await axios.post(
-        `${backendUrl}/wishlist/remove`,
-        { product_id: itemId },
-        { withCredentials: true }
+      console.log("🗑️ Removing product from wishlist:", productId);
+
+      const response = await axios.delete(
+        `${backendUrl}/wishlist/remove/${productId}`,
+        {
+          withCredentials: true,
+        }
       );
 
       if (response.data.success) {
-        // Update local state
-        setWishlistItems(prevItems => 
-          prevItems.filter(item => item.id !== itemId)
+        setWishlistItems((prevItems) =>
+          prevItems.filter((item) => item.product_id._id !== productId)
         );
         toast.success("Item removed from wishlist");
       } else {
-        toast.error(response.data.message || "Failed to remove item from wishlist");
+        toast.error(response.data.message || "Failed to remove item");
       }
     } catch (error) {
-      console.error("Remove from wishlist error:", error);
-      toast.error("Failed to remove item. Please try again.");
+      console.error("❌ Error removing from wishlist:", error);
+      toast.error("Failed to remove item from wishlist");
     }
   };
 
-  // REPLACE the existing addToCart function with this:
   const handleAddToCart = async (product, quantity = 1) => {
-    if (!isLoggedIn) {
-      toast.info("Please login to add items to cart");
-      return false;
+    try {
+      console.log("🛒 Adding to cart:", product._id, "quantity:", quantity);
+      await addToCart(product._id, quantity);
+      toast.success("Item added to cart!");
+    } catch (error) {
+      console.error("❌ Error adding to cart:", error);
+      toast.error("Failed to add item to cart");
     }
-
-    // Use CartContext addToCart which handles UI updates
-    const result = await addToCart(product.id, quantity);
-    return result; // CartContext already shows success/error toasts and updates cart count
   };
 
-  // ADD BUY NOW HANDLER
   const handleBuyNow = (product) => {
-    if (!isLoggedIn) {
-      toast.error("Please login to buy this product");
-      navigate("/login");
-      return;
-    }
-
-    if (!product.inStock) {
-      toast.error("This product is out of stock");
-      return;
-    }
-
-    // Navigate to checkout with product data
-    navigate("/checkout", {
-      state: {
-        buyNowMode: true,
-        product: {
-          id: product.id,
-          name: product.title,
-          brand: product.brand,
-          price: product.discountedPrice || product.price,
-          image: product.imageUrl,
-          quantity: 1
-        }
-      }
-    });
+    console.log("⚡ Buy now product:", product);
+    navigate(`/shop/product/${product._id}`);
   };
 
-  const clearWishlist = async () => {
-    if (!isLoggedIn) {
-      toast.info("Please login to modify your wishlist");
-      return;
-    }
-
-    if (wishlistItems.length === 0) {
-      toast.info("Your wishlist is already empty");
-      return;
-    }
-
-    // Show confirmation
-    if (!window.confirm("Are you sure you want to clear your entire wishlist?")) {
-      return;
-    }
-
-    try {
-      // Remove all items one by one (since we don't have a clear all endpoint)
-      const promises = wishlistItems.map(item => 
-        axios.post(
-          `${backendUrl}/wishlist/remove`,
-          { product_id: item.id },
-          { withCredentials: true }
-        )
-      );
-
-      await Promise.all(promises);
-      setWishlistItems([]);
-      toast.success("Wishlist cleared successfully");
-    } catch (error) {
-      console.error("Clear wishlist error:", error);
-      toast.error("Failed to clear wishlist. Please try again.");
-      // Refresh the wishlist to show accurate state
-      fetchWishlist();
-    }
-  };
-
-  // UPDATE moveAllToCart function to use CartContext:
-  const moveAllToCart = async () => {
-    if (!isLoggedIn) {
-      toast.info("Please login to add items to cart");
-      return;
-    }
-
-    if (wishlistItems.length === 0) {
-      toast.info("Your wishlist is empty");
-      return;
-    }
-
-    const inStockItems = wishlistItems.filter(item => item.inStock);
-    
-    if (inStockItems.length === 0) {
-      toast.info("No items in stock to add to cart");
-      return;
-    }
-
-    try {
-      let addedCount = 0;
-      const addPromises = inStockItems.map(async (item) => {
-        const success = await handleAddToCart(item, 1); // Use handleAddToCart instead
-        if (success) {
-          addedCount++;
-          // Remove from wishlist after successful cart addition
-          await axios.post(
-            `${backendUrl}/wishlist/remove`,
-            { product_id: item.id },
-            { withCredentials: true }
-          );
-        }
-        return success;
-      });
-
-      await Promise.all(addPromises);
-
-      if (addedCount > 0) {
-        // Update local state to remove successfully added items
-        setWishlistItems(prevItems => 
-          prevItems.filter(item => !item.inStock || !inStockItems.includes(item))
-        );
-        toast.success(`${addedCount} item${addedCount > 1 ? 's' : ''} moved to cart successfully!`);
-      }
-
-      const outOfStockCount = wishlistItems.length - inStockItems.length;
-      if (outOfStockCount > 0) {
-        toast.info(`${outOfStockCount} out of stock item${outOfStockCount > 1 ? 's' : ''} remained in wishlist`);
-      }
-    } catch (error) {
-      console.error("Move all to cart error:", error);
-      toast.error("Some items failed to move to cart. Please try again.");
-      // Refresh wishlist to show accurate state
-      fetchWishlist();
-    }
-  };
-
-  // Format price function - UPDATED TO USE INR
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(price || 0);
+    }).format(price);
   };
 
-  // Redirect to login if not authenticated
-  if (!isLoggedIn && !loading) {
+  if (!isLoggedIn) {
     return (
-      <div className="bg-background min-h-[60vh]">
-        <PageHeader 
-          title="My Wishlist" 
-          breadcrumbs={[
-            { label: 'Wishlist' }
-          ]}
-        />
-        <div className="min-h-[40vh] flex flex-col items-center justify-center text-center px-4 py-12">
-          <div className="mb-6 text-primary text-7xl opacity-90">
-            <i className="fas fa-lock"></i>
+      <div className="min-h-screen bg-background text-text py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center py-16">
+            <i className="fas fa-sign-in-alt text-6xl text-primary mb-6"></i>
+            <h2 className="text-2xl font-bold text-text mb-4">Login Required</h2>
+            <p className="text-text/70 mb-8">
+              Please log in to view your wishlist items
+            </p>
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+            >
+              Login Now
+            </button>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            Login Required
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
-            Please login to view and manage your wishlist items.
-          </p>
-          <Link 
-            to="/login"
-            className="bg-primary hover:bg-primary/90 text-white px-6 py-3.5 rounded-full shadow transition-colors flex items-center justify-center"
-          >
-            <i className="fas fa-sign-in-alt mr-2"></i>
-            Login to Continue
-          </Link>
         </div>
       </div>
     );
   }
 
+  if (loading) {
+    return <WishlistSkeleton />;
+  }
+
   return (
-    <div className="bg-background min-h-[60vh]">
-      <PageHeader 
-        title="My Wishlist" 
-        breadcrumbs={[
-          { label: 'Wishlist' }
-        ]}
-      />
-
-      <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map((skeleton) => (
-                <WishlistSkeleton key={`skeleton-${skeleton}`} />
-              ))}
-            </div>
-          ) : wishlistItems.length === 0 ? (
-            <WishlistEmpty />
-          ) : (
+    <div className="min-h-screen bg-background text-text py-4 md:py-8">
+      <div className="max-w-6xl mx-auto px-3 md:px-4 lg:px-6">
+        {/* Header */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
             <div>
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-                <div>
-                  <div className="border-l-4 border-primary pl-4 mb-2">
-                    <span className="text-primary/80 uppercase tracking-wider text-sm font-medium">
-                      Your collection
-                    </span>
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-text">
-                    {wishlistItems.length} {wishlistItems.length === 1 ? 'Item' : 'Items'} in Your Wishlist
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-2">
-                    {wishlistItems.filter(item => item.inStock).length} in stock • {' '}
-                    {wishlistItems.filter(item => !item.inStock).length} out of stock
-                  </p>
-                </div>
-                
-                <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-                  <button 
-                    onClick={moveAllToCart}
-                    disabled={wishlistItems.filter(item => item.inStock).length === 0}
-                    className={`px-5 py-2.5 rounded-lg shadow-sm transition-colors flex items-center ${
-                      wishlistItems.filter(item => item.inStock).length > 0
-                        ? "bg-primary hover:bg-primary/90 text-white"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    <i className="fas fa-shopping-cart mr-2"></i>
-                    Add All to Cart ({wishlistItems.filter(item => item.inStock).length})
-                  </button>
-                  
-                  <button 
-                    onClick={clearWishlist}
-                    className="border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-lg transition-colors flex items-center"
-                  >
-                    <i className="fas fa-trash-alt mr-2"></i>
-                    Clear Wishlist
-                  </button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 fade-in">
-                {wishlistItems.map((item) => (
-                  <WishlistItem 
-                    key={item.id} 
-                    item={item} 
-                    onRemove={removeFromWishlist}
-                    onAddToCart={handleAddToCart} // CHANGED: use handleAddToCart
-                    onBuyNow={handleBuyNow}
-                    formatPrice={formatPrice}
-                  />
-                ))}
-              </div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text mb-1 md:mb-2">
+                My Wishlist
+              </h1>
+              <p className="text-text/70 text-sm">
+                {wishlistItems.length > 0
+                  ? `${wishlistItems.length} item${
+                      wishlistItems.length !== 1 ? "s" : ""
+                    } saved for later`
+                  : "No items in your wishlist yet"}
+              </p>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* Related Products CTA */}
-      <section className="py-16 bg-gradient-to-b from-background to-[#f8f5e6] to-90%">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <span className="text-primary/80 uppercase tracking-wider text-sm font-medium mb-2 inline-block">
-              <i className="fas fa-lightbulb mr-2"></i>Discover More
-            </span>
-            <h2 className="text-2xl md:text-3xl font-bold text-text mb-6">
-              Recommended For You
-            </h2>
-            <div className="h-1 w-24 bg-primary mx-auto mb-6"></div>
-            <p className="text-text/80 mb-8 leading-relaxed">
-              Based on your wishlist items, you might also enjoy these carefully selected products
-            </p>
-            <Link
-              to="/shop"
-              className="inline-flex items-center bg-primary text-white hover:bg-primary/90 px-7 py-3.5 rounded-full font-medium transition-colors shadow-md"
-            >
-              <i className="fas fa-shopping-bag mr-2"></i>
-              Explore More Products
-            </Link>
+            {wishlistItems.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-text/70">
+                <i className="fas fa-heart text-primary"></i>
+                <span className="hidden md:inline">
+                  Keep shopping to find more items you love
+                </span>
+                <span className="md:hidden">
+                  {wishlistItems.length} saved items
+                </span>
+              </div>
+            )}
           </div>
         </div>
-      </section>
+
+        {/* Wishlist Content */}
+        {wishlistItems.length === 0 ? (
+          <WishlistEmpty />
+        ) : (
+          <div className="space-y-4 md:space-y-6">
+            {/* Items Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
+              {wishlistItems.map((item) => (
+                <WishlistItem
+                  key={item._id}
+                  item={item}
+                  onRemove={removeFromWishlist}
+                  onAddToCart={handleAddToCart}
+                  onBuyNow={handleBuyNow}
+                  formatPrice={formatPrice}
+                />
+              ))}
+            </div>
+
+            {/* Action Bar */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 md:p-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <i className="fas fa-info-circle text-primary text-sm"></i>
+                  <span className="text-xs md:text-sm text-text/70">
+                    Items in your wishlist are saved across all devices
+                  </span>
+                </div>
+                <div className="flex flex-col md:flex-row gap-2 md:gap-3">
+                  <button
+                    onClick={() => navigate("/shop")}
+                    className="px-3 md:px-4 py-2 border border-gray-200 dark:border-gray-600 text-text hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors text-xs md:text-sm font-medium"
+                  >
+                    Continue Shopping
+                  </button>
+                  <button
+                    onClick={() => {
+                      wishlistItems.forEach((item) => {
+                        handleAddToCart(item.product_id, 1);
+                      });
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-white px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-xs md:text-sm"
+                  >
+                    <i className="fas fa-shopping-cart mr-1 md:mr-2"></i>
+                    Add All to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

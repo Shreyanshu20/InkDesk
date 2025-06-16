@@ -3,6 +3,7 @@ import { AppContent } from "../../Context/AppContent.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
+import MyAccountSkeleton from "./MyAccountSkeleton";
 
 function MyAccount() {
   const { userData, setUserData, backendUrl } = useContext(AppContent);
@@ -66,41 +67,48 @@ function MyAccount() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
-      
-      console.log('🔄 Fetching user data from backend...');
-      console.log('🌐 Backend URL:', backendUrl);
-      
+
+      console.log("🔄 Fetching user data from backend...");
+      console.log("🌐 Backend URL:", backendUrl);
+
       // Get user profile and auth data
       const [profileResponse, authResponse] = await Promise.all([
-        axios.get(`${backendUrl}/auth/profile`, { 
+        axios.get(`${backendUrl}/auth/profile`, {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }),
-        axios.post(`${backendUrl}/auth/is-auth`, {}, { 
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
+        axios.post(
+          `${backendUrl}/auth/is-auth`,
+          {},
+          {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
-        })
+        ),
       ]);
 
-      console.log('📊 Profile response:', profileResponse.data);
-      console.log('🔐 Auth response:', authResponse.data);
+      console.log("📊 Profile response:", profileResponse.data);
+      console.log("🔐 Auth response:", authResponse.data);
 
       if (profileResponse.data.success && authResponse.data.success) {
-        const user = { ...profileResponse.data.user, ...authResponse.data.user };
-        
+        const user = {
+          ...profileResponse.data.user,
+          ...authResponse.data.user,
+        };
+
         setProfileData(user);
-        
+
         // Set form data
         setProfileForm({
           first_name: user.first_name || "",
           last_name: user.last_name || "",
-          phone: user.phone || ""
+          phone: user.phone || "",
         });
-        
+
         // Set address form data
         setAddressForm({
           address_line1: user.address_line1 || "",
@@ -108,17 +116,17 @@ function MyAccount() {
           city: user.city || "",
           state: user.state || "",
           postal_code: user.postal_code || "",
-          country: user.country || ""
+          country: user.country || "",
         });
-        
+
         // Update context with fresh data
         setUserData(user);
-        
+
         console.log("✅ User data loaded successfully");
       }
     } catch (error) {
       console.error("❌ Error fetching user data:", error);
-      
+
       if (error.response?.status === 401) {
         console.log("🔓 User not authenticated, redirecting to login");
         toast.error("Please login to access your account");
@@ -456,61 +464,47 @@ function MyAccount() {
   };
 
   if (isLoading && !profileData.email) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Loading your account...
-          </p>
-        </div>
-      </div>
-    );
+    return <MyAccountSkeleton />;
   }
 
+  const tabsData = [
+    { key: "profile", icon: "fas fa-user", label: "Profile", mobileLabel: "Info" },
+    { key: "address", icon: "fas fa-map-marker-alt", label: "Address", mobileLabel: "Address" },
+    { key: "security", icon: "fas fa-shield-alt", label: "Security", mobileLabel: "Password" },
+    { key: "account", icon: "fas fa-cog", label: "Account", mobileLabel: "Settings" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background text-text py-4 sm:py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">
             My Account
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-text/70 text-sm sm:text-base">
             Manage your personal information, shipping address, and account
             settings
           </p>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 sm:mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8 px-6">
-              {[
-                { key: "profile", icon: "fas fa-user", label: "Profile" },
-                {
-                  key: "address",
-                  icon: "fas fa-map-marker-alt",
-                  label: "Address",
-                },
-                {
-                  key: "security",
-                  icon: "fas fa-shield-alt",
-                  label: "Security",
-                },
-                { key: "account", icon: "fas fa-cog", label: "Account" },
-              ].map((tab) => (
+            <nav className="flex overflow-x-auto px-3 sm:px-6">
+              {tabsData.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`flex-shrink-0 py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors mr-4 sm:mr-8 ${
                     activeTab === tab.key
                       ? "border-primary text-primary"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200"
+                      : "border-transparent text-text/70 hover:text-text hover:border-gray-300"
                   }`}
                 >
-                  <i className={`${tab.icon} mr-2`}></i>
-                  {tab.label}
+                  <i className={`${tab.icon} mr-1 sm:mr-2`}></i>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.mobileLabel}</span>
                 </button>
               ))}
             </nav>
@@ -518,28 +512,28 @@ function MyAccount() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-          <div className="p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 lg:p-8">
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Personal Information
                 </h2>
 
                 {/* Account Overview */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center md:text-left">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <div className="bg-gradient-to-r from-primary/5 to-secondary/5 dark:from-primary/10 dark:to-secondary/10 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-primary/10 dark:border-primary/20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="text-center sm:text-left">
+                      <div className="text-xs sm:text-sm text-text/70 mb-1 sm:mb-2">
                         Account Status
                       </div>
-                      <div className="flex items-center justify-center md:justify-start">
+                      <div className="flex items-center justify-center sm:justify-start">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
                             profileData.isAccountVerified
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"
+                              : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
                           }`}
                         >
                           <i
@@ -547,7 +541,7 @@ function MyAccount() {
                               profileData.isAccountVerified
                                 ? "fa-check-circle"
                                 : "fa-exclamation-triangle"
-                            } mr-2`}
+                            } mr-1 sm:mr-2`}
                           ></i>
                           {profileData.isAccountVerified
                             ? "Verified"
@@ -555,21 +549,21 @@ function MyAccount() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-center md:text-left">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <div className="text-center sm:text-left">
+                      <div className="text-xs sm:text-sm text-text/70 mb-1 sm:mb-2">
                         Account Type
                       </div>
-                      <div className="font-medium text-gray-900 dark:text-white capitalize">
-                        <i className="fas fa-user mr-2 text-primary"></i>
+                      <div className="font-medium text-text capitalize text-sm sm:text-base">
+                        <i className="fas fa-user mr-1 sm:mr-2 text-primary"></i>
                         {profileData.role || "Customer"}
                       </div>
                     </div>
-                    <div className="text-center md:text-left">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <div className="text-center sm:text-left sm:col-span-2 lg:col-span-1">
+                      <div className="text-xs sm:text-sm text-text/70 mb-1 sm:mb-2">
                         Member Since
                       </div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        <i className="fas fa-calendar mr-2 text-primary"></i>
+                      <div className="font-medium text-text text-sm sm:text-base">
+                        <i className="fas fa-calendar mr-1 sm:mr-2 text-primary"></i>
                         {formatDate(profileData.createdAt)}
                       </div>
                     </div>
@@ -577,10 +571,13 @@ function MyAccount() {
                 </div>
 
                 {/* Profile Form */}
-                <form onSubmit={handleProfileSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form
+                  onSubmit={handleProfileSubmit}
+                  className="space-y-4 sm:space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         First Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -589,13 +586,13 @@ function MyAccount() {
                         onChange={(e) =>
                           handleProfileChange("first_name", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter your first name"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Last Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -604,7 +601,7 @@ function MyAccount() {
                         onChange={(e) =>
                           handleProfileChange("last_name", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter your last name"
                         required
                       />
@@ -612,28 +609,28 @@ function MyAccount() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-text mb-2">
                       Email Address
                     </label>
                     <div className="relative">
                       <input
                         type="email"
                         value={profileData.email}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-text/50 cursor-not-allowed text-sm sm:text-base"
                         placeholder="Email cannot be changed"
                         disabled
                         readOnly
                       />
-                      <i className="fas fa-lock absolute right-3 top-3 text-gray-400"></i>
+                      <i className="fas fa-lock absolute right-3 top-2.5 sm:top-3 text-text/40"></i>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-xs sm:text-sm text-text/70">
                       <i className="fas fa-info-circle mr-1"></i>
                       Email address cannot be changed for security reasons
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-text mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -642,11 +639,11 @@ function MyAccount() {
                       onChange={(e) =>
                         handleProfileChange("phone", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                       placeholder="Enter your phone number"
                       required
                     />
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-xs sm:text-sm text-text/70">
                       Example: +1234567890 or 1234567890
                     </p>
                   </div>
@@ -655,7 +652,7 @@ function MyAccount() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-medium flex items-center gap-2 transition-colors text-sm sm:text-base"
                     >
                       {isLoading && <i className="fas fa-spinner fa-spin"></i>}
                       <i className="fas fa-save"></i>
@@ -669,13 +666,16 @@ function MyAccount() {
             {/* Address Tab */}
             {activeTab === "address" && (
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Shipping Address
                 </h2>
 
-                <form onSubmit={handleAddressSubmit} className="space-y-6">
+                <form
+                  onSubmit={handleAddressSubmit}
+                  className="space-y-4 sm:space-y-6"
+                >
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-text mb-2">
                       Address Line 1 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -684,14 +684,14 @@ function MyAccount() {
                       onChange={(e) =>
                         handleAddressChange("address_line1", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                       placeholder="Street address, P.O. Box, company name"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-text mb-2">
                       Address Line 2
                     </label>
                     <input
@@ -700,14 +700,14 @@ function MyAccount() {
                       onChange={(e) =>
                         handleAddressChange("address_line2", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                       placeholder="Apartment, suite, unit, building, floor, etc."
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         City <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -716,13 +716,13 @@ function MyAccount() {
                         onChange={(e) =>
                           handleAddressChange("city", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter city"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         State/Province
                       </label>
                       <input
@@ -731,15 +731,15 @@ function MyAccount() {
                         onChange={(e) =>
                           handleAddressChange("state", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter state or province"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Postal Code <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -748,11 +748,11 @@ function MyAccount() {
                         onChange={(e) =>
                           handleAddressChange("postal_code", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter postal code"
                         required
                       />
-                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      <p className="mt-2 text-xs sm:text-sm text-text/70">
                         {addressForm.country === "India" &&
                           "Example: 110001 (6 digits)"}
                         {addressForm.country === "United States" &&
@@ -764,7 +764,7 @@ function MyAccount() {
                       </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Country <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -772,7 +772,7 @@ function MyAccount() {
                         onChange={(e) =>
                           handleAddressChange("country", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         required
                       >
                         <option value="">Select Country</option>
@@ -793,7 +793,7 @@ function MyAccount() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-medium flex items-center gap-2 transition-colors text-sm sm:text-base"
                     >
                       {isLoading && <i className="fas fa-spinner fa-spin"></i>}
                       <i className="fas fa-map-marker-alt"></i>
@@ -807,24 +807,24 @@ function MyAccount() {
             {/* Security Tab */}
             {activeTab === "security" && (
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Security Settings
                 </h2>
 
                 {/* Change Password Section */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-lg font-medium text-text mb-4">
                     Change Password
                   </h3>
 
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
                     <div className="flex items-start">
-                      <i className="fas fa-shield-alt text-blue-500 mt-0.5 mr-3"></i>
+                      <i className="fas fa-shield-alt text-blue-500 mt-0.5 mr-2 sm:mr-3 text-sm sm:text-base"></i>
                       <div>
-                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-400 mb-2">
+                        <h4 className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-400 mb-2">
                           Password Security Tips
                         </h4>
-                        <div className="text-sm text-blue-700 dark:text-blue-300">
+                        <div className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                           <ul className="list-disc list-inside space-y-1">
                             <li>Use at least 8 characters</li>
                             <li>Include uppercase and lowercase letters</li>
@@ -836,9 +836,12 @@ function MyAccount() {
                     </div>
                   </div>
 
-                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                  <form
+                    onSubmit={handlePasswordSubmit}
+                    className="space-y-4 sm:space-y-6"
+                  >
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Current Password <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -847,14 +850,14 @@ function MyAccount() {
                         onChange={(e) =>
                           handlePasswordChange("oldPassword", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter your current password"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         New Password <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -863,7 +866,7 @@ function MyAccount() {
                         onChange={(e) =>
                           handlePasswordChange("newPassword", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter your new password"
                         minLength="6"
                         required
@@ -871,7 +874,7 @@ function MyAccount() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Confirm New Password{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -884,7 +887,7 @@ function MyAccount() {
                             e.target.value
                           )
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Confirm your new password"
                         minLength="6"
                         required
@@ -893,7 +896,7 @@ function MyAccount() {
                         passwordForm.confirmPassword &&
                         passwordForm.newPassword !==
                           passwordForm.confirmPassword && (
-                          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                          <p className="mt-2 text-xs sm:text-sm text-red-600 dark:text-red-400">
                             <i className="fas fa-exclamation-triangle mr-1"></i>
                             Passwords do not match
                           </p>
@@ -908,7 +911,7 @@ function MyAccount() {
                           passwordForm.newPassword !==
                             passwordForm.confirmPassword
                         }
-                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-medium flex items-center gap-2 transition-colors text-sm sm:text-base"
                       >
                         {isLoading && (
                           <i className="fas fa-spinner fa-spin"></i>
@@ -925,18 +928,18 @@ function MyAccount() {
             {/* Account Tab */}
             {activeTab === "account" && (
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Account Settings
                 </h2>
 
                 {/* Account Status */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-lg font-medium text-text mb-4">
                     Account Status
                   </h3>
 
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-600">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                       <div className="flex items-center">
                         <div
                           className={`h-3 w-3 rounded-full mr-3 ${
@@ -947,15 +950,15 @@ function MyAccount() {
                               : "bg-red-500"
                           }`}
                         ></div>
-                        <span className="text-lg font-medium text-gray-900 dark:text-white capitalize">
+                        <span className="text-base sm:text-lg font-medium text-text capitalize">
                           {profileData.status || "active"}
                         </span>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium self-start sm:self-auto ${
                           profileData.status === "active"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"
+                            : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
                         }`}
                       >
                         {profileData.status === "active"
@@ -965,8 +968,8 @@ function MyAccount() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span className="text-sm font-medium text-text/70">
                           Email verification:
                         </span>
                         <div className="flex items-center gap-2">
@@ -976,7 +979,7 @@ function MyAccount() {
                               Verified
                             </span>
                           ) : (
-                            <>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                               <span className="text-yellow-600 dark:text-yellow-400 text-sm">
                                 <i className="fas fa-exclamation-triangle mr-1"></i>
                                 Not verified
@@ -984,19 +987,19 @@ function MyAccount() {
                               <button
                                 onClick={handleSendVerificationEmail}
                                 disabled={isLoading}
-                                className="ml-2 text-primary hover:text-primary/80 text-sm font-medium"
+                                className="text-primary hover:text-primary/80 text-sm font-medium underline"
                               >
                                 Send verification email
                               </button>
-                            </>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span className="text-sm font-medium text-text/70">
                           Account type:
                         </span>
-                        <span className="text-sm text-gray-900 dark:text-white capitalize">
+                        <span className="text-sm text-text capitalize">
                           {profileData.role || "Customer"}
                         </span>
                       </div>
@@ -1017,20 +1020,20 @@ function MyAccount() {
                 </div>
 
                 {/* Danger Zone - Delete Account */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 sm:pt-8">
                   <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
                     <i className="fas fa-exclamation-triangle mr-2"></i>
                     Danger Zone
                   </h3>
 
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
                     <div className="flex items-start">
-                      <i className="fas fa-trash-alt text-red-500 mt-0.5 mr-3"></i>
+                      <i className="fas fa-trash-alt text-red-500 mt-0.5 mr-2 sm:mr-3 text-sm sm:text-base"></i>
                       <div>
-                        <h4 className="text-sm font-medium text-red-800 dark:text-red-400 mb-2">
+                        <h4 className="text-xs sm:text-sm font-medium text-red-800 dark:text-red-400 mb-2">
                           Delete Account Permanently
                         </h4>
-                        <div className="text-sm text-red-700 dark:text-red-300">
+                        <div className="text-xs sm:text-sm text-red-700 dark:text-red-300">
                           <ul className="list-disc list-inside space-y-1">
                             <li>
                               All your personal data will be permanently deleted
@@ -1047,9 +1050,12 @@ function MyAccount() {
                     </div>
                   </div>
 
-                  <form onSubmit={handleDeleteAccount} className="space-y-6">
+                  <form
+                    onSubmit={handleDeleteAccount}
+                    className="space-y-4 sm:space-y-6"
+                  >
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Enter your password to confirm{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -1059,14 +1065,14 @@ function MyAccount() {
                         onChange={(e) =>
                           handleDeleteChange("password", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Enter your current password"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-text mb-2">
                         Type "DELETE" to confirm{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -1076,13 +1082,13 @@ function MyAccount() {
                         onChange={(e) =>
                           handleDeleteChange("confirmText", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                         placeholder="Type DELETE to confirm"
                         required
                       />
                       {deleteForm.confirmText &&
                         deleteForm.confirmText !== "DELETE" && (
-                          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                          <p className="mt-2 text-xs sm:text-sm text-red-600 dark:text-red-400">
                             <i className="fas fa-exclamation-triangle mr-1"></i>
                             Please type "DELETE" exactly as shown
                           </p>
@@ -1097,7 +1103,7 @@ function MyAccount() {
                           deleteForm.confirmText !== "DELETE" ||
                           !deleteForm.password
                         }
-                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-medium flex items-center gap-2 transition-colors text-sm sm:text-base"
                       >
                         {isLoading && (
                           <i className="fas fa-spinner fa-spin"></i>

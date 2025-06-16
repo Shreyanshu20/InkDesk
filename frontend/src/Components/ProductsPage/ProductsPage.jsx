@@ -11,6 +11,7 @@ import NoProduct from "./components/NoProduct";
 import Pagination from "../Common/Pagination";
 import PageHeader from "../Common/PageHeader";
 import Newsletter from "../HomePage/Newsletter/Newsletter";
+import ProductsGridSkeleton from "./components/ProductsGridSkeleton.jsx";
 
 const ProductsPage = () => {
   const { category, subcategory } = useParams();
@@ -47,13 +48,19 @@ const ProductsPage = () => {
   useEffect(() => {
     const checkNavbarMobileMenu = () => {
       // Look for the mobile menu sidebar element
-      const mobileMenuSidebar = document.querySelector('div[class*="translate-x-0"][class*="fixed"][class*="left-0"]');
-      const mobileMenuOverlay = document.querySelector('div[class*="bg-black/50"][class*="fixed"][class*="inset-0"]');
-      
+      const mobileMenuSidebar = document.querySelector(
+        'div[class*="translate-x-0"][class*="fixed"][class*="left-0"]'
+      );
+      const mobileMenuOverlay = document.querySelector(
+        'div[class*="bg-black/50"][class*="fixed"][class*="inset-0"]'
+      );
+
       // Check if mobile menu is open
-      const isOpen = (mobileMenuSidebar && !mobileMenuSidebar.classList.contains('-translate-x-full')) ||
-                    (mobileMenuOverlay && mobileMenuOverlay.style.display !== 'none');
-      
+      const isOpen =
+        (mobileMenuSidebar &&
+          !mobileMenuSidebar.classList.contains("-translate-x-full")) ||
+        (mobileMenuOverlay && mobileMenuOverlay.style.display !== "none");
+
       setIsNavbarSidebarOpen(isOpen);
     };
 
@@ -70,7 +77,7 @@ const ProductsPage = () => {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class', 'style']
+      attributeFilter: ["class", "style"],
     });
 
     return () => observer.disconnect();
@@ -86,10 +93,10 @@ const ProductsPage = () => {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
     handleScroll(); // Check initial state
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // All other functions remain exactly the same...
@@ -464,14 +471,12 @@ const ProductsPage = () => {
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-6 md:pb-10">
         
-        {/* Total Products Count - Top of page */}
         <div className="mb-4 md:mb-6">
           <div className="flex items-center justify-between">
             <p className="text-text/70 text-sm md:text-base">
               <span className="font-medium text-text">{totalProducts}</span> {totalProducts === 1 ? "product" : "products"} found
             </p>
             
-            {/* Desktop Sorting - Moved to top right */}
             <div className="hidden md:block">
               <Sorting
                 sortOption={sortOption}
@@ -481,7 +486,6 @@ const ProductsPage = () => {
           </div>
         </div>
 
-        {/* Fixed Mobile Controls - Hide when navbar sidebar is open */}
         {showMobileControls && !isNavbarSidebarOpen && (
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-5 py-1 shadow-lg">
             <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
@@ -527,27 +531,55 @@ const ProductsPage = () => {
             formatPrice={formatPrice}
           />
 
-          <div className="flex-1">
-            {isLoading ? (
-              <div className="h-96 flex justify-center items-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                  <p className="text-base text-text/70">Loading products...</p>
-                </div>
-              </div>
-            ) : filteredProducts.length === 0 ? (
+          {isLoading ? (
+            <ProductsGridSkeleton />
+          ) : (
+            <div className="flex-1">
+              {filteredProducts.length === 0 ? (
+                <NoProduct clearFilters={clearFilters} />
+              ) : (
+                <>
+                  <div className="mb-8">
+                    <Products
+                      products={filteredProducts}
+                      formatPrice={formatPrice}
+                    />
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="flex justify-center">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        setCurrentPage={setCurrentPage}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Layout */}
+        {isLoading ? (
+          <ProductsGridSkeleton />
+        ) : (
+          <div className="md:hidden pb-20">
+            {filteredProducts.length === 0 ? (
               <NoProduct clearFilters={clearFilters} />
             ) : (
               <>
-                <div className="mb-8">
+                <div className="mb-6">
                   <Products
                     products={filteredProducts}
                     formatPrice={formatPrice}
+                    isMobile={true}
                   />
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center mb-6" ref={productsEndRef}>
                     <Pagination
                       currentPage={currentPage}
                       totalPages={totalPages}
@@ -555,47 +587,12 @@ const ProductsPage = () => {
                     />
                   </div>
                 )}
+                
+                {totalPages <= 1 && <div ref={productsEndRef}></div>}
               </>
             )}
           </div>
-        </div>
-
-        {/* Mobile Products - Added bottom padding for fixed buttons */}
-        <div className="md:hidden pb-20">
-          {isLoading ? (
-            <div className="h-64 flex justify-center items-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                <p className="text-sm text-text/70">Loading...</p>
-              </div>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <NoProduct clearFilters={clearFilters} />
-          ) : (
-            <>
-              <div className="mb-6">
-                <Products
-                  products={filteredProducts}
-                  formatPrice={formatPrice}
-                  isMobile={true}
-                />
-              </div>
-
-              {totalPages > 1 && (
-                <div className="flex justify-center mb-6" ref={productsEndRef}>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    setCurrentPage={setCurrentPage}
-                  />
-                </div>
-              )}
-              
-              {/* Products end marker - if no pagination */}
-              {totalPages <= 1 && <div ref={productsEndRef}></div>}
-            </>
-          )}
-        </div>
+        )}
       </div>
 
       <Newsletter />

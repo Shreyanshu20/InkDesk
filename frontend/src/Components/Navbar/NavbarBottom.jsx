@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useCategories } from "../../Context/CategoryContext.jsx";
 import { useTheme } from "../../Context/ThemeContext.jsx";
 import { useCart } from "../../Context/CartContext.jsx";
@@ -14,6 +14,7 @@ function NavbarBottom() {
   const { getWishlistItemCount } = useWishlist();
   const { isLoggedIn, userData, logout } = useContext(AppContent);
   const navigate = useNavigate();
+  const location = useLocation(); // Add this to get current route
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -119,7 +120,7 @@ function NavbarBottom() {
       { name: "Home", link: "/" },
       {
         name: "Shop",
-        link: "/shop",
+        link: "",
         hasDropdown: true,
         categories: [
           {
@@ -195,7 +196,7 @@ function NavbarBottom() {
     <div className="bg-background shadow-sm relative z-20 bg-gradient-to-b from-accent/30 to-background/90">
       <div className="max-w-7xl mx-auto">
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center justify-center p-2">
+        <div className="hidden lg:flex items-center justify-center px-2 py-1">
           <nav className="flex items-center" aria-label="Main Navigation">
             {menuItems.map((item, index) => (
               <div
@@ -206,25 +207,38 @@ function NavbarBottom() {
                 }
                 onMouseLeave={handleMouseLeave}
               >
-                <NavLink
-                  to={item.link}
-                  className={({ isActive }) =>
-                    `px-6 py-2 text-sm font-medium transition-colors ${
-                      isActive || activeDropdown === index
-                        ? "text-[#E66354] border-b-2 border-[#E66354]"
-                        : "text-text hover:text-[#E66354]"
-                    }`
-                  }
-                >
-                  {item.name}
-                  {item.hasDropdown && (
+                {item.hasDropdown ? (
+                  // For dropdown items like Shop, use a button with route-based active state
+                  <button
+                    className={`px-6 py-2 text-sm font-medium transition-colors ${
+                      location.pathname === '/shop' // Check if currently on /shop route
+                        ? "text-[#E66354] border-b-2 border-[#E66354]" // Active state
+                        : "text-text hover:text-[#E66354]" // Same hover effect as others
+                    }`}
+                  >
+                    {item.name}
                     <i
                       className="fas fa-chevron-down text-xs ml-1"
                       aria-hidden="true"
                     ></i>
-                  )}
-                </NavLink>
+                  </button>
+                ) : (
+                  // For regular links, use NavLink
+                  <NavLink
+                    to={item.link}
+                    className={({ isActive }) =>
+                      `px-6 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "text-[#E66354] border-b-2 border-[#E66354]"
+                          : "text-text hover:text-[#E66354]"
+                      }`
+                    }
+                  >
+                    {item.name}
+                  </NavLink>
+                )}
 
+                {/* Dropdown content remains the same */}
                 {item.hasDropdown && activeDropdown === index && (
                   <div className="absolute top-full left-0 bg-background shadow-lg rounded-b-lg p-6 mt-1 w-[1000px] -ml-[400px] grid grid-cols-5 gap-6 border-t-2 border-[#E66354]">
                     {item.categories.map((category, catIndex) => (

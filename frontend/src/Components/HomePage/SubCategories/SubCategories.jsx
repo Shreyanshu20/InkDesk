@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import SubCategoriesSkeleton from "./SubCategoriesSkeleton";
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -98,24 +99,7 @@ function SubCategories({ category, title, description }) {
 
   // Show loading state
   if (loading) {
-    return (
-      <section className="py-10 px-4 md:px-6 bg-background">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-8 md:mb-12 lg:mb-16">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-text mb-3 md:mb-4">
-              {title}
-            </h2>
-            <div className="w-24 h-1 bg-primary mx-auto mt-4"></div>
-          </div>
-          <div className="flex justify-center items-center h-40">
-            <div className="text-center">
-              <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
-              <p className="text-text/70">Loading {category} subcategories...</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
+    return <SubCategoriesSkeleton title={title} />;
   }
 
   // Show error state

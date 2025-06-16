@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 function Breadcrumb({ items = [] }) {
   return (
-    <div className="text-sm text-text/70 flex items-center flex-wrap">
+    <div className="text-xs md:text-sm text-text/70 flex items-center flex-wrap">
       <Link to="/" className="hover:text-text transition-colors">
         <i className="fas fa-home mr-1"></i> Home
       </Link>

@@ -8,6 +8,7 @@ import StarRating from "../../Common/StarRating";
 import PriceDisplay from "../../Common/PriceDisplay";
 import Button from "../../Common/Button";
 import { PRICING_CONFIG } from "../../Common/pricing";
+import ProductsSkeleton from "./ProductsSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -32,19 +33,17 @@ function Products() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Responsive pagination settings
   const getProductsPerPage = () => {
     if (typeof window !== "undefined") {
-      if (window.innerWidth < 768) return 2; // Mobile: 2 products per page
-      if (window.innerWidth < 1024) return 4; // Tablet: 4 products per page
-      return 4; // Desktop: 4 products per page
+      if (window.innerWidth < 768) return 2;
+      if (window.innerWidth < 1024) return 4;
+      return 4;
     }
     return 4;
   };
 
   const [productsPerPage, setProductsPerPage] = useState(getProductsPerPage());
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       const newProductsPerPage = getProductsPerPage();
@@ -58,7 +57,6 @@ function Products() {
     return () => window.removeEventListener("resize", handleResize);
   }, [productsPerPage]);
 
-  // Fetch products from backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -96,12 +94,11 @@ function Products() {
               : [],
         });
       } catch (error) {
-        console.error("Error fetching products:", error);
         setError("Failed to load products. Please try again later.");
         setProducts({
-          featured: getSampleProducts("featured"),
-          bestsellers: getSampleProducts("bestsellers"),
-          new: getSampleProducts("new"),
+          featured: [],
+          bestsellers: [],
+          new: [],
         });
       } finally {
         setIsLoading(false);
@@ -111,46 +108,9 @@ function Products() {
     fetchProducts();
   }, []);
 
-  // Reset pagination when tab changes
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab]);
-
-  const getSampleProducts = (type) => {
-    const basePrice =
-      type === "featured" ? 29.99 : type === "bestsellers" ? 19.99 : 34.99;
-    const brandPrefix =
-      type === "featured"
-        ? "Premium"
-        : type === "bestsellers"
-        ? "Popular"
-        : "Latest";
-
-    return Array.from({ length: 12 }, (_, i) => ({
-      _id: `${type}-${i + 1}`,
-      product_name: `${brandPrefix} ${
-        type === "featured"
-          ? "Notebook Set"
-          : type === "bestsellers"
-          ? "Pen Collection"
-          : "Art Supplies"
-      } ${i + 1}`,
-      product_description: `High-quality ${type} products for professionals`,
-      product_price: basePrice + i * 3,
-      product_image: `https://images.unsplash.com/photo-${
-        type === "featured"
-          ? "1544716278-ca5e3f4abd8c"
-          : type === "bestsellers"
-          ? "1586075010923-59c9c0e3a59c"
-          : "1513475382585-d06e58bcb0e0"
-      }?ixlib=rb-4.0.3&w=400`,
-      product_category: "stationery",
-      product_rating: 4.5 - i * 0.1,
-      product_stock: i === 2 ? 0 : 10 + i, // Make 3rd product out of stock
-      product_brand: `${brandPrefix} Brand`,
-      product_discount: i % 3 === 0 ? 15 : 0,
-    }));
-  };
 
   const sanitizeProduct = (product) => {
     return {
@@ -170,7 +130,6 @@ function Products() {
     };
   };
 
-  // Memoize the handleAddToCart to prevent unnecessary re-renders
   const handleAddToCart = useMemo(
     () => async (e, productId) => {
       e.preventDefault();
@@ -181,7 +140,6 @@ function Products() {
         return;
       }
 
-      // Use CartContext addToCart which handles UI updates
       await addToCart(productId, 1);
     },
     [isLoggedIn, addToCart]
@@ -209,13 +167,11 @@ function Products() {
     }
   };
 
-  // Fixed discount calculation - use the same logic as your working version
   const calculateDiscount = (price, discountPercentage) => {
     if (!discountPercentage) return 0;
     return Math.round(discountPercentage);
   };
 
-  // Pagination logic
   const currentProducts = products[activeTab];
   const totalPages = Math.ceil(currentProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
@@ -238,15 +194,12 @@ function Products() {
     }
   };
 
-  // Product Card Component - EXACT STYLING FROM YOUR FILE
   const ProductCard = ({ product }) => {
-    // FIXED: Use product.product_discount (like in your working version)
     const discount = calculateDiscount(
       product.product_price,
-      product.product_discount // CHANGED: back to product_discount
+      product.product_discount
     );
     const inStock = product.product_stock > 0;
-    // FIXED: Use the same discount calculation as your working version
     const discountedPrice =
       discount > 0
         ? product.product_price - product.product_price * (discount / 100)
@@ -258,7 +211,6 @@ function Products() {
       <div className="group relative h-full">
         <Link to={`/shop/product/${product._id}`} className="block h-full">
           <div className="bg-gray-50 dark:bg-gray-800 text-text rounded-lg border border-gray-100 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:scale-101 h-full flex flex-col group border-b-4 border-transparent hover:border-primary">
-            {/* Product Image - Fixed Height */}
             <div className="relative aspect-square bg-gray-50 flex-shrink-0">
               <img
                 src={
@@ -274,14 +226,12 @@ function Products() {
                 }}
               />
 
-              {/* Discount Badge */}
               {discount > 0 && (
                 <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                   {discount}% OFF
                 </span>
               )}
 
-              {/* Out of Stock Overlay */}
               {!inStock && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center group-hover:scale-101">
                   <span className="bg-black/80 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -290,7 +240,6 @@ function Products() {
                 </div>
               )}
 
-              {/* Wishlist Button */}
               <button
                 onClick={(e) => toggleWishlist(e, product._id)}
                 disabled={wishlistLoading}
@@ -311,15 +260,12 @@ function Products() {
               </button>
             </div>
 
-            {/* Product Info - Flexible Height with Fixed Structure */}
             <div className="px-4 py-3 flex-1 flex flex-col justify-between">
               <div className="flex-1">
-                {/* Product Name - Fixed Height */}
                 <h3 className="font-medium text-sm md:text-base mb-2 line-clamp-2 h-12 overflow-hidden leading-6">
                   {product.product_name}
                 </h3>
 
-                {/* Brand - Fixed Height */}
                 <div className="h-5 mb-2">
                   {product.product_brand && (
                     <p className="text-xs text-text/70">
@@ -328,7 +274,6 @@ function Products() {
                   )}
                 </div>
 
-                {/* Rating - Fixed Height */}
                 <div className="mb-3 h-4">
                   <StarRating
                     rating={product.product_rating || 0}
@@ -338,7 +283,6 @@ function Products() {
                 </div>
               </div>
 
-              {/* Price - Always at Bottom */}
               <div className="mt-auto">
                 <PriceDisplay
                   price={discountedPrice}
@@ -352,7 +296,6 @@ function Products() {
           </div>
         </Link>
 
-        {/* Add to Cart Button for in-stock OR Notify Button for out-of-stock */}
         {inStock ? (
           <Button
             className="absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
@@ -385,24 +328,12 @@ function Products() {
   };
 
   if (isLoading) {
-    return (
-      <section className="py-10 px-4 md:px-6 bg-background">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center">
-            <div className="w-8 md:w-12 h-8 md:h-12 border-3 md:border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3 md:mb-4"></div>
-            <p className="text-text/70 dark:text-gray-400 text-sm md:text-base">
-              Loading products...
-            </p>
-          </div>
-        </div>
-      </section>
-    );
+    return <ProductsSkeleton />;
   }
 
   return (
     <section className="py-10 px-4 md:px-6 bg-background">
       <div className="container mx-auto max-w-7xl">
-        {/* Section header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-6 lg:mb-8">
           <div>
             <h2 className="text-2xl lg:text-3xl font-bold text-text text-center mb-1 md:mb-2">
@@ -421,7 +352,6 @@ function Products() {
           </Link>
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 md:px-4 py-2 md:py-3 rounded-lg mb-4 md:mb-6 text-xs md:text-sm">
             <div className="flex items-center">
@@ -431,7 +361,6 @@ function Products() {
           </div>
         )}
 
-        {/* Category tabs */}
         <div className="flex overflow-x-auto mb-4 md:mb-6 lg:mb-8 border-b border-gray-200 dark:border-gray-700 -mx-2 px-2 md:mx-0 md:px-0">
           {["featured", "bestsellers", "new"].map((tab) => (
             <button
@@ -453,7 +382,6 @@ function Products() {
           ))}
         </div>
 
-        {/* Products Grid */}
         <div>
           {currentPageProducts.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6 lg:mb-8">
@@ -476,7 +404,6 @@ function Products() {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8">
             <div className="text-xs md:text-sm text-text/70 dark:text-gray-400 hidden md:block">
@@ -540,7 +467,6 @@ function Products() {
           </div>
         )}
 
-        {/* Mobile View All Button */}
         <div className="text-center md:hidden">
           <Link
             to="/shop"

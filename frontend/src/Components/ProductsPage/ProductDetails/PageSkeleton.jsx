@@ -1,97 +1,97 @@
-import React from "react";
-
 function PageSkeleton() {
   return (
-    <div className="bg-background text-text animate-pulse">
+    <div className="min-h-screen bg-background">
       {/* Breadcrumb Skeleton */}
-      <div className="container mx-auto px-6 py-4">
-        <div className="h-5 bg-gray-300 dark:bg-gray-700 rounded w-1/3"></div>
+      <div className="container mx-auto px-6 lg:px-20 py-4">
+        <div className="flex items-center gap-2">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 animate-pulse"></div>
+          <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+          <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+        </div>
       </div>
 
-      {/* Product Details Skeleton */}
-      <div className="container mx-auto px-6 lg:px-20 py-7">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          {/* Image Skeleton */}
-          <div className="w-full lg:w-2/5">
-            <div className="sticky top-24">
-              <div className="relative mb-6 rounded-md overflow-hidden border border-gray-300 dark:border-gray-600 bg-gray-300 dark:bg-gray-700">
-                <div className="aspect-[3/4] w-full"></div>
-              </div>
-
-              {/* Thumbnail Skeletons */}
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {[...Array(4)].map((_, index) => (
-                  <div
-                    key={index}
-                    className="w-20 h-20 rounded-md bg-gray-300 dark:bg-gray-700 flex-shrink-0"
+      {/* Main Product Details Skeleton */}
+      <div className="bg-background">
+        <div className="max-w-7xl mx-auto px-6 py-2 md:py-5">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
+            {/* Image Gallery Skeleton */}
+            <div className="space-y-4">
+              <div className="aspect-square rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+              <div className="flex gap-2 overflow-x-auto">
+                {[1, 2, 3, 4].map((i) => (
+                  <div 
+                    key={i} 
+                    className="flex-shrink-0 w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
                   ></div>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Content Skeleton */}
-          <div className="w-full lg:w-3/5">
-            {/* Title & Author */}
-            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-4/5 mb-2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-5"></div>
-
-            {/* Ratings */}
-            <div className="h-5 bg-gray-300 dark:bg-gray-700 rounded w-1/3 mb-5"></div>
-
-            {/* Price */}
-            <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-2/5 mb-6"></div>
-
-            <div className="border-t border-gray-300 dark:border-gray-700 my-6"></div>
-
-            {/* Description */}
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-5/6 mb-2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-4/5 mb-6"></div>
-
-            <div className="border-t border-gray-300 dark:border-gray-700 my-6"></div>
-
-            {/* Product Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="flex">
-                  <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full mr-3"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2 mb-1"></div>
-                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-gray-300 dark:border-gray-700 my-6"></div>
-
-            {/* Buttons */}
-            <div className="flex gap-4 mb-6">
-              <div className="h-12 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-              <div className="h-12 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Skeleton */}
-      <div className="container mx-auto px-6 lg:px-20 py-10">
-        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-          <div className="flex border-b border-gray-300 dark:border-gray-700">
-            {[...Array(3)].map((_, index) => (
-              <div key={index} className="flex-1 py-5 px-6">
-                <div className="h-5 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+            {/* Product Info Skeleton */}
+            <div className="space-y-4">
+              {/* Title */}
+              <div className="h-6 md:h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              
+              {/* Brand */}
+              <div className="flex items-center gap-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4 animate-pulse"></div>
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
               </div>
-            ))}
-          </div>
-          <div className="p-8">
-            {[...Array(3)].map((_, index) => (
-              <div
-                key={index}
-                className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full mb-3"
-              ></div>
-            ))}
+              
+              {/* Rating */}
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-12 animate-pulse"></div>
+                </div>
+              </div>
+              
+              {/* Price */}
+              <div className="bg-gradient-to-r from-primary/5 to-secondary/5 dark:from-primary/10 dark:to-secondary/10 p-3 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 md:h-7 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+              </div>
+
+              {/* Quantity */}
+              <div className="flex items-center gap-3">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-28 animate-pulse"></div>
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-3">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="flex-1 h-11 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                  <div className="flex-1 h-11 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                </div>
+                <div className="w-full h-11 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+              </div>
+
+              {/* Features */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -27,13 +27,13 @@ function PriceDisplay({
 
   return (
     <div className="flex items-center">
-      <span className={`${sizeClasses[size]} md:text-lg mr-3`}>
+      <span className={`${sizeClasses[size]} mr-3`}>
         {formatPriceWithFallback(price)}
       </span>
 
       {originalPrice && (
         <>
-          <span className={`${sizeClasses[size]} md:text-lg text-text/70 line-through`}>
+          <span className={`${sizeClasses[size]} text-text/70 line-through`}>
             {formatPriceWithFallback(originalPrice)}
           </span>
         </>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import HeroSkeleton from "./HeroSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -75,13 +76,7 @@ function Hero() {
   };
 
   if (isLoading) {
-    return (
-      <section className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </section>
-    );
+    return <HeroSkeleton />;
   }
 
   if (slides.length === 0) {

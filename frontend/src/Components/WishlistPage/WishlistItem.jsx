@@ -1,151 +1,215 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import StarRating from "../Common/StarRating";
-import PriceDisplay from "../Common/PriceDisplay";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
+  const navigate = useNavigate();
+
   const handleRemove = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onRemove(item.id);
+    console.log("🗑️ Remove button clicked for product:", item.product_id._id);
+    onRemove(item.product_id._id);
   };
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onAddToCart(item, 1);
+    console.log("🛒 Add to cart clicked for product:", item.product_id);
+    onAddToCart(item.product_id, 1);
   };
 
   const handleBuyNow = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onBuyNow(item);
+    console.log("⚡ Buy now clicked for product:", item.product_id);
+
+    navigate("/checkout", {
+      state: {
+        buyNowMode: true,
+        product: {
+          id: item.product_id._id,
+          name: item.product_id.product_name,
+          brand: item.product_id.product_brand,
+          price: item.product_id.product_price,
+          image:
+            item.product_id.product_image ||
+            item.product_id.product_images?.[0] ||
+            "https://placehold.co/300x400?text=No+Image",
+          quantity: 1,
+        },
+      },
+    });
   };
-  
+
+  const product = item.product_id;
+
+  console.log("🔍 WishlistItem product data:", product);
+
+  if (!product) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="text-center text-text/50">
+          <i className="fas fa-exclamation-triangle text-2xl mb-2"></i>
+          <p className="text-sm">Product not available</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isOutOfStock = product.product_stock <= 0;
+  const discountPercentage = product.product_discount || 0;
+
+  // Calculate discounted price
+  const discountedPrice =
+    discountPercentage > 0
+      ? product.product_price - (product.product_price * discountPercentage) / 100
+      : product.product_price;
+
+  // Get the product image
+  const productImage =
+    product.product_images && product.product_images.length > 0
+      ? product.product_images[0].url || product.product_images[0]
+      : product.product_image || "https://placehold.co/300x400?text=No+Image";
+
+  console.log("🖼️ Product image URL:", productImage);
+
   return (
-    <div className="bg-white dark:bg-[#1a1212] rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group">
-      <div className="flex flex-col sm:flex-row">
-        <Link 
-          to={`/shop/product/${item.id}`} 
-          className="sm:w-1/3 md:w-2/5 lg:w-1/3 relative overflow-hidden"
-        >
-          <img 
-            src={item.imageUrl} 
-            alt={item.title}
-            className="w-full h-48 sm:h-full object-cover transform transition-transform duration-500 group-hover:scale-105"
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group h-full flex flex-col">
+      <Link to={`/shop/product/${product._id}`} className="block flex-1">
+        {/* Product Image */}
+        <div className="relative bg-gray-100 dark:bg-gray-700 aspect-square md:aspect-[3/4]">
+          <img
+            src={productImage}
+            alt={product.product_name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
             onError={(e) => {
-              e.target.src = "/api/placeholder/300/300";
+              console.log("❌ Image load error, using placeholder");
+              e.target.src = "https://placehold.co/300x400?text=No+Image";
             }}
           />
-          {!item.inStock && (
+
+          {/* Discount Badge - Top Right */}
+          {discountPercentage > 0 && (
+            <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-full">
+              {discountPercentage}% OFF
+            </span>
+          )}
+
+          {/* Out of Stock Overlay */}
+          {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <p className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium uppercase">
+              <span className="bg-black/80 text-white px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-medium">
                 Out of Stock
-              </p>
+              </span>
             </div>
           )}
-          {item.discount > 0 && (
-            <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-              {Math.round(item.discount)}% OFF
-            </div>
-          )}
-        </Link>
-        
-        <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
-                  <Link 
-                    to={`/shop/product/${item.id}`} 
-                    className="hover:text-primary transition-colors"
-                  >
-                    {item.title}
-                  </Link>
-                </h3>
-                
-                {item.brand && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    {item.brand}
-                  </p>
-                )}
-              </div>
-              
-              <button
-                onClick={handleRemove}
-                className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50 rounded-full ml-2"
-                aria-label={`Remove ${item.title} from wishlist`}
+        </div>
+
+        {/* Product Info */}
+        <div className="p-2 md:p-3 flex-1 flex flex-col">
+          <div className="flex-1">
+            <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight">
+              {product.product_name}
+            </h3>
+
+            {/* Brand */}
+            {product.product_brand && (
+              <p className="text-xs text-text/60 mb-1 md:mb-2">{product.product_brand}</p>
+            )}
+
+            {/* Stock Status */}
+            <div className="flex items-center gap-1 text-xs mb-2">
+              <div
+                className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${
+                  isOutOfStock ? "bg-red-500" : "bg-green-500"
+                }`}
+              ></div>
+              <span
+                className={
+                  isOutOfStock
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-green-600 dark:text-green-400"
+                }
               >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <div className="mb-3">
-              <StarRating rating={item.rating} size="sm" showText={false} />
-            </div>
-            
-            <div className="mb-4">
-              <PriceDisplay 
-                price={item.discountedPrice || item.price}
-                originalPrice={item.discount > 0 ? item.price : null}
-                discount={item.discount}
-                formatPrice={formatPrice}
-                size="lg" 
-              />
+                {isOutOfStock
+                  ? "Out of Stock"
+                  : `${product.product_stock} in stock`}
+              </span>
             </div>
 
-            {item.inStock && (
-              <p className="text-xs text-green-600 dark:text-green-400 mb-2">
-                ✓ {item.stock} in stock
-              </p>
-            )}
-            
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              <i className="fas fa-calendar-alt mr-1.5"></i>
-              Added on {new Date(item.dateAdded).toLocaleDateString()}
-            </p>
-          </div>
-          
-          {/* Updated action buttons with Buy Now */}
-          <div className="flex flex-col gap-3">
-            {/* Primary action buttons */}
-            <div className="flex gap-3">
-              <button 
-                onClick={handleAddToCart}
-                className={`flex-1 px-4 py-2.5 rounded-lg flex items-center justify-center transition-colors text-sm font-medium ${
-                  item.inStock 
-                    ? "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600" 
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                }`}
-                disabled={!item.inStock}
-              >
-                <i className="fas fa-shopping-cart mr-2"></i>
-                Add to Cart
-              </button>
-              
-              <button 
-                onClick={handleBuyNow}
-                className={`flex-1 px-4 py-2.5 rounded-lg flex items-center justify-center transition-colors text-sm font-medium ${
-                  item.inStock 
-                    ? "bg-primary hover:bg-primary/90 text-white shadow-sm" 
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                }`}
-                disabled={!item.inStock}
-              >
-                <i className="fas fa-bolt mr-2"></i>
-                Buy Now
-              </button>
+            {/* Price */}
+            <div className="mb-2">
+              <div className="flex items-center gap-1 md:gap-2">
+                <span className="text-sm md:text-base font-bold text-primary">
+                  {formatPrice(discountedPrice)}
+                </span>
+                {discountPercentage > 0 && (
+                  <span className="text-xs text-gray-500 line-through">
+                    {formatPrice(product.product_price)}
+                  </span>
+                )}
+              </div>
             </div>
-            
-            {/* Secondary action button */}
-            <Link 
-              to={`/shop/product/${item.id}`}
-              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2.5 rounded-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
-            >
-              <i className="fas fa-eye mr-2"></i>
-              View Details
-            </Link>
           </div>
+        </div>
+      </Link>
+
+      {/* Action Buttons */}
+      <div className="p-2 md:p-3 pt-0 space-y-1.5 md:space-y-2">
+        {/* Add to Cart Button */}
+        {isOutOfStock ? (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              toast.info("We'll notify you when this product is back in stock!");
+            }}
+            className="w-full bg-gray-400 text-white text-xs md:text-sm py-1.5 md:py-2 rounded-md font-medium flex items-center justify-center gap-1 md:gap-2"
+          >
+            <i className="fas fa-bell text-xs"></i>
+            Out of Stock
+          </button>
+        ) : (
+          <button
+            onClick={handleAddToCart}
+            className="w-full bg-primary text-white text-xs md:text-sm py-1.5 md:py-2 rounded-md hover:bg-primary/90 transition-colors font-medium flex items-center justify-center gap-1 md:gap-2"
+          >
+            <i className="fas fa-shopping-cart text-xs"></i>
+            Add to Cart
+          </button>
+        )}
+
+        {/* Buy Now Button */}
+        <button
+          onClick={handleBuyNow}
+          disabled={isOutOfStock}
+          className="w-full border border-primary text-primary hover:bg-primary hover:text-white py-1.5 md:py-2 rounded-md font-medium transition-colors text-xs md:text-sm flex items-center justify-center gap-1 md:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <i className="fas fa-bolt text-xs"></i>
+          Buy Now
+        </button>
+
+        {/* Remove from Wishlist Button */}
+        <button
+          onClick={handleRemove}
+          className="w-full border border-red-500 text-red-500 hover:bg-red-500 hover:text-white py-1.5 md:py-2 rounded-md font-medium transition-colors text-xs md:text-sm flex items-center justify-center gap-1 md:gap-2"
+        >
+          <i className="fas fa-heart-broken text-xs"></i>
+          <span className="hidden md:inline">Remove from Wishlist</span>
+          <span className="md:hidden">Remove</span>
+        </button>
+      </div>
+
+      {/* Added Date - Only show on larger screens */}
+      <div className="hidden md:block px-3 pb-2">
+        <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-text/50 text-center">
+            <i className="fas fa-heart mr-1"></i>
+            Added{" "}
+            {new Date(item.createdAt || Date.now()).toLocaleDateString()}
+          </p>
         </div>
       </div>
     </div>
