@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Banner() {
   const [bannerData, setBannerData] = useState(null);
@@ -11,14 +12,16 @@ function Banner() {
   useEffect(() => {
     const fetchBanner = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/banners?location=homepage`);
+        const response = await fetch(
+          `${API_BASE_URL}/banners?location=homepage`
+        );
         const data = await response.json();
-        
+
         if (data.success && data.banners.length > 0) {
           setBannerData(data.banners[0]);
         }
       } catch (error) {
-        console.error('Error fetching homepage banner:', error);
+        console.error("Error fetching homepage banner:", error);
       }
     };
 
@@ -28,7 +31,7 @@ function Banner() {
   const handleSubscribe = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !email.includes('@')) {
+    if (!email.trim() || !email.includes("@")) {
       setMessage({ type: "error", text: "Please enter a valid email address" });
       return;
     }
@@ -38,7 +41,10 @@ function Banner() {
 
     setTimeout(() => {
       setIsSubmitting(false);
-      setMessage({ type: "success", text: "Thank you! Check your email for your discount code." });
+      setMessage({
+        type: "success",
+        text: "Thank you! Check your email for your discount code.",
+      });
       setEmail("");
       setTimeout(() => setMessage(null), 5000);
     }, 1500);
@@ -48,90 +54,117 @@ function Banner() {
     title: "Get 10% Off Your First Order!",
     subtitle: "Join our newsletter and receive an exclusive discount code.",
     buttonText: "Get Discount",
-    image: "banner.webp"
   };
 
   const banner = bannerData || defaultBanner;
 
   return (
-    <section 
-      className="w-full py-12 md:py-16 px-4 relative"
-      style={{ 
-        backgroundImage: `linear-gradient(135deg, #667eea 0%, #764ba2 100%), url(${banner.image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundBlendMode: 'overlay',
-        backdropFilter: 'blur(5px)',
-      }}
-    >
-      <div className="max-w-3xl mx-auto text-center text-text">
-        <div className="bg-gray-50 dark:bg-gray-800 p-8 md:p-12 rounded-2xl shadow-lg">
-          {/* Icon */}
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-white rounded-full mb-4">
-            <i className="fas fa-tags"></i>
-          </div>
+    <section className="w-full p-4">
+      <div className="">
+        <div
+          className="relative overflow-hidden rounded-lg shadow-md"
+          style={
+            banner.image
+              ? {
+                  backgroundImage: `url(${banner.image})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                }
+          }
+        >
+          <div className="relative px-4 py-6 md:px-8 md:py-10 text-center">
+            {/* Background Overlay Box */}
+            <div className="bg-gradient-to-br from-red-400 to-red-900 max-w-xl mx-auto rounded-lg p-4 md:p-6 text-white">
+              {/* Compact Icon */}
+              <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full mb-3 md:mb-4">
+                <i className="fas fa-gift text-sm md:text-base"></i>
+              </div>
 
-          {/* Title */}
-          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-text">
-            {banner.title}
-          </h2>
-          
-          {/* Subtitle */}
-          <p className="text-text text-base md:text-lg mb-6">
-            {banner.subtitle}
-          </p>
+              {/* Compact Title */}
+              <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 md:mb-3 leading-tight">
+                {banner.title}
+              </h2>
 
-          {/* Form */}
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
-            <div className="flex-grow">
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-500 text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70 whitespace-nowrap"
-            >
-              {isSubmitting ? (
-                <>
-                  <i className="fas fa-spinner fa-spin mr-1"></i>
-                  Please wait...
-                </>
-              ) : (
-                banner.buttonText || "Get Discount"
+              {/* Shorter Subtitle */}
+              {banner.subtitle && (
+                <p className="text-sm md:text-base text-white/90 mb-4 md:mb-6 leading-relaxed">
+                  {banner.subtitle}
+                </p>
               )}
-            </button>
-          </form>
 
-          {/* Trust indicators */}
-          <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 mb-4">
-            <span className="flex items-center">
-              <i className="fas fa-shield-alt mr-1 text-green-500"></i>
-              Secure & Private
-            </span>
-            <span className="flex items-center">
-              <i className="fas fa-clock mr-1 text-blue-500"></i>
-              Instant Delivery
-            </span>
-          </div>
+              {/* Responsive Form */}
+              <form
+                onSubmit={handleSubscribe}
+                className="max-w-xs sm:max-w-md md:max-w-lg mx-auto mb-4 md:mb-6"
+              >
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="email"
+                      placeholder="Enter your email"
+                      className="w-full px-3 py-2.5 text-sm rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-primary hover:bg-primary/70 text-white px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Processing...
+                      </>
+                    ) : (
+                      banner.buttonText || "Get Discount"
+                    )}
+                  </button>
+                </div>
+              </form>
 
-          {/* Message */}
-          {message && (
-            <div className={`px-4 py-2 rounded-lg text-sm ${
-              message.type === "error"
-                ? "bg-red-50 text-red-700 border border-red-200"
-                : "bg-green-50 text-green-700 border border-green-200"
-            }`}>
-              {message.text}
+              {/* Compact Trust Indicators */}
+              <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-xs text-white/80 mb-3 md:mb-4">
+                <span className="flex items-center">
+                  <i className="fas fa-shield-alt mr-1.5 text-green-400"></i>
+                  100% Secure
+                </span>
+                <span className="flex items-center">
+                  <i className="fas fa-clock mr-1.5 text-blue-400"></i>
+                  Instant Delivery
+                </span>
+                <span className="flex items-center">
+                  <i className="fas fa-envelope mr-1.5 text-yellow-400"></i>
+                  No Spam
+                </span>
+              </div>
+
+              {/* Message */}
+              {message && (
+                <div
+                  className={`inline-block px-3 py-2 rounded-md text-xs font-medium ${
+                    message.type === "error"
+                      ? "bg-red-500/20 text-red-200 border border-red-400/30"
+                      : "bg-green-500/20 text-green-200 border border-green-400/30"
+                  }`}
+                >
+                  <i
+                    className={`fas ${
+                      message.type === "error"
+                        ? "fa-exclamation-circle"
+                        : "fa-check-circle"
+                    } mr-1`}
+                  ></i>
+                  {message.text}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </section>

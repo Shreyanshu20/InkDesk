@@ -79,7 +79,7 @@ function NavbarTop() {
   };
 
   return (
-    <div className="bg-primary lg:px-8 py-5 text-white">
+    <div className="bg-gradient-to-br from-red-500 to-red-800 lg:px-8 py-5 text-white">
       <div className="mx-auto flex items-center justify-center lg:justify-between">
         
         {/* Logo - Always visible */}
@@ -108,7 +108,7 @@ function NavbarTop() {
             />
             <button
               onClick={handleSearch}
-              className="bg-[#E66354] px-6 rounded-r-full text-white border-none hover:bg-[#E66354]/80 transition-all duration-300 flex items-center justify-center h-12 flex-shrink-0"
+              className="bg-accent px-6 rounded-r-full text-white border-none hover:bg-accent/70 transition-all duration-300 flex items-center justify-center h-12 flex-shrink-0"
               aria-label="Search"
             >
               <i className="fas fa-search" aria-hidden="true"></i>
@@ -117,7 +117,7 @@ function NavbarTop() {
         </div>
 
         {/* Desktop Right Section - Hidden on mobile/tablet */}
-        <div className="hidden lg:flex items-center space-x-4 flex-shrink-0">
+        <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
           {/* Authentication Buttons */}
           {!isLoggedIn ? (
             <div className="flex items-center space-x-2">

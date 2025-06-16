@@ -18,7 +18,7 @@ module.exports.getBanners = async (req, res) => {
     
     const banners = await Banner.find(query)
       .sort({ position: 1, createdAt: -1 })
-      .select('title subtitle image url buttonText textPosition location');
+      .select('title subtitle image mobileImage url buttonText textPosition location position'); // ADD position field
     
     return res.json({
       success: true,
@@ -36,17 +36,17 @@ module.exports.getBanners = async (req, res) => {
 module.exports.getAdminBanners = async (req, res) => {
   try {
     const { location, page = 1, limit = 10 } = req.query;
-    const skip = (page - 1) * limit;
     
     const query = {};
-    if (location && location !== 'all') {
+    
+    if (location) {
       query.location = location;
     }
     
     const banners = await Banner.find(query)
       .sort({ position: 1, createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
     
     const total = await Banner.countDocuments(query);
     
@@ -55,7 +55,7 @@ module.exports.getAdminBanners = async (req, res) => {
       banners,
       total,
       page: parseInt(page),
-      totalPages: Math.ceil(total / limit)
+      pages: Math.ceil(total / limit)
     });
   } catch (error) {
     return res.status(500).json({
@@ -66,7 +66,7 @@ module.exports.getAdminBanners = async (req, res) => {
 };
 
 // Admin: Get single banner
-module.exports.getBanner = async (req, res) => {
+module.exports.getAdminBanner = async (req, res) => {
   try {
     const banner = await Banner.findById(req.params.id);
     
@@ -95,10 +95,10 @@ module.exports.createBanner = async (req, res) => {
     const bannerData = req.body;
     
     // Validate required fields
-    if (!bannerData.title || !bannerData.image || !bannerData.location) {
+    if (!bannerData.title || !bannerData.location) {
       return res.status(400).json({
         success: false,
-        message: "Title, image, and location are required"
+        message: "Title and location are required"
       });
     }
     
@@ -121,11 +121,7 @@ module.exports.createBanner = async (req, res) => {
 // Admin: Update banner
 module.exports.updateBanner = async (req, res) => {
   try {
-    const banner = await Banner.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
       return res.status(404).json({
@@ -134,10 +130,16 @@ module.exports.updateBanner = async (req, res) => {
       });
     }
     
+    const updatedBanner = await Banner.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
     return res.json({
       success: true,
       message: "Banner updated successfully",
-      banner
+      banner: updatedBanner
     });
   } catch (error) {
     return res.status(500).json({
@@ -150,7 +152,7 @@ module.exports.updateBanner = async (req, res) => {
 // Admin: Delete banner
 module.exports.deleteBanner = async (req, res) => {
   try {
-    const banner = await Banner.findByIdAndDelete(req.params.id);
+    const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
       return res.status(404).json({
@@ -158,6 +160,8 @@ module.exports.deleteBanner = async (req, res) => {
         message: "Banner not found"
       });
     }
+    
+    await Banner.findByIdAndDelete(req.params.id);
     
     return res.json({
       success: true,

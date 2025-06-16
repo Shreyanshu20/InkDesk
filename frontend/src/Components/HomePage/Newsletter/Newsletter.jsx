@@ -1,34 +1,14 @@
-import React, { useState, useEffect } from "react";
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+import React, { useState } from "react";
 
 function Newsletter() {
-  const [newsletterBanner, setNewsletterBanner] = useState(null);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
 
-  useEffect(() => {
-    const fetchNewsletterBanner = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/banners?location=newsletter`);
-        const data = await response.json();
-        
-        if (data.success && data.banners.length > 0) {
-          setNewsletterBanner(data.banners[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching newsletter banner:', error);
-      }
-    };
-
-    fetchNewsletterBanner();
-  }, []);
-
   const handleSubscribe = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !email.includes('@')) {
+    if (!email.trim() || !email.includes("@")) {
       setMessage({ type: "error", text: "Please enter a valid email address" });
       return;
     }
@@ -36,6 +16,7 @@ function Newsletter() {
     setIsSubmitting(true);
     setMessage(null);
 
+    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setMessage({ type: "success", text: "Thank you for subscribing!" });
@@ -44,96 +25,92 @@ function Newsletter() {
     }, 1500);
   };
 
-  const defaultContent = {
-    title: "Stay in the Loop",
-    subtitle: "Get the latest updates and special offers delivered to your inbox."
-  };
-
-  const content = newsletterBanner || defaultContent;
-
   return (
-    <section 
-      className="w-full py-12 md:py-16 px-4 relative"
-      style={newsletterBanner?.image ? {
-        backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.5)), url(${newsletterBanner.image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      } : {
-        background: 'linear-gradient(135deg,rgb(234, 102, 102) 0%,rgb(162, 75, 75) 100%)',
-      }}
-    >
-      <div className="max-w-2xl mx-auto text-center">
-        {/* Icon */}
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-4">
-          <i className="fas fa-envelope text-white text-lg"></i>
-        </div>
+    <section className="w-full p-4">
+      <div className="">
+        <div className="relative overflow-hidden rounded-lg shadow-md bg-gradient-to-br from-red-600 to-red-900">
+          <div className="relative px-4 py-6 md:px-8 md:py-10 text-center text-white">
+            {/* Compact Icon */}
+            <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-sm rounded-full mb-3 md:mb-4">
+              <i className="fas fa-envelope text-sm md:text-base"></i>
+            </div>
 
-        {/* Title */}
-        <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
-          {content.title}
-        </h2>
+            {/* Compact Title */}
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 md:mb-3 leading-tight">
+              Stay Updated
+            </h2>
 
-        {/* Subtitle */}
-        <p className="text-base md:text-lg text-white/90 mb-6">
-          {content.subtitle}
-        </p>
+            {/* Shorter Subtitle */}
+            <p className="text-sm md:text-base text-white/80 mb-4 md:mb-6 leading-relaxed">
+              Get latest updates and exclusive offers.
+            </p>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubscribe}
-          className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4"
-        >
-          <div className="flex-grow">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 rounded-lg bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-white/50"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
+            {/* Responsive Form */}
+            <form
+              onSubmit={handleSubscribe}
+              className="max-w-xs sm:max-w-md md:max-w-lg mx-auto mb-4 md:mb-6"
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="w-full px-3 py-2.5 text-sm rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-primary hover:bg-primary/70 text-white px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Subscribing...
+                    </>
+                  ) : (
+                    "Subscribe"
+                  )}
+                </button>
+              </div>
+            </form>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-accent hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
-          >
-            {isSubmitting ? (
-              <>
-                <i className="fas fa-spinner fa-spin mr-1"></i>
-                Subscribing...
-              </>
-            ) : (
-              "Subscribe"
+            {/* Compact Trust Indicators */}
+            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-xs text-white/70 mb-3 md:mb-4">
+              <span className="flex items-center">
+                <i className="fas fa-users mr-1.5 text-blue-400"></i>
+                10k+ Readers
+              </span>
+              <span className="flex items-center">
+                <i className="fas fa-shield-alt mr-1.5 text-green-400"></i>
+                No Spam
+              </span>
+            </div>
+
+            {/* Message */}
+            {message && (
+              <div
+                className={`inline-block px-3 py-2 rounded-md text-xs font-medium ${
+                  message.type === "error"
+                    ? "bg-red-500/20 text-red-200 border border-red-400/30"
+                    : "bg-green-500/20 text-green-200 border border-green-400/30"
+                }`}
+              >
+                <i
+                  className={`fas ${
+                    message.type === "error"
+                      ? "fa-exclamation-circle"
+                      : "fa-check-circle"
+                  } mr-1`}
+                ></i>
+                {message.text}
+              </div>
             )}
-          </button>
-        </form>
-
-        {/* Trust Indicators */}
-        <div className="flex items-center justify-center space-x-4 text-sm text-white/70 mb-4">
-          <span className="flex items-center">
-            <i className="fas fa-users mr-1"></i>
-            10,000+ readers
-          </span>
-          <span className="flex items-center">
-            <i className="fas fa-shield-alt mr-1"></i>
-            No spam
-          </span>
-        </div>
-
-        {/* Message */}
-        {message && (
-          <div
-            className={`px-4 py-2 rounded-lg text-sm ${
-              message.type === "error"
-                ? "bg-red-500/20 text-red-100"
-                : "bg-green-500/20 text-green-100"
-            }`}
-          >
-            {message.text}
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

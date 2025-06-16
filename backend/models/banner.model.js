@@ -14,6 +14,10 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  mobileImage: {  // ADD THIS FIELD
+    type: String,
+    trim: true
+  },
   location: {
     type: String,
     required: true,

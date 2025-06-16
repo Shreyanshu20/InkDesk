@@ -46,22 +46,29 @@ try {
     throw new Error('CLOUDINARY_CLOUD_NAME is required');
   }
 
-  // Simple storage configuration without complex transformations
+  // HIGH QUALITY storage configuration for banners/advertisements
   storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
       folder: (req) => {
-        return req.originalUrl.includes('category-images') ? 'inkdesk/categories' : 'inkdesk/products';
+        if (req.originalUrl.includes('category-images')) return 'inkdesk/categories';
+        if (req.originalUrl.includes('subcategory-images')) return 'inkdesk/subcategories';
+        if (req.originalUrl.includes('product-images')) return 'inkdesk/products';
+        return 'inkdesk/banners'; // Default for banner/advertisement images
       },
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-      transformation: [{ quality: 'auto:low', fetch_format: 'auto' }] // Minimal transformation
+      // REMOVE aggressive compression - keep original quality for banners
+      transformation: [
+        { quality: 'auto:best' }, // Use best quality instead of low
+        { fetch_format: 'auto' }
+      ]
     }
   });
 
   upload = multer({
     storage: storage,
     limits: {
-      fileSize: 3 * 1024 * 1024, // Reduce to 3MB
+      fileSize: 10 * 1024 * 1024, // Increase to 10MB for high-quality banners
       files: 5
     },
     fileFilter: (req, file, cb) => {
@@ -74,7 +81,7 @@ try {
     },
   });
 
-  console.log('✅ Cloudinary config loaded');
+  console.log('✅ Cloudinary config loaded with high quality settings');
 
 } catch (error) {
   console.error('💥 Cloudinary configuration failed:', error.message);

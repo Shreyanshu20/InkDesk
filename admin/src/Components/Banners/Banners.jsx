@@ -436,7 +436,6 @@ function Banners() {
     const locationMap = {
       "homepage-carousel": "Homepage Carousel",
       homepage: "Homepage Banner",
-      newsletter: "Newsletter Banner",
       advertisement: "Advertisement Banner",
     };
     return locationMap[location] || location;
@@ -562,8 +561,6 @@ function Banners() {
               "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
             homepage:
               "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-            newsletter:
-              "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
             advertisement:
               "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
           };
@@ -571,7 +568,6 @@ function Banners() {
           const shortLocationMap = {
             "homepage-carousel": "Carousel",
             homepage: "Homepage",
-            newsletter: "Newsletter",
             advertisement: "Ads",
           };
 
@@ -791,7 +787,6 @@ function Banners() {
             <option value="all">All Locations</option>
             <option value="homepage-carousel">Homepage Carousel</option>
             <option value="homepage">Homepage Banner</option>
-            <option value="newsletter">Newsletter Banner</option>
             <option value="advertisement">Advertisement Banner</option>
           </select>
 

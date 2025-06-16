@@ -180,7 +180,7 @@ function Hero() {
 
       {/* Slide Indicators */}
       {slides.length > 1 && (
-        <div className="absolute bottom-4 md:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
+        <div className="absolute bottom-4 md:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
           {slides.map((_, index) => (
             <button
               key={index}

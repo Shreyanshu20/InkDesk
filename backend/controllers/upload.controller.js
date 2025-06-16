@@ -1,7 +1,7 @@
-const { cloudinary } = require('../config/cloudinary'); // FIX: Destructure cloudinary
+const { cloudinary } = require('../config/cloudinary');
 const fs = require('fs');
 
-// Single image upload (existing)
+// Single image upload with HIGH QUALITY for banners
 module.exports.uploadImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -11,13 +11,13 @@ module.exports.uploadImage = async (req, res) => {
       });
     }
 
+    // HIGH QUALITY upload for banners/advertisements
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'categories',
-      transformation: [
-        { width: 500, height: 500, crop: 'limit' },
-        { quality: 'auto' },
-        { format: 'auto' }
-      ]
+      folder: 'inkdesk/banners',
+      quality: 'auto:best', // CHANGE FROM 'auto:low' TO 'auto:best'
+      format: 'auto',
+      // Remove size restrictions for banners - keep original dimensions
+      flags: 'preserve_transparency'
     });
 
     // Delete temporary file
@@ -40,7 +40,7 @@ module.exports.uploadImage = async (req, res) => {
   }
 };
 
-// Upload category images - ADD THIS FUNCTION
+// Category images with moderate quality
 module.exports.uploadCategoryImages = async (req, res) => {
   try {
     console.log('📤 Category image upload request received');
@@ -53,13 +53,13 @@ module.exports.uploadCategoryImages = async (req, res) => {
       });
     }
 
-    // Upload each file to Cloudinary (should be only 1 for categories)
+    // Upload each file to Cloudinary
     const uploadPromises = req.files.map(file => {
       return cloudinary.uploader.upload(file.path, {
-        folder: 'categories',
+        folder: 'inkdesk/categories',
         transformation: [
           { width: 800, height: 600, crop: 'limit' },
-          { quality: 'auto' },
+          { quality: 'auto:good' }, // Good quality for categories
           { format: 'auto' }
         ]
       });
@@ -108,45 +108,6 @@ module.exports.uploadCategoryImages = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error uploading category images',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// Delete category image - ADD THIS FUNCTION
-module.exports.deleteCategoryImage = async (req, res) => {
-  try {
-    const { publicId } = req.params;
-    
-    console.log('🗑️ Delete category image request for public_id:', publicId);
-
-    if (!publicId || publicId === 'undefined' || publicId === 'null') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid public_id provided'
-      });
-    }
-
-    // Delete from Cloudinary
-    const deleteResult = await cloudinary.uploader.destroy(publicId);
-    
-    console.log('🗑️ Cloudinary deletion result:', deleteResult);
-
-    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
-      res.json({
-        success: true,
-        message: 'Category image deleted successfully',
-        result: deleteResult
-      });
-    } else {
-      throw new Error('Failed to delete from Cloudinary');
-    }
-
-  } catch (error) {
-    console.error('❌ Error deleting category image:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete category image',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -225,6 +186,45 @@ module.exports.uploadSubcategoryImages = async (req, res) => {
   }
 };
 
+// Delete category image - ADD THIS FUNCTION
+module.exports.deleteCategoryImage = async (req, res) => {
+  try {
+    const { publicId } = req.params;
+    
+    console.log('🗑️ Delete category image request for public_id:', publicId);
+
+    if (!publicId || publicId === 'undefined' || publicId === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid public_id provided'
+      });
+    }
+
+    // Delete from Cloudinary
+    const deleteResult = await cloudinary.uploader.destroy(publicId);
+    
+    console.log('🗑️ Cloudinary deletion result:', deleteResult);
+
+    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
+      res.json({
+        success: true,
+        message: 'Category image deleted successfully',
+        result: deleteResult
+      });
+    } else {
+      throw new Error('Failed to delete from Cloudinary');
+    }
+
+  } catch (error) {
+    console.error('❌ Error deleting category image:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete category image',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // Delete subcategory image - ADD THIS FUNCTION
 module.exports.deleteSubcategoryImage = async (req, res) => {
   try {
@@ -278,10 +278,10 @@ module.exports.uploadProductImages = async (req, res) => {
 
     const uploadPromises = req.files.map(file => {
       return cloudinary.uploader.upload(file.path, {
-        folder: 'products',
+        folder: 'inkdesk/products',
         transformation: [
           { width: 1000, height: 1000, crop: 'limit' },
-          { quality: 'auto' },
+          { quality: 'auto:good' }, // Good quality for products
           { format: 'auto' }
         ]
       });
