@@ -4,10 +4,10 @@ const FreeShippingProgressBar = ({ amountForFreeShipping, freeShippingProgress, 
   if (amountForFreeShipping <= 0) return null;
   
   return (
-    <div className="mb-6 bg-gray-100 dark:bg-gray-900 rounded-xl p-4 border border-gray-300 dark:border-gray-600 shadow-sm">
+    <div className="mb-4 md:mb-6 bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-3 md:p-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center mb-2">
         <i className="fas fa-truck text-primary mr-2"></i>
-        <p className="text-sm text-text">
+        <p className="text-xs md:text-sm text-text">
           Add{" "}
           <span className="font-bold text-primary">
             {formatPrice(amountForFreeShipping)}

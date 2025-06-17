@@ -19,35 +19,35 @@ const PaymentForm = ({
   step,
   handleUpiInput,
   handleWalletSelection,
-  isPaymentFormValid, // Add this prop
+  isPaymentFormValid,
 }) => {
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl shadow-md overflow-hidden border border-gray-300 dark:border-gray-600">
-      <div className="p-6 border-b border-gray-300 dark:border-gray-600">
-        <h2 className="text-xl font-bold text-text flex items-center">
-          <i className="fas fa-credit-card text-primary mr-3"></i>
+    <div className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+      <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg md:text-xl font-bold text-text flex items-center">
+          <i className="fas fa-credit-card text-primary mr-2 md:mr-3"></i>
           Payment Method
         </h2>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="p-4 md:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
           <button
             type="button"
             onClick={() => setPaymentMethod("card")}
-            className={`group p-4 flex flex-col items-center justify-center rounded-lg border hover:text-secondary ${
+            className={`group p-3 md:p-4 flex flex-col items-center justify-center rounded-lg border hover:text-secondary ${
               paymentMethod === "card"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                 : "border-gray-300 dark:border-gray-600 bg-background hover:bg-secondary/10 hover:border-gray-400"
-            } transition-all duration-300 `}
+            } transition-all duration-300`}
           >
             <i
-              className={`far fa-credit-card text-2xl mb-2 ${
+              className={`far fa-credit-card text-lg md:text-2xl mb-1 md:mb-2 ${
                 paymentMethod === "card" ? "text-primary" : "text-text/80 group-hover:text-text"
               }`}
             ></i>
             <span
-              className={`text-sm ${
+              className={`text-xs md:text-sm ${
                 paymentMethod === "card"
                   ? "text-primary font-medium"
                   : "text-text/80 group-hover:text-text"
@@ -60,19 +60,19 @@ const PaymentForm = ({
           <button
             type="button"
             onClick={() => setPaymentMethod("upi")}
-            className={`group p-4 flex flex-col items-center justify-center rounded-lg border ${
+            className={`group p-3 md:p-4 flex flex-col items-center justify-center rounded-lg border ${
               paymentMethod === "upi"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                 : "border-gray-300 dark:border-gray-600 bg-background hover:bg-secondary/10 hover:border-gray-400"
-            } transition-all duration-300 `}
+            } transition-all duration-300`}
           >
             <i
-              className={`fas fa-mobile-alt text-2xl mb-2 ${
+              className={`fas fa-mobile-alt text-lg md:text-2xl mb-1 md:mb-2 ${
                 paymentMethod === "upi" ? "text-primary" : "text-text/80 group-hover:text-text"
               }`}
             ></i>
             <span
-              className={`text-sm ${
+              className={`text-xs md:text-sm ${
                 paymentMethod === "upi"
                    ? "text-primary font-medium"
                   : "text-text/80 group-hover:text-text"
@@ -85,19 +85,19 @@ const PaymentForm = ({
           <button
             type="button"
             onClick={() => setPaymentMethod("wallet")}
-            className={`group p-4 flex flex-col items-center justify-center rounded-lg border ${
+            className={`group p-3 md:p-4 flex flex-col items-center justify-center rounded-lg border ${
               paymentMethod === "wallet"
                ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                 : "border-gray-300 dark:border-gray-600 bg-background hover:bg-secondary/10 hover:border-gray-400"
-            } transition-all duration-300 `}
+            } transition-all duration-300`}
           >
             <i
-              className={`fas fa-wallet text-2xl mb-2 ${
+              className={`fas fa-wallet text-lg md:text-2xl mb-1 md:mb-2 ${
                 paymentMethod === "wallet" ? "text-primary" : "text-text/80 group-hover:text-text"
               }`}
             ></i>
             <span
-              className={`text-sm ${
+              className={`text-xs md:text-sm ${
                 paymentMethod === "wallet"
                    ? "text-primary font-medium"
                   : "text-text/80 group-hover:text-text"
@@ -110,19 +110,19 @@ const PaymentForm = ({
           <button
             type="button"
             onClick={() => setPaymentMethod("cod")}
-            className={`group p-4 flex flex-col items-center justify-center rounded-lg border ${
+            className={`group p-3 md:p-4 flex flex-col items-center justify-center rounded-lg border ${
               paymentMethod === "cod"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                 : "border-gray-300 dark:border-gray-600 bg-background hover:bg-secondary/10 hover:border-gray-400"
-            } transition-all duration-300 `}
+            } transition-all duration-300`}
           >
             <i
-              className={`fas fa-money-bill-wave text-2xl mb-2 ${
+              className={`fas fa-money-bill-wave text-lg md:text-2xl mb-1 md:mb-2 ${
                 paymentMethod === "cod" ? "text-primary" : "text-text/80 group-hover:text-text"
               }`}
             ></i>
             <span
-              className={`text-sm ${
+              className={`text-xs md:text-sm ${
                 paymentMethod === "cod"
                    ? "text-primary font-medium"
                   : "text-text/80 group-hover:text-text"
@@ -134,7 +134,6 @@ const PaymentForm = ({
         </div>
 
         <form onSubmit={handlePaymentSubmit}>
-          {/* Payment Method Forms */}
           {paymentMethod === "card" && (
             <PaymentCardForm
               paymentDetails={paymentDetails}
@@ -162,22 +161,21 @@ const PaymentForm = ({
 
           {paymentMethod === "cod" && <PaymentCodForm />}
 
-          <div className="mt-8 flex justify-between">
+          <div className="mt-6 md:mt-8 flex flex-col-reverse md:flex-row justify-between gap-2 md:gap-0">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="bg-background hover:bg-accent/10 border border-gray-300 dark:border-gray-600 hover:border-gray-400 text-text/80 font-medium rounded-md px-6 py-3 transition-all duration-300 flex items-center justify-center"
+              className="w-full md:w-auto bg-background hover:bg-accent/10 border border-gray-300 dark:border-gray-600 hover:border-gray-400 text-text/80 font-medium rounded-md px-4 md:px-6 py-2 md:py-3 transition-all duration-300 flex items-center justify-center text-sm md:text-base"
             >
               <i className="fas fa-arrow-left mr-2"></i>
               Back to Shipping
             </button>
 
-            {/* Conditional Continue Button */}
             {isPaymentFormValid() ? (
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-primary hover:bg-primary/90 text-white font-medium rounded-md px-8 py-3 transition-colors duration-300 flex items-center justify-center shadow-md hover:shadow-lg"
+                className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-medium rounded-md px-6 md:px-8 py-2 md:py-3 transition-colors duration-300 flex items-center justify-center shadow-md hover:shadow-lg text-sm md:text-base"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -214,7 +212,7 @@ const PaymentForm = ({
               <button
                 type="button"
                 disabled
-                className="bg-gray-300 text-gray-500 font-medium rounded-md px-8 py-3 cursor-not-allowed flex items-center justify-center"
+                className="w-full md:w-auto bg-gray-300 text-gray-500 font-medium rounded-md px-6 md:px-8 py-2 md:py-3 cursor-not-allowed flex items-center justify-center text-sm md:text-base"
               >
                 Complete Payment Details
                 <i className="fas fa-lock ml-2"></i>

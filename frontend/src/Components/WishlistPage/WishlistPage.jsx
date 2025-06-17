@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import WishlistItem from "./WishlistItem";
 import WishlistEmpty from "./WishlistEmpty";
 import WishlistSkeleton from "./WishlistSkeleton";
+import PageHeader from "../Common/PageHeader"; // Add this import
 
 function WishlistPage() {
   const { backendUrl, isLoggedIn, userData } = useContext(AppContent);
@@ -39,7 +40,10 @@ function WishlistPage() {
 
       if (response.data.success) {
         setWishlistItems(response.data.wishlist || []);
-        console.log("✅ Wishlist items loaded:", response.data.wishlist?.length || 0);
+        console.log(
+          "✅ Wishlist items loaded:",
+          response.data.wishlist?.length || 0
+        );
       } else {
         toast.error(response.data.message || "Failed to fetch wishlist");
       }
@@ -83,11 +87,11 @@ function WishlistPage() {
 
   const handleAddToCart = async (product, quantity = 1) => {
     try {
-      console.log("🛒 Adding to cart:", product._id, "quantity:", quantity);
+      // Only call addToCart - it will handle the toast message
       await addToCart(product._id, quantity);
-      toast.success("Item added to cart!");
+      // Remove the duplicate toast from here
     } catch (error) {
-      console.error("❌ Error adding to cart:", error);
+      // Only show error toast if addToCart fails
       toast.error("Failed to add item to cart");
     }
   };
@@ -106,11 +110,14 @@ function WishlistPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background text-text py-8">
-        <div className="max-w-6xl mx-auto px-4">
+      <div className="min-h-screen bg-background text-text">
+        <PageHeader title="My Wishlist" breadcrumbs={[{ label: "Wishlist" }]} />
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="text-center py-16">
             <i className="fas fa-sign-in-alt text-6xl text-primary mb-6"></i>
-            <h2 className="text-2xl font-bold text-text mb-4">Login Required</h2>
+            <h2 className="text-2xl font-bold text-text mb-4">
+              Login Required
+            </h2>
             <p className="text-text/70 mb-8">
               Please log in to view your wishlist items
             </p>
@@ -127,19 +134,23 @@ function WishlistPage() {
   }
 
   if (loading) {
-    return <WishlistSkeleton />;
+    return (
+      <div className="bg-background min-h-screen">
+        <PageHeader title="My Wishlist" breadcrumbs={[{ label: "Wishlist" }]} />
+        <WishlistSkeleton />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background text-text py-4 md:py-8">
-      <div className="max-w-6xl mx-auto px-3 md:px-4 lg:px-6">
-        {/* Header */}
+    <div className="min-h-screen bg-background text-text">
+      <PageHeader title="My Wishlist" breadcrumbs={[{ label: "Wishlist" }]} />
+
+      <div className="max-w-6xl mx-auto px-3 md:px-4 lg:px-6 py-4 md:py-8">
+        {/* Sub-header with item count */}
         <div className="mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text mb-1 md:mb-2">
-                My Wishlist
-              </h1>
               <p className="text-text/70 text-sm">
                 {wishlistItems.length > 0
                   ? `${wishlistItems.length} item${
@@ -148,17 +159,6 @@ function WishlistPage() {
                   : "No items in your wishlist yet"}
               </p>
             </div>
-            {wishlistItems.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-text/70">
-                <i className="fas fa-heart text-primary"></i>
-                <span className="hidden md:inline">
-                  Keep shopping to find more items you love
-                </span>
-                <span className="md:hidden">
-                  {wishlistItems.length} saved items
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -199,6 +199,7 @@ function WishlistPage() {
                   </button>
                   <button
                     onClick={() => {
+                      // Add all items to cart - only one toast per item from CartContext
                       wishlistItems.forEach((item) => {
                         handleAddToCart(item.product_id, 1);
                       });

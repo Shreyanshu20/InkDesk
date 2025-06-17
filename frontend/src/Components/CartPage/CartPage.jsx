@@ -5,33 +5,35 @@ import CartItems from "./components/CartItems";
 import CouponSection from "./components/CouponSection";
 import OrderSummary from "./components/OrderSummary";
 import EmptyCart from "./components/EmptyCart";
-import RelatedProducts from "./components/RelatedProducts";
 import PageHeader from "../Common/PageHeader";
 import { AppContent } from "../../Context/AppContent";
 import { useCart } from "../../Context/CartContext";
 
 function CartPage() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useContext(AppContent);
+  const { isLoggedIn, loading } = useContext(AppContent); // Add loading from context
   const {
     cartItems: backendCartItems,
     cartSummary,
     isLoading,
-    updateCartItemOptimistic, // New function
+    updateCartItemOptimistic,
     removeFromCart,
     fetchCart,
-    hasPendingUpdates, // New flag
+    hasPendingUpdates,
   } = useCart();
 
   // Check authentication on component mount
   useEffect(() => {
+    // Wait for auth loading to complete before redirecting
+    if (loading) return;
+
     if (!isLoggedIn) {
       navigate("/login");
       return;
     }
 
     fetchCart();
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, navigate, loading]); // Add loading as dependency
 
   // Format price in Indian Rupees
   const formatPrice = (price) => {
@@ -120,6 +122,31 @@ function CartPage() {
     // No success toast needed
   };
 
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="bg-background min-h-screen">
+        <PageHeader
+          title="Shopping Cart"
+          breadcrumbs={[{ label: "Shopping Cart" }]}
+        />
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl">
+          <div className="flex justify-center items-center py-10 md:py-20">
+            <div className="text-center">
+              <i className="fas fa-spinner fa-spin text-3xl md:text-4xl text-primary mb-4"></i>
+              <p className="text-text text-sm md:text-base">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not logged in (will redirect)
+  if (!isLoggedIn) {
+    return null;
+  }
+
   // Show loading state
   if (isLoading) {
     return (
@@ -128,11 +155,11 @@ function CartPage() {
           title="Shopping Cart"
           breadcrumbs={[{ label: "Shopping Cart" }]}
         />
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="flex justify-center items-center py-20">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl">
+          <div className="flex justify-center items-center py-10 md:py-20">
             <div className="text-center">
-              <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
-              <p className="text-text">Loading your cart...</p>
+              <i className="fas fa-spinner fa-spin text-3xl md:text-4xl text-primary mb-4"></i>
+              <p className="text-text text-sm md:text-base">Loading your cart...</p>
             </div>
           </div>
         </div>
@@ -147,11 +174,11 @@ function CartPage() {
         breadcrumbs={[{ label: "Shopping Cart" }]}
       />
 
-      <section className="bg-gradient-to-b from-background to-[#f8f5e6] to-90%">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <section className="bg-background">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl">
           {transformedCartItems.length > 0 ? (
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+              <div className="lg:col-span-2 space-y-4 md:space-y-6">
                 {/* Free Shipping Progress Bar */}
                 <FreeShippingIndicator
                   amountForFreeShipping={amountForFreeShipping}
@@ -189,9 +216,6 @@ function CartPage() {
             <EmptyCart />
           )}
         </div>
-
-        {/* Related Products Section */}
-        <RelatedProducts formatPrice={formatPrice} />
       </section>
     </div>
   );

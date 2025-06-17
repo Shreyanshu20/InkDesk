@@ -234,6 +234,15 @@ try {
   console.error('❌ Banner routes error:', error.message);
 }
 
+// Contact routes
+try {
+  const contactRoutes = require('./routes/contact.routes.js');
+  app.use('/contact', contactRoutes);
+  console.log('✅ Contact routes loaded at /contact');
+} catch (error) {
+  console.error('❌ Contact routes error:', error.message);
+}
+
 // Admin routes (should be last among functional routes)
 try {
   const adminRoutes = require('./routes/admin.routes');

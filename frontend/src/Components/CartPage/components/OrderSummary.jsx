@@ -32,11 +32,12 @@ const OrderSummary = ({
   const finalTotal = total + (paymentMethod === "cod" ? 40 : 0);
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl shadow-md border border-gray-300 dark:border-gray-600 sticky top-6">
-      <div className="p-6 border-b border-gray-300 dark:border-gray-600">
-        <h2 className="text-xl font-bold text-text flex items-center">
-          <i className="fas fa-clipboard-list text-primary mr-3"></i>
-          Order Summary
+    <div className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 sticky top-6">
+      <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-base md:text-lg font-bold text-text flex items-center">
+          <i className="fas fa-clipboard-list text-primary mr-2"></i>
+          <span className="hidden md:inline">Order Summary</span>
+          <span className="md:hidden">Summary</span>
         </h2>
       </div>
 
@@ -45,16 +46,16 @@ const OrderSummary = ({
         <FreeShippingInfo amountForFreeShipping={amountForFreeShipping} />
       )}
 
-      <div className="p-6 space-y-4">
-        <div className="flex justify-between text-text/70">
+      <div className="p-4 md:p-6 space-y-3">
+        <div className="flex justify-between text-text/70 text-sm">
           <span>Subtotal</span>
           <span className="font-medium text-text">{formatPrice(subtotal)}</span>
         </div>
 
-        <div className="flex justify-between text-text/70">
+        <div className="flex justify-between text-text/70 text-sm">
           <span>Shipping</span>
           {shipping === 0 ? (
-            <span className="text-green-600 font-medium">Free</span>
+            <span className="text-green-600 font-medium text-sm">Free</span>
           ) : (
             <span className="font-medium text-text">
               {formatPrice(shipping)}
@@ -62,23 +63,23 @@ const OrderSummary = ({
           )}
         </div>
 
-        <div className="flex justify-between text-text/70">
+        <div className="flex justify-between text-text/70 text-sm">
           <span>GST (18%)</span>
           <span className="font-medium text-text">{formatPrice(tax)}</span>
         </div>
 
         {/* COD Fee - Only show in checkout when COD is selected */}
         {paymentMethod === "cod" && (
-          <div className="flex justify-between text-text/70">
+          <div className="flex justify-between text-text/70 text-sm">
             <span>COD Fee</span>
             <span className="font-medium text-text">₹40</span>
           </div>
         )}
 
-        <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
+        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-text">Total</span>
-            <span className="text-xl font-bold text-primary">
+            <span className="text-base font-bold text-text">Total</span>
+            <span className="text-lg font-bold text-primary">
               {formatPrice(finalTotal)}
             </span>
           </div>
@@ -89,7 +90,7 @@ const OrderSummary = ({
         {!hideCheckoutButton && (
           <button
             onClick={handleCheckout}
-            className="w-full mt-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-md px-5 py-3.5 transition-colors duration-300 flex items-center justify-center shadow-md hover:shadow-lg"
+            className="w-full mt-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-md px-4 py-3 transition-colors duration-300 flex items-center justify-center shadow-md hover:shadow-lg text-sm"
           >
             <i className="fas fa-credit-card mr-2"></i>
             Proceed to Checkout
@@ -101,7 +102,7 @@ const OrderSummary = ({
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
             <div className="flex items-start">
               <i className="fas fa-info-circle text-blue-500 mt-0.5 mr-2"></i>
-              <p className="text-sm text-blue-800 dark:text-blue-300">
+              <p className="text-xs text-blue-800 dark:text-blue-300">
                 Add{" "}
                 <span className="font-bold">
                   {formatPrice(amountForFreeShipping)}
@@ -113,22 +114,22 @@ const OrderSummary = ({
           </div>
         )}
 
-        <div className="pt-6 flex items-center justify-center text-text/90 mb-4">
+        <div className="pt-4 flex items-center justify-center text-text/90 mb-3">
           <i className="fas fa-shield-alt text-primary/90 mr-2"></i>
-          <span className="text-sm">Secure checkout</span>
+          <span className="text-xs">Secure checkout</span>
         </div>
 
-        <div className="flex justify-center space-x-4 mt-4">
-          <i className="fab fa-cc-visa text-2xl text-text/90"></i>
-          <i className="fab fa-cc-mastercard text-2xl text-text/90"></i>
-          <i className="fab fa-cc-amex text-2xl text-text/90"></i>
-          <i className="fab fa-cc-paypal text-2xl text-text/90"></i>
-          <i className="fab fa-google-pay text-2xl text-text/90"></i>
-          <i className="fab fa-apple-pay text-2xl text-text/90"></i>
+        <div className="flex justify-center space-x-3 mt-3">
+          <i className="fab fa-cc-visa text-lg text-text/90"></i>
+          <i className="fab fa-cc-mastercard text-lg text-text/90"></i>
+          <i className="fab fa-cc-amex text-lg text-text/90"></i>
+          <i className="fab fa-cc-paypal text-lg text-text/90"></i>
+          <i className="fab fa-google-pay text-lg text-text/90"></i>
+          <i className="fab fa-apple-pay text-lg text-text/90"></i>
         </div>
       </div>
 
-      <div className="mx-6 pt-6 border-t border-dashed border-gray-400 dark:border-gray-500"></div>
+      <div className="mx-4 md:mx-6 pt-4 border-t border-dashed border-gray-400 dark:border-gray-500"></div>
 
       <OrderServices />
     </div>

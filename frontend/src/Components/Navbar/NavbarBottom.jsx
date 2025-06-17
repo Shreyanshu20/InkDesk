@@ -240,7 +240,7 @@ function NavbarBottom() {
 
                 {/* Dropdown content remains the same */}
                 {item.hasDropdown && activeDropdown === index && (
-                  <div className="absolute top-full left-0 bg-background shadow-lg rounded-b-lg p-6 mt-1 w-[1000px] -ml-[400px] grid grid-cols-5 gap-6 border-t-2 border-[#E66354]">
+                  <div className="absolute top-full left-0 bg-background shadow-lg rounded-b-lg p-6 w-[1000px] -ml-[400px] grid grid-cols-5 gap-6 border-t-2 border-[#E66354]">
                     {item.categories.map((category, catIndex) => (
                       <div key={catIndex} className="space-y-3">
                         <h3

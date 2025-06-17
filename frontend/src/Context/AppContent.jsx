@@ -4,30 +4,25 @@ import axios from "axios";
 export const AppContent = createContext();
 
 export const AppContentProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-  // Remove localStorage initialization - rely only on server auth check
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Add this line
 
-  // Check auth status when the app loads - ONLY rely on cookies
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+  // Check authentication on app load
   useEffect(() => {
     const checkAuthStatus = async () => {
+      setLoading(true); // Set loading to true when checking
       try {
-        setLoading(true);
-        console.log("🔐 Checking authentication via cookies...");
-
         const response = await axios.post(
-          `${backendUrl}/auth/is-auth/`,
+          `${backendUrl}/auth/is-auth`,
           {},
-          {
-            withCredentials: true, // This sends the cookie
-          }
+          { withCredentials: true }
         );
 
         if (response.data.success) {
-          console.log("✅ User authenticated via cookie");
+          console.log("✅ User authenticated via cookie:", response.data.user);
           setIsLoggedIn(true);
           setUserData(response.data.user);
         } else {
@@ -40,7 +35,7 @@ export const AppContentProvider = ({ children }) => {
         setIsLoggedIn(false);
         setUserData(null);
       } finally {
-        setLoading(false);
+        setLoading(false); // Always set loading to false when done
       }
     };
 
@@ -72,9 +67,13 @@ export const AppContentProvider = ({ children }) => {
     setIsLoggedIn,
     userData,
     setUserData,
-    loading,
+    loading, // Add loading to the context value
     logout,
   };
 
-  return <AppContent.Provider value={value}>{children}</AppContent.Provider>;
+  return (
+    <AppContent.Provider value={value}>
+      {children}
+    </AppContent.Provider>
+  );
 };

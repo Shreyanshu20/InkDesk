@@ -19,11 +19,9 @@ const CheckOut = () => {
   const { cartItems, cartSummary, clearCart } = useCart();
   const { isLoggedIn, backendUrl } = useContext(AppContent);
 
-  // ADD BUY NOW HANDLING - Check if in Buy Now mode
   const buyNowMode = location.state?.buyNowMode;
   const buyNowProduct = location.state?.product;
 
-  // MODIFY EXISTING LOGIC - Use Buy Now product or regular cart items
   const checkoutItems =
     buyNowMode && buyNowProduct
       ? [
@@ -35,14 +33,13 @@ const CheckOut = () => {
               product_brand: buyNowProduct.brand,
               product_price: buyNowProduct.price,
               product_images: [buyNowProduct.image],
-              product_stock: 999, // Assume in stock for buy now
+              product_stock: 999,
             },
             quantity: buyNowProduct.quantity,
           },
         ]
       : cartItems;
 
-  // MODIFY EXISTING LOGIC - Calculate totals for Buy Now mode
   const activeCartSummary =
     buyNowMode && buyNowProduct
       ? {
@@ -79,62 +76,53 @@ const CheckOut = () => {
   const [showGiftMessageForm, setShowGiftMessageForm] = useState(false);
   const [orderData, setOrderData] = useState(null);
 
-  // Format price function
   const formatPrice = PRICING_CONFIG.formatPrice;
-
-  // Free shipping threshold
   const freeShippingThreshold = PRICING_CONFIG.freeShippingThreshold;
-
-  // Shipping cost
-  const shipping = PRICING_CONFIG.calculateShipping(
-    activeCartSummary.totalPrice
-  );
-
-  // Amount needed for free shipping
-  const amountForFreeShipping = PRICING_CONFIG.getAmountForFreeShipping(
-    activeCartSummary.totalPrice
-  );
-
-  // Progress percentage for free shipping
-  const freeShippingProgress = Math.min(
-    100,
-    (activeCartSummary.totalPrice / freeShippingThreshold) * 100
-  );
-
-  // Tax calculation (GST 18%)
+  const shipping = PRICING_CONFIG.calculateShipping(activeCartSummary.totalPrice);
+  const amountForFreeShipping = PRICING_CONFIG.getAmountForFreeShipping(activeCartSummary.totalPrice);
+  const freeShippingProgress = Math.min(100, (activeCartSummary.totalPrice / freeShippingThreshold) * 100);
   const tax = PRICING_CONFIG.calculateTax(activeCartSummary.totalPrice);
-
-  // Total cost
   const total = PRICING_CONFIG.calculateTotal(activeCartSummary.totalPrice);
 
-  // MODIFY EXISTING LOGIC - Transform cart items for display (works for both regular and buy now)
-  const transformedCartItems = checkoutItems.map((item) => ({
-    id: item._id,
-    name: item.product_id?.product_name || "Unknown Product",
-    brand: item.product_id?.product_brand || "Unknown brand",
-    price: item.product_id?.product_price || 0,
-    quantity: item.quantity,
-    totalPrice: (item.product_id?.product_price || 0) * item.quantity,
-    image: item.product_id?.product_images?.[0]
-      ? (typeof item.product_id.product_images[0] === 'string' 
-        ? item.product_id.product_images[0] 
-        : item.product_id.product_images[0]?.url || ''
-      ).startsWith('http')
-        ? item.product_id.product_images[0]
-        : `${backendUrl}${item.product_id.product_images[0]}`
-      : "https://placehold.co/120x160?text=No+Image",
-    stock: item.product_id?.product_stock || 0,
-    productId: item.product_id?._id,
-  }));
+  const transformedCartItems = checkoutItems.map((item) => {
+    // Handle image URL properly
+    let imageUrl = "https://placehold.co/120x160?text=No+Image";
+    
+    if (item.product_id?.product_images && item.product_id.product_images.length > 0) {
+      // Handle new product_images array format
+      const firstImage = item.product_id.product_images[0];
+      if (typeof firstImage === 'string') {
+        imageUrl = firstImage.startsWith('http') ? firstImage : `${backendUrl}${firstImage}`;
+      } else if (firstImage?.url) {
+        imageUrl = firstImage.url.startsWith('http') ? firstImage.url : `${backendUrl}${firstImage.url}`;
+      }
+    } else if (item.product_id?.product_image) {
+      // Handle backward compatibility single image
+      imageUrl = item.product_id.product_image.startsWith('http') 
+        ? item.product_id.product_image 
+        : `${backendUrl}${item.product_id.product_image}`;
+    }
 
-  // Redirect if not logged in
+    return {
+      id: item._id,
+      name: item.product_id?.product_name || "Unknown Product",
+      brand: item.product_id?.product_brand || "Unknown brand",
+      author: item.product_id?.product_brand || "Unknown brand", // Add author field for consistency
+      price: item.product_id?.product_price || 0,
+      quantity: item.quantity,
+      totalPrice: (item.product_id?.product_price || 0) * item.quantity,
+      image: imageUrl,
+      stock: item.product_id?.product_stock || 0,
+      productId: item.product_id?._id,
+    };
+  });
+
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
     }
   }, [isLoggedIn, navigate]);
 
-  // MODIFY EXISTING LOGIC - Redirect if cart is empty (but not for buy now)
   useEffect(() => {
     if (!buyNowMode && cartItems.length === 0 && step <= 3) {
       toast.info("Your cart is empty. Please add items to proceed.");
@@ -166,21 +154,15 @@ const CheckOut = () => {
     setStep(3);
   };
 
-  // Validation function for payment forms
   const isPaymentFormValid = () => {
     switch (paymentMethod) {
       case "card":
-        const isCardNumberValid =
-          paymentDetails.cardNumber.replace(/\s/g, "").length === 16;
-        const isCardHolderValid =
-          paymentDetails.cardHolderName.trim().length >= 2;
+        const isCardNumberValid = paymentDetails.cardNumber.replace(/\s/g, "").length === 16;
+        const isCardHolderValid = paymentDetails.cardHolderName.trim().length >= 2;
         const isCvvValid = paymentDetails.cvv.length >= 3;
 
         const isExpiryValid = (() => {
-          if (
-            paymentDetails.expiryDate.length !== 5 ||
-            !paymentDetails.expiryDate.includes("/")
-          ) {
+          if (paymentDetails.expiryDate.length !== 5 || !paymentDetails.expiryDate.includes("/")) {
             return false;
           }
 
@@ -199,14 +181,9 @@ const CheckOut = () => {
           return true;
         })();
 
-        return (
-          isCardNumberValid && isCardHolderValid && isExpiryValid && isCvvValid
-        );
+        return isCardNumberValid && isCardHolderValid && isExpiryValid && isCvvValid;
       case "upi":
-        return (
-          paymentDetails.upiId.trim().length > 0 &&
-          paymentDetails.upiId.includes("@")
-        );
+        return paymentDetails.upiId.trim().length > 0 && paymentDetails.upiId.includes("@");
       case "wallet":
         return paymentDetails.selectedWallet.trim().length > 0;
       case "cod":
@@ -216,7 +193,6 @@ const CheckOut = () => {
     }
   };
 
-  // Payment input handlers
   const handlePaymentInput = (e) => {
     const { name, value } = e.target;
     setPaymentDetails((prev) => ({
@@ -294,10 +270,7 @@ const CheckOut = () => {
         month = currentMonth;
       }
 
-      formattedValue =
-        month.toString().padStart(2, "0") +
-        "/" +
-        year.toString().padStart(2, "0");
+      formattedValue = month.toString().padStart(2, "0") + "/" + year.toString().padStart(2, "0");
     }
 
     setPaymentDetails((prev) => ({
@@ -336,18 +309,15 @@ const CheckOut = () => {
     setShowGiftMessageForm(!showGiftMessageForm);
   };
 
-  // MODIFY EXISTING LOGIC - Updated order confirmation handler
   const handleConfirmOrder = async () => {
     setLoading(true);
 
     try {
-      // CHOOSE ENDPOINT - Use different endpoint for Buy Now vs regular checkout
       const endpoint = buyNowMode ? "/orders/buy-now" : "/orders/create";
 
       let orderPayload;
 
       if (buyNowMode) {
-        // Buy Now payload
         orderPayload = {
           product_id: buyNowProduct.id,
           quantity: buyNowProduct.quantity,
@@ -362,7 +332,6 @@ const CheckOut = () => {
           },
         };
       } else {
-        // Regular checkout payload
         orderPayload = {
           items: transformedCartItems.map((item) => ({
             product_id: item.productId,
@@ -377,28 +346,18 @@ const CheckOut = () => {
         };
       }
 
-      console.log("Creating order with payload:", orderPayload);
-
-      // Call backend API to create order
-      const response = await axios.post(
-        `${backendUrl}${endpoint}`,
-        orderPayload,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await axios.post(`${backendUrl}${endpoint}`, orderPayload, {
+        withCredentials: true,
+      });
 
       if (response.data.success) {
-        // MODIFY EXISTING LOGIC - Clear cart only if not in buy now mode
         if (!buyNowMode) {
           await clearCart();
         }
 
-        // FIX THE TOTAL CALCULATION HERE - Use correct variable names
         const codFee = paymentMethod === "cod" ? 40 : 0;
         const finalTotal = (activeCartSummary.totalPrice || 0) + shipping + tax + codFee;
 
-        // Prepare order data for success page
         const successOrderData = {
           orderNumber: response.data.order.order_number,
           orderId: response.data.order._id,
@@ -408,18 +367,14 @@ const CheckOut = () => {
           cartItems: transformedCartItems,
           giftMessage,
           subtotal: activeCartSummary.totalPrice || 0,
-          shipping: shipping, // Use 'shipping' not 'shippingCost'
-          tax: tax, // Use 'tax' not 'taxAmount'
+          shipping: shipping,
+          tax: tax,
           codFee: codFee,
           total: finalTotal,
           orderDate: new Date().toISOString(),
           estimatedDelivery: {
-            start: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000
-            ).toLocaleDateString("en-IN"),
-            end: new Date(
-              Date.now() + 7 * 24 * 60 * 60 * 1000
-            ).toLocaleDateString("en-IN"),
+            start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN"),
+            end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN"),
           },
           status: 'pending'
         };
@@ -431,8 +386,6 @@ const CheckOut = () => {
         toast.error(response.data.message || "Failed to place order");
       }
     } catch (error) {
-      console.error("Error placing order:", error);
-
       if (error.response?.status === 401) {
         toast.error("Please login to place an order");
         navigate("/login");
@@ -446,12 +399,10 @@ const CheckOut = () => {
     }
   };
 
-  // Don't render if not logged in
   if (!isLoggedIn) {
     return null;
   }
 
-  // MODIFY EXISTING LOGIC - Don't render if cart is empty (except for buy now or success page)
   if (!buyNowMode && cartItems.length === 0 && step <= 3) {
     return null;
   }
@@ -460,11 +411,11 @@ const CheckOut = () => {
     <div className="min-h-screen bg-background">
       {step <= 3 && <CheckoutHeader />}
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl">
         {step <= 3 && <CheckoutProgress step={step} />}
 
         {step <= 3 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             <div className="lg:col-span-2">
               {step === 1 && (
                 <ShippingForm
@@ -531,7 +482,7 @@ const CheckOut = () => {
         )}
 
         {step === 4 && orderData && (
-          <div className="flex justify-center items-center min-h-[80vh]">
+          <div className="flex justify-center items-center min-h-screen md:min-h-[80vh]">
             <div className="w-full max-w-4xl">
               <OrderSuccess orderData={orderData} formatPrice={formatPrice} />
             </div>

@@ -12,7 +12,8 @@ import { AppContent } from "../../Context/AppContent.jsx";
 function AuthForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { backendUrl, setIsLoggedIn, setUserData } = useContext(AppContent);
+  const { backendUrl, setIsLoggedIn, setUserData, isLoggedIn, loading } =
+    useContext(AppContent); // Add isLoggedIn and loading
   const [searchParams] = useSearchParams();
 
   // Determine if this is signup or login based on path
@@ -69,6 +70,13 @@ function AuthForm() {
     );
     setErrors({});
   }, [isSignup]);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && isLoggedIn) {
+      navigate("/");
+    }
+  }, [isLoggedIn, loading, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -225,6 +233,23 @@ function AuthForm() {
       toast.error("Please fix the errors in the form");
     }
   };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+          <p className="text-text">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if already logged in
+  if (isLoggedIn) {
+    return null;
+  }
 
   return (
     <div className="bg-background flex flex-col justify-center px-4 py-5 md:py-12">

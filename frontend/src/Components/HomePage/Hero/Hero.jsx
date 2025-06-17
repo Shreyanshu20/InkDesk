@@ -157,7 +157,7 @@ function Hero() {
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4 md:py-10 rounded-r-md transition-all duration-300 z-20 hover:shadow-md"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4 md:py-10 rounded-r-md transition-all duration-300 z-10 hover:shadow-md"
             aria-label="Previous slide"
           >
             <i className="fas fa-chevron-left text-sm md:text-base"></i>
@@ -165,7 +165,7 @@ function Hero() {
 
           <button
             onClick={goToNext}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4  md:py-10 rounded-l-md transition-all duration-300 z-20 hover:shadow-md"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4  md:py-10 rounded-l-md transition-all duration-300 z-10 hover:shadow-md"
             aria-label="Next slide"
           >
             <i className="fas fa-chevron-right text-sm md:text-base"></i>

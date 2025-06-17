@@ -12,7 +12,7 @@ function Footer() {
             <div className="flex items-center mb-5">
               <Link to="/" className="flex items-center">
                 <img
-                  src="/src/assets/brandlogo.png"
+                  src="brandlogo.png"
                   alt="InkDesk Logo"
                   className="h-10 w-auto object-contain brightness-110"
                 />
@@ -82,7 +82,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  to="/products"
+                  to="/shop"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
@@ -91,7 +91,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  to="/featured"
+                  to="/shop?featured=true"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
@@ -109,7 +109,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  to="/blog"
+                  to="/blogs"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
@@ -125,15 +125,6 @@ function Footer() {
                   Contact
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/faq"
-                  className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
-                >
-                  <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
-                  FAQ
-                </Link>
-              </li>
             </ul>
           </div>
           {/* Products */}
@@ -142,16 +133,25 @@ function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  to="/products/notebooks"
+                  to="/shop/category/stationery/notebooks"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
-                  Notebooks & Journals
+                  Notebooks
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/products/pens"
+                  to="/shop/category/stationery/journals"
+                  className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
+                >
+                  <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
+                  Journals
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/shop/category/stationery/pens"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
@@ -160,7 +160,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  to="/products/organizers"
+                  to="/shop/category/office-supplies/organizers"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
@@ -169,38 +169,29 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  to="/products/planners"
+                  to="/shop/category/office-supplies/calculators"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
-                  Planners & Calendars
+                  Calculators
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/products/accessories"
+                  to="/shop/category/art-supplies/art-pencils"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
-                  Desk Accessories
+                  Art Pencils
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/products/office"
+                  to="/shop/category/office-supplies"
                   className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
                 >
                   <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
                   Office Supplies
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/products/gifts"
-                  className="text-white/80 hover:text-white text-sm transition-colors flex items-center"
-                >
-                  <i className="fas fa-chevron-right mr-2 text-xs text-white/70"></i>
-                  Gift Sets
                 </Link>
               </li>
             </ul>
@@ -216,31 +207,31 @@ function Footer() {
           {/* Policy Links */}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             <Link
-              to="/privacy"
+              to="#"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
-              to="/terms"
+              to="#"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               Terms & Conditions
             </Link>
             <Link
-              to="/shipping"
+              to="#"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               Shipping Policy
             </Link>
             <Link
-              to="/returns"
+              to="#"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               Returns & Refunds
             </Link>
             <Link
-              to="/accessibility"
+              to="#"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               Accessibility
