@@ -1,74 +1,72 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User.model');
+const User = require('../models/user.model');
 
 const userAuth = async (req, res, next) => {
     try {
-        console.log('🔐 UserAuth middleware called');
-        console.log('🍪 All cookies:', req.cookies);
-        
-        // Check for both possible cookie names
-        const token = req.cookies.userToken || req.cookies.token;
-        
+        console.log('🔐 UserAuth middleware - checking authentication');
+        console.log('🍪 Cookies received:', req.cookies);
+
+        // Get token from cookies or Authorization header
+        let token = req.cookies.userToken || req.cookies.token;
+
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+                console.log('🎫 Found token in Authorization header');
+            }
+        }
+
         if (!token) {
-            console.log('❌ No token provided in cookies');
+            console.log('❌ No token provided');
             return res.status(401).json({
                 success: false,
-                message: 'Access denied. Please login to continue.'
+                message: 'Access denied. No token provided.'
             });
         }
 
-        console.log('🎫 Token found, verifying...');
-        
-        // Check if JWT_SECRET_USER is defined
-        if (!process.env.JWT_SECRET_USER) {
-            console.error('❌ JWT_SECRET_USER not defined');
-            return res.status(500).json({
-                success: false,
-                message: 'Server configuration error'
-            });
-        }
-
-        // Verify token
+        console.log('🎫 Verifying token...');
+        // FIXED: Use JWT_SECRET_USER from .env file
         const decoded = jwt.verify(token, process.env.JWT_SECRET_USER);
-        console.log('✅ Token decoded successfully:', decoded);
-        
-        // Handle both possible user ID field names
-        const userId = decoded.userId || decoded.id;
-        req.userId = userId;
-        
-        // Optional: Verify user still exists
-        const user = await User.findById(userId);
+        console.log('✅ Token verified successfully. User ID:', decoded.id);
+
+        // Find user and attach to request
+        const user = await User.findById(decoded.id).select('-password');
         if (!user) {
-            console.log('❌ User not found in database');
+            console.log('❌ User not found for token');
             return res.status(401).json({
                 success: false,
-                message: 'User not found. Please login again.'
+                message: 'Invalid token. User not found.'
             });
         }
+
+        // Attach user info to request
+        req.userId = decoded.id;
+        req.user = user;
         
         console.log('✅ User authenticated:', user.email);
         next();
-        
+
     } catch (error) {
-        console.error('❌ Token verification failed:', error.message);
-        
+        console.error('❌ Auth middleware error:', error);
+
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid token. Please login again.'
+                message: 'Invalid token.'
             });
         }
-        
+
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({
                 success: false,
-                message: 'Token expired. Please login again.'
+                message: 'Token expired.'
             });
         }
-        
-        return res.status(401).json({
+
+        return res.status(500).json({
             success: false,
-            message: 'Authentication failed. Please login again.'
+            message: 'Error verifying token.'
         });
     }
 };

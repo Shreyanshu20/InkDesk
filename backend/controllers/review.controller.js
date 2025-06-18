@@ -1,6 +1,6 @@
 const Review = require('../models/review.model');
 const Product = require('../models/product.model');
-const User = require('../models/User.model');
+const User = require('../models/user.model');
 
 // Create a new review
 const createReview = async (req, res) => {

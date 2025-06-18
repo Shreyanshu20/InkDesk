@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { userAuth } = require('../middleware/userAuth');
-const User = require('../models/User.model');
+
+// Import models properly to avoid overwrite error
+const User = require('../models/user.model');
 const Address = require('../models/address.model');
 
 // Get user addresses
@@ -73,37 +75,40 @@ router.post('/addresses', userAuth, async (req, res) => {
         // If setting as primary, update existing primary addresses
         if (is_primary) {
             await Address.updateMany(
-                { _id: { $in: user.address_details } },
+                { user_id: userId, is_primary: true },
                 { is_primary: false }
             );
         }
 
         // Create new address
         const newAddress = new Address({
+            user_id: userId,
             first_name,
             last_name,
             phone,
             address_line_1,
+            address_line_2: req.body.address_line_2 || '',
             city,
             state,
             postal_code,
             country: country || 'India',
-            is_primary: is_primary || user.address_details.length === 0
+            is_primary: is_primary || false
         });
 
         const savedAddress = await newAddress.save();
 
-        // Add to user's address list
+        // Add address to user's address list
         user.address_details.push(savedAddress._id);
         await user.save();
 
-        console.log('📍 Address saved and added to user successfully');
+        console.log('✅ Address saved successfully:', savedAddress._id);
 
-        res.status(201).json({
+        res.json({
             success: true,
             message: 'Address saved successfully',
             address: savedAddress
         });
+
     } catch (error) {
         console.error('❌ Error saving address:', error);
         res.status(500).json({
@@ -115,10 +120,12 @@ router.post('/addresses', userAuth, async (req, res) => {
 });
 
 // Update address
-router.put('/addresses/:addressId', userAuth, async (req, res) => {
+router.put('/addresses/:id', userAuth, async (req, res) => {
     try {
-        const { addressId } = req.params;
         const userId = req.userId;
+        const addressId = req.params.id;
+        console.log('📍 PUT /user/addresses called for:', addressId);
+
         const {
             first_name,
             last_name,
@@ -131,35 +138,24 @@ router.put('/addresses/:addressId', userAuth, async (req, res) => {
             is_primary
         } = req.body;
 
-        console.log('📍 PUT /user/addresses/:addressId called');
-
-        // Find the user
-        const user = await User.findById(userId);
-        if (!user) {
+        // Find the address and verify ownership
+        const address = await Address.findOne({ _id: addressId, user_id: userId });
+        if (!address) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Check if address belongs to user
-        const addressExists = user.address_details.some(addr => addr.toString() === addressId);
-        if (!addressExists) {
-            return res.status(403).json({
-                success: false,
-                message: 'Address not found or not authorized'
+                message: 'Address not found or unauthorized'
             });
         }
 
         // If setting as primary, update existing primary addresses
-        if (is_primary) {
+        if (is_primary && !address.is_primary) {
             await Address.updateMany(
-                { _id: { $in: user.address_details } },
+                { user_id: userId, is_primary: true },
                 { is_primary: false }
             );
         }
 
-        // Update the address
+        // Update address
         const updatedAddress = await Address.findByIdAndUpdate(
             addressId,
             {
@@ -167,21 +163,17 @@ router.put('/addresses/:addressId', userAuth, async (req, res) => {
                 last_name,
                 phone,
                 address_line_1,
+                address_line_2: req.body.address_line_2 || '',
                 city,
                 state,
                 postal_code,
                 country: country || 'India',
-                is_primary
+                is_primary: is_primary || false
             },
             { new: true }
         );
 
-        if (!updatedAddress) {
-            return res.status(404).json({
-                success: false,
-                message: 'Address not found'
-            });
-        }
+        console.log('✅ Address updated successfully:', addressId);
 
         res.json({
             success: true,
@@ -200,37 +192,27 @@ router.put('/addresses/:addressId', userAuth, async (req, res) => {
 });
 
 // Delete address
-router.delete('/addresses/:addressId', userAuth, async (req, res) => {
+router.delete('/addresses/:id', userAuth, async (req, res) => {
     try {
-        const { addressId } = req.params;
         const userId = req.userId;
+        const addressId = req.params.id;
+        console.log('📍 DELETE /user/addresses called for:', addressId);
 
-        console.log('📍 DELETE /user/addresses/:addressId called');
-
-        // Find the user
-        const user = await User.findById(userId).populate('address_details');
-        if (!user) {
+        // Find and delete the address
+        const address = await Address.findOneAndDelete({ _id: addressId, user_id: userId });
+        if (!address) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Address not found or unauthorized'
             });
         }
 
-        // Check if address belongs to user
-        const addressExists = user.address_details.some(addr => addr._id.toString() === addressId);
-        if (!addressExists) {
-            return res.status(403).json({
-                success: false,
-                message: 'Address not found or not authorized'
-            });
-        }
+        // Remove address from user's address list
+        await User.findByIdAndUpdate(userId, {
+            $pull: { address_details: addressId }
+        });
 
-        // Delete the address
-        await Address.findByIdAndDelete(addressId);
-
-        // Remove from user's address list
-        user.address_details = user.address_details.filter(addr => addr._id.toString() !== addressId);
-        await user.save();
+        console.log('✅ Address deleted successfully:', addressId);
 
         res.json({
             success: true,

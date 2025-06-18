@@ -30,11 +30,11 @@ router.post('/resetPassword', authController.resetPassword);
 // User authentication and profile routes
 router.post('/is-auth', authController.isAuth);
 router.post('/is-admin', authController.isAuth); // Will check admin in controller
-router.get('/profile', userAuth, authController.getUserProfile);
+router.get('/profile', userAuth, authController.getProfile); // FIXED: Use getProfile
 
 // Profile management routes
-router.post('/update-profile', userAuth, authController.updateUserProfile);
-router.post('/update-address', userAuth, authController.updateUserAddress);
+router.post('/update-profile', userAuth, authController.updateProfile); // FIXED: Use updateProfile
+router.post('/update-address', userAuth, authController.updateAddress); // FIXED: Use updateAddress
 router.put('/change-password', userAuth, authController.changePassword);
 router.delete('/delete-account', userAuth, authController.deleteAccount);
 

@@ -1,5 +1,5 @@
 const Product = require('../models/product.model');
-const User = require('../models/User.model');
+const User = require('../models/user.model');
 
 // Add item to cart - Direct to user shopping_cart
 const addToCart = async (req, res) => {
@@ -420,7 +420,7 @@ const getCartCount = async (req, res) => {
 const testAddToCart = async (req, res) => {
   try {
     const userId = req.userId;
-    const User = require('../models/User.model');
+    const User = require('../models/user.model');
     const Product = require('../models/product.model');
     
     // Get first available product

@@ -289,7 +289,7 @@ function Products() {
                   originalPrice={discount > 0 ? product.product_price : null}
                   discount={discount}
                   formatPrice={PRICING_CONFIG.formatPrice}
-                  size="sm"
+                  size="md"
                 />
               </div>
             </div>

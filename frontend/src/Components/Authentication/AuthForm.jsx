@@ -12,22 +12,20 @@ import { AppContent } from "../../Context/AppContent.jsx";
 function AuthForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { backendUrl, setIsLoggedIn, setUserData, isLoggedIn, loading } =
-    useContext(AppContent); // Add isLoggedIn and loading
+  const { backendUrl, setIsLoggedIn, setUserData, isLoggedIn, loading, userData } =
+    useContext(AppContent);
   const [searchParams] = useSearchParams();
 
   // Determine if this is signup or login based on path
   const isSignup = location.pathname === "/signup";
 
-  // Get user type and registration success from URL params
+  // Get registration success from URL params
   const registeredSuccess = searchParams.get("registered") === "true";
-  const initialUserType =
-    searchParams.get("type") === "seller" ? "seller" : "customer";
 
-  // State for user type and form submission
-  const [userType, setUserType] = useState(initialUserType);
+  // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   // Initialize form data based on auth type
   const [formData, setFormData] = useState(
@@ -42,14 +40,9 @@ function AuthForm() {
       : {
           email: "",
           password: "",
-          rememberMe: false,
+          rememberMe: true,
         }
   );
-
-  // Clear errors when user type changes
-  useEffect(() => {
-    setErrors({});
-  }, [userType]);
 
   // Clear or re-initialize form when switching between login/signup
   useEffect(() => {
@@ -65,18 +58,19 @@ function AuthForm() {
         : {
             email: "",
             password: "",
-            rememberMe: false,
+            rememberMe: true,
           }
     );
     setErrors({});
+    setShowPassword(false);
   }, [isSignup]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in and verified
   useEffect(() => {
-    if (!loading && isLoggedIn) {
+    if (!loading && isLoggedIn && userData?.isAccountVerified) {
       navigate("/");
     }
-  }, [isLoggedIn, loading, navigate]);
+  }, [isLoggedIn, loading, navigate, userData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -133,7 +127,7 @@ function AuthForm() {
             last_name: formData.lastName,
             email: formData.email,
             password: formData.password,
-            role: userType === "seller" ? "admin" : "user",
+            role: "user",
           };
 
           const response = await axios.post(
@@ -145,28 +139,22 @@ function AuthForm() {
           if (response.data.success) {
             toast.success("Registration successful! Please verify your email.");
 
-            // Set user data in context - no localStorage
+            // FIXED: Set logged in immediately after registration since backend sets cookie
             setIsLoggedIn(true);
-            setUserData({
-              email: formData.email,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              role: userType === "seller" ? "admin" : "user",
-              isAccountVerified: false,
-            });
+            setUserData(response.data.user);
 
-            setTimeout(() => {
-              navigate(`/verify-email`);
-            }, 1500);
+            // Direct redirect to verification page
+            navigate(`/verify-email?email=${encodeURIComponent(formData.email)}&fromRegistration=true`);
           } else {
             toast.error(response.data.message || "Registration failed");
           }
         } else {
-          // Login logic - REMOVE ALL localStorage operations
+          // Login logic
           const loginData = {
             email: formData.email,
             password: formData.password,
-            role: userType === "seller" ? "admin" : "user",
+            role: "user",
+            rememberMe: formData.rememberMe,
           };
 
           const response = await axios.post(
@@ -178,11 +166,9 @@ function AuthForm() {
           if (response.data.success) {
             toast.success("Login successful!");
 
-            // Set user data in context ONLY - no localStorage
             setIsLoggedIn(true);
             setUserData(response.data.user);
 
-            // Check if user needs email verification
             if (!response.data.user.isAccountVerified) {
               toast.info("Please verify your email to access all features.");
               setTimeout(() => {
@@ -195,22 +181,8 @@ function AuthForm() {
               return;
             }
 
-            // Redirect based on user role
             setTimeout(() => {
-              if (response.data.user.role === "admin") {
-                const adminUrl =
-                  import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
-
-                console.log("🔄 Redirecting admin to:", adminUrl);
-                toast.success(
-                  `Welcome ${response.data.user.first_name}! Redirecting to admin panel...`
-                );
-
-                // Redirect to admin panel - cookie will handle auth
-                window.location.href = adminUrl;
-              } else {
-                navigate("/");
-              }
+              navigate("/");
             }, 1000);
           } else {
             toast.error(response.data.message || "Login failed");
@@ -239,122 +211,128 @@ function AuthForm() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-text">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Don't render form if already logged in
-  if (isLoggedIn) {
+  // Don't render form if already logged in and verified
+  if (isLoggedIn && userData?.isAccountVerified) {
     return null;
   }
 
   return (
-    <div className="bg-background flex flex-col justify-center px-4 py-5 md:py-12">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-800 p-5 md:p-10 shadow rounded-lg">
-          <div className="mb-5 md:mb-8">
-            <h2 className="text-center text-2xl font-semibold text-gray-800 dark:text-white">
+    <div className="min-h-screen bg-background flex flex-col justify-center px-4 py-6 md:py-12">
+      <div className="mx-auto w-full max-w-md md:max-w-lg">
+        <div className="bg-white dark:bg-gray-800 p-6 md:p-8 lg:p-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
+          {/* Header */}
+          <div className="mb-6 md:mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+                <i
+                  className={`fas ${
+                    isSignup ? "fa-user-plus" : "fa-sign-in-alt"
+                  } text-white text-lg md:text-xl`}
+                ></i>
+              </div>
+            </div>
+            <h2 className="text-center text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
               {isSignup ? "Create Account" : "Welcome Back"}
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-center text-sm md:text-base text-gray-600 dark:text-gray-400">
               {isSignup
-                ? `Join our community of ${
-                    userType === "seller"
-                      ? "stationery sellers"
-                      : "stationery enthusiasts"
-                  }`
+                ? "Join our community of stationery enthusiasts"
                 : "Sign in to continue to your account"}
             </p>
           </div>
 
+          {/* Success message */}
           {registeredSuccess && !isSignup && (
-            <div className="mb-4 rounded-md bg-green-50 dark:bg-green-900/30 p-3 text-sm text-green-700 dark:text-green-300">
-              Account created successfully! Please log in.
+            <div className="mb-4 rounded-lg bg-green-50 dark:bg-green-900/30 p-3 md:p-4 text-sm text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+              <div className="flex items-center">
+                <i className="fas fa-check-circle mr-2 text-green-500"></i>
+                Account created successfully! Please log in.
+              </div>
             </div>
           )}
 
+          {/* Error message */}
           {errors.form && (
-            <div className="mb-4 rounded-md bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300">
-              {errors.form}
+            <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/30 p-3 md:p-4 text-sm text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+              <div className="flex items-center">
+                <i className="fas fa-exclamation-circle mr-2 text-red-500"></i>
+                {errors.form}
+              </div>
             </div>
           )}
 
-          {/* User Type Toggle */}
-          <div className="flex mb-6 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setUserType("customer")}
-              className={`flex-1 py-2.5 text-center text-sm font-medium transition-all ${
-                userType === "customer"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <i className="fas fa-user mr-2"></i>
-              Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType("seller")}
-              className={`flex-1 py-2.5 text-center text-sm font-medium transition-all ${
-                userType === "seller"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <i className="fas fa-store mr-2"></i>
-              Seller
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Signup-only fields */}
             {isSignup && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    First Name
+                  </label>
                   <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i className="fas fa-user text-gray-400 text-sm"></i>
+                    </div>
                     <input
                       id="firstName"
                       name="firstName"
                       type="text"
                       value={formData.firstName || ""}
                       onChange={handleChange}
-                      placeholder="First Name"
-                      className={`w-full rounded-md py-2 px-3 border ${
+                      placeholder="John"
+                      className={`pl-10 pr-3 md:pr-4 w-full rounded-lg py-2.5 md:py-3 border ${
                         errors.firstName
-                          ? "border-red-500 dark:border-red-700"
-                          : "border-gray-300 dark:border-gray-600"
-                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary`}
+                          ? "border-red-500 dark:border-red-700 focus:ring-red-500"
+                          : "border-gray-300 dark:border-gray-600 focus:ring-primary"
+                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                     />
                   </div>
                   {errors.firstName && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p className="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <i className="fas fa-exclamation-triangle mr-1 text-xs"></i>
                       {errors.firstName}
                     </p>
                   )}
                 </div>
 
                 <div>
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Last Name
+                  </label>
                   <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i className="fas fa-user text-gray-400 text-sm"></i>
+                    </div>
                     <input
                       id="lastName"
                       name="lastName"
                       type="text"
                       value={formData.lastName || ""}
                       onChange={handleChange}
-                      placeholder="Last Name"
-                      className={`w-full rounded-md py-2 px-3 border ${
+                      placeholder="Doe"
+                      className={`pl-10 pr-3 md:pr-4 w-full rounded-lg py-2.5 md:py-3 border ${
                         errors.lastName
-                          ? "border-red-500 dark:border-red-700"
-                          : "border-gray-300 dark:border-gray-600"
-                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary`}
+                          ? "border-red-500 dark:border-red-700 focus:ring-red-500"
+                          : "border-gray-300 dark:border-gray-600 focus:ring-primary"
+                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                     />
                   </div>
                   {errors.lastName && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p className="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <i className="fas fa-exclamation-triangle mr-1 text-xs"></i>
                       {errors.lastName}
                     </p>
                   )}
@@ -364,9 +342,15 @@ function AuthForm() {
 
             {/* Email field */}
             <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Email Address
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="fas fa-envelope text-gray-400"></i>
+                  <i className="fas fa-envelope text-gray-400 text-sm"></i>
                 </div>
                 <input
                   id="email"
@@ -375,46 +359,65 @@ function AuthForm() {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Email address"
-                  className={`pl-10 w-full rounded-md py-2 px-3 border ${
+                  placeholder="john@example.com"
+                  className={`pl-10 pr-3 md:pr-4 w-full rounded-lg py-2.5 md:py-3 border ${
                     errors.email
-                      ? "border-red-500 dark:border-red-700"
-                      : "border-gray-300 dark:border-gray-600"
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary`}
+                      ? "border-red-500 dark:border-red-700 focus:ring-red-500"
+                      : "border-gray-300 dark:border-gray-600 focus:ring-primary"
+                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p className="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400 flex items-center">
+                  <i className="fas fa-exclamation-triangle mr-1 text-xs"></i>
                   {errors.email}
                 </p>
               )}
             </div>
 
-            {/* Password field */}
+            {/* Password field with toggle */}
             <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Password
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="fas fa-lock text-gray-400"></i>
+                  <i className="fas fa-lock text-gray-400 text-sm"></i>
                 </div>
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete={isSignup ? "new-password" : "current-password"}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder={
-                    isSignup ? "Password (min. 8 characters)" : "Password"
+                    isSignup ? "Minimum 8 characters" : "Enter your password"
                   }
-                  className={`pl-10 w-full rounded-md py-2 px-3 border ${
+                  className={`pl-10 pr-12 w-full rounded-lg py-2.5 md:py-3 border ${
                     errors.password
-                      ? "border-red-500 dark:border-red-700"
-                      : "border-gray-300 dark:border-gray-600"
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary`}
+                      ? "border-red-500 dark:border-red-700 focus:ring-red-500"
+                      : "border-gray-300 dark:border-gray-600 focus:ring-primary"
+                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 md:pr-5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <i
+                    className={`fas ${
+                      showPassword ? "fa-eye-slash" : "fa-eye"
+                    } text-sm`}
+                  ></i>
+                </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p className="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400 flex items-center">
+                  <i className="fas fa-exclamation-triangle mr-1 text-xs"></i>
                   {errors.password}
                 </p>
               )}
@@ -422,16 +425,7 @@ function AuthForm() {
 
             {/* Login-only fields */}
             {!isSignup && (
-              <div className="flex flex-col md:justify-between gap-3">
-                <div className="text-sm flex justify-end">
-                  <Link
-                    to="/forgot-password"
-                    className="font-medium text-primary hover:text-primary/80"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
                     id="rememberMe"
@@ -439,7 +433,7 @@ function AuthForm() {
                     type="checkbox"
                     checked={formData.rememberMe || false}
                     onChange={handleChange}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                   <label
                     htmlFor="rememberMe"
@@ -448,38 +442,54 @@ function AuthForm() {
                     Remember me
                   </label>
                 </div>
+
+                <div className="text-sm">
+                  <Link
+                    to="/forgot-password"
+                    className="font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
             )}
 
             {/* Signup-only terms agreement */}
             {isSignup && (
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
+              <div className="flex items-start space-x-3">
+                <div className="flex items-center h-5 mt-0.5">
                   <input
                     id="agreeToTerms"
                     name="agreeToTerms"
                     type="checkbox"
                     checked={formData.agreeToTerms || false}
                     onChange={handleChange}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                 </div>
-                <div className="ml-3">
+                <div className="flex-1">
                   <label
                     htmlFor="agreeToTerms"
                     className="text-sm text-gray-700 dark:text-gray-300"
                   >
                     I agree to the{" "}
-                    <Link to="/terms" className="text-primary">
-                      Terms
+                    <Link
+                      to="/terms"
+                      className="text-primary hover:text-primary/80 font-medium"
+                    >
+                      Terms of Service
                     </Link>{" "}
                     and{" "}
-                    <Link to="/privacy" className="text-primary">
+                    <Link
+                      to="/privacy"
+                      className="text-primary hover:text-primary/80 font-medium"
+                    >
                       Privacy Policy
                     </Link>
                   </label>
                   {errors.agreeToTerms && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <p className="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <i className="fas fa-exclamation-triangle mr-1 text-xs"></i>
                       {errors.agreeToTerms}
                     </p>
                   )}
@@ -488,57 +498,62 @@ function AuthForm() {
             )}
 
             {/* Submit button */}
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform"
               >
                 {isSubmitting ? (
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                ) : isSignup ? (
-                  "Create Account"
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {isSignup ? "Creating Account..." : "Signing In..."}
+                  </>
                 ) : (
-                  `Sign in as ${userType === "seller" ? "Seller" : "Customer"}`
+                  <>
+                    <i
+                      className={`fas ${
+                        isSignup ? "fa-user-plus" : "fa-sign-in-alt"
+                      } mr-2`}
+                    ></i>
+                    {isSignup ? "Create Account" : "Sign In"}
+                  </>
                 )}
               </button>
             </div>
           </form>
 
-          {/* Toggle between login and signup */}
-          <div className="mt-6 text-center text-sm">
-            <p className="text-gray-600 dark:text-gray-400">
-              {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
-              <Link
-                to={
-                  isSignup
-                    ? `/login${userType === "seller" ? "?type=seller" : ""}`
-                    : `/signup${userType === "seller" ? "?type=seller" : ""}`
-                }
-                className="font-medium text-primary hover:text-primary/80"
-              >
-                {isSignup ? "Sign in" : "Sign up"}
-              </Link>
-            </p>
+          {/* Footer links */}
+          <div className="mt-6 md:mt-8 space-y-4">
+            <div className="text-center text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
+                {isSignup
+                  ? "Already have an account?"
+                  : "Don't have an account?"}{" "}
+                <Link
+                  to={isSignup ? "/login" : "/signup"}
+                  className="font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  {isSignup ? "Sign in" : "Sign up"}
+                </Link>
+              </p>
+            </div>
+
+            {/* Admin Link */}
+            <div className="text-center text-sm border-t border-gray-200 dark:border-gray-600 pt-4">
+              <p className="text-gray-600 dark:text-gray-400">
+                Are you a admin?{" "}
+                <a
+                  href={import.meta.env.VITE_ADMIN_URL || "http://localhost:5174"}
+                  className="font-medium text-accent hover:text-accent/80 inline-flex items-center gap-1 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fas fa-external-link-alt text-xs"></i>
+                  Access Admin Panel
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>

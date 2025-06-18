@@ -1,6 +1,6 @@
 const Order = require('../models/order.model');
 const Product = require('../models/product.model');
-const User = require('../models/User.model');
+const User = require('../models/user.model');
 const { transporter } = require('../config/nodemailer');
 
 // Helper function to calculate order totals - CORRECTED TO MATCH FRONTEND

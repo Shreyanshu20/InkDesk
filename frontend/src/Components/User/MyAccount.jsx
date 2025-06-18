@@ -431,12 +431,13 @@ function MyAccount() {
     }
   };
 
-  // Send verification email
+  // Send verification email - FIXED ENDPOINT
   const handleSendVerificationEmail = async () => {
     try {
       setIsLoading(true);
+      // CORRECT ENDPOINT: /auth/sendVerificationEmail
       const response = await axios.post(
-        `${backendUrl}/auth/send-otp`,
+        `${backendUrl}/auth/sendVerificationEmail`,
         {},
         { withCredentials: true }
       );

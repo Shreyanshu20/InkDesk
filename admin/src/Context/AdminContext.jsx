@@ -52,13 +52,7 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
-      // Only redirect on 401/403, not on network errors
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        console.log('🔄 Redirecting to frontend login...');
-        const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-        window.location.href = `${frontendUrl}/login?type=admin&redirect=admin`;
-      }
-      
+      // Don't redirect automatically - let the component handle it
       return false;
     } finally {
       setIsLoading(false);
@@ -97,7 +91,6 @@ export const AdminProvider = ({ children }) => {
         setAdminData(user);
         setIsAuthenticated(true);
         
-        toast.success('Login successful!');
         return { success: true };
       } else {
         toast.error(response.data.message || 'Login failed');
@@ -127,9 +120,8 @@ export const AdminProvider = ({ children }) => {
       
       console.log('✅ Admin logout successful - cookie cleared by server');
       
-      // Force redirect to frontend
-      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-      window.location.replace(`${frontendUrl}/`);
+      // Redirect to login page
+      window.location.replace('/login');
       
     } catch (error) {
       console.error('❌ Logout error:', error);
@@ -137,8 +129,7 @@ export const AdminProvider = ({ children }) => {
       setAdminData(null);
       setIsAuthenticated(false);
       
-      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-      window.location.replace(`${frontendUrl}/`);
+      window.location.replace('/login');
     }
   };
 

@@ -9,7 +9,7 @@ function PriceDisplay({
 }) {
   const sizeClasses = {
     sm: "text-sm",
-    md: "text-lg",
+    md: "text-base",
     lg: "text-2xl",
     xl: "text-3xl",
   };

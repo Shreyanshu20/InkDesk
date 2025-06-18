@@ -35,7 +35,7 @@ router.post('/clear', clearCart); // Use the controller function
 router.get('/debug-raw', async (req, res) => {
   try {
     const userId = req.userId;
-    const User = require('../models/User.model');
+    const User = require('../models/user.model');
     
     const user = await User.findById(userId);
     

@@ -1,12 +1,13 @@
-import React, { useState, useContext, useRef } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { AppContent } from "../../Context/AppContent.jsx";
+import { ThemeContext } from "../../Context/ThemeContext";
 
-function ForgetPassword() {
-  const { backendUrl } = useContext(AppContent);
+function AdminForgotPassword() {
   const navigate = useNavigate();
+  const { themeToggle } = useContext(ThemeContext);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // Track the current step of the password reset flow
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
@@ -32,10 +33,29 @@ function ForgetPassword() {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
+  // Theme state
+  const [isDark, setIsDark] = useState(false);
+
   // References for OTP inputs
   const inputRefs = Array(6)
     .fill(0)
     .map(() => useRef(null));
+
+  // Check initial theme state
+  useEffect(() => {
+    const isDarkMode =
+      document.documentElement.classList.contains("dark") ||
+      localStorage.theme === "dark" ||
+      (!("theme" in localStorage) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setIsDark(isDarkMode);
+  }, []);
+
+  // Handle theme toggle
+  const handleThemeToggle = () => {
+    themeToggle();
+    setIsDark(!isDark);
+  };
 
   // Handle email submission (Step 1)
   const handleEmailSubmit = async (e) => {
@@ -208,7 +228,7 @@ function ForgetPassword() {
       if (response.data.success) {
         toast.success("Password reset successfully");
         setTimeout(() => {
-          navigate("/login");
+          navigate("/admin/login");
         }, 2000);
       } else {
         toast.error(response.data.message || "Failed to reset password");
@@ -255,7 +275,7 @@ function ForgetPassword() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
+                  placeholder="Enter your admin email address"
                   className="pl-10 pr-3 md:pr-4 w-full rounded-lg py-3 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                   required
                 />
@@ -305,7 +325,7 @@ function ForgetPassword() {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={index === 0 ? handleOtpPaste : undefined}
-                    className="w-10 h-10 md:w-12 md:h-12 text-center text-lg md:text-xl font-semibold rounded-lg border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary focus:ring-2 focus:ring-primary transition-all duration-200"
+                    className="w-10 h-10 md:w-12 md:h-12 text-center text-lg md:text-xl font-semibold rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-primary focus:ring-2 focus:ring-primary transition-all duration-200"
                     required
                   />
                 ))}
@@ -464,7 +484,19 @@ function ForgetPassword() {
   };
 
   return (
-    <div className="flex flex-col justify-center py-6 md:py-12 px-2 md:px-4 bg-background text-text">
+    <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 md:py-12 relative">
+      {/* Theme Toggle - Top Left */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={handleThemeToggle}
+          className="text-text w-12 h-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 shadow-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          aria-label="Toggle theme"
+          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          <i className={`fas ${isDark ? "fa-sun" : "fa-moon"} text-lg`}></i>
+        </button>
+      </div>
+
       <div className="mx-auto w-full max-w-md md:max-w-lg">
         <div className="bg-white dark:bg-gray-800 py-8 px-6 md:px-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
           {/* Header */}
@@ -475,16 +507,16 @@ function ForgetPassword() {
               </div>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              Reset your password
+              Reset Admin Password
             </h2>
             <p className="mt-2 text-sm md:text-base text-gray-600 dark:text-gray-400">
-              {step === 1 && "Enter your email to receive a reset code"}
+              {step === 1 && "Enter your admin email to receive a reset code"}
               {step === 2 && "Enter the verification code sent to your email"}
-              {step === 3 && "Create a new password for your account"}
+              {step === 3 && "Create a new password for your admin account"}
             </p>
           </div>
 
-          {/* FIXED: Progress Indicator with proper alignment */}
+          {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex items-center">
               {/* Step 1 */}
@@ -557,11 +589,11 @@ function ForgetPassword() {
           {/* Back to Login */}
           <div className="mt-6 text-center">
             <Link
-              to="/login"
+              to="/admin/login"
               className="text-sm font-medium text-primary hover:text-primary/80 inline-flex items-center transition-colors"
             >
               <i className="fas fa-arrow-left mr-1"></i>
-              Back to Login
+              Back to Admin Login
             </Link>
           </div>
         </div>
@@ -570,4 +602,4 @@ function ForgetPassword() {
   );
 }
 
-export default ForgetPassword;
+export default AdminForgotPassword;

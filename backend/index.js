@@ -7,28 +7,20 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 
-// CORS Configuration - Allow BOTH base domain and /admin path
+// CORS Configuration - SEPARATE DOMAINS
 const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
-    'http://localhost:5173',
-    'http://localhost:5174',  // Base localhost admin
-    'http://localhost:5174/admin',  // Admin path
+    'http://localhost:5173',      // Frontend domain
+    'http://localhost:5174',      // Admin domain - SEPARATE
     'https://inkdesk-frontend.onrender.com',
-    'https://inkdesk-admin.onrender.com',  // Base admin domain (THIS IS WHAT WE NEED)
-    'https://inkdesk-admin.onrender.com/admin',  // Admin path (keep this for redirects)
+    'https://inkdesk-admin.onrender.com',     // Admin domain - SEPARATE
     'https://inkdesk-backend.onrender.com'
   ];
 
   // Add environment URLs if they exist
   if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
-  if (process.env.ADMIN_URL) {
-    origins.push(process.env.ADMIN_URL);
-    // Also add the base domain if ADMIN_URL contains /admin
-    if (process.env.ADMIN_URL.includes('/admin')) {
-      origins.push(process.env.ADMIN_URL.replace('/admin', ''));
-    }
-  }
+  if (process.env.ADMIN_URL) origins.push(process.env.ADMIN_URL);
 
   return [...new Set(origins)]; // Remove duplicates
 };
@@ -37,7 +29,7 @@ const getAllowedOrigins = () => {
 console.log('🌐 Configuring CORS...');
 console.log('📋 Allowed origins:', getAllowedOrigins());
 
-// Enhanced CORS configuration for cross-domain cookies
+// Enhanced CORS configuration for SEPARATE DOMAIN cookies
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = getAllowedOrigins();
@@ -74,7 +66,7 @@ app.use(cors({
   optionsSuccessStatus: 200 // For legacy browser support
 }));
 
-// Add specific middleware to handle cookies properly
+// Add specific middleware to handle cookies properly for SEPARATE DOMAINS
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = getAllowedOrigins();
@@ -82,29 +74,25 @@ app.use((req, res, next) => {
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Vary', 'Origin'); // Important for caching
-  }
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cookie');
-    res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-    return res.status(200).end();
   }
   
   next();
 });
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Connect to MongoDB
-console.log('Connecting to MongoDB...');
+// Database connection
+console.log('🔌 Connecting to MongoDB...');
 mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+    .then(() => {
+        console.log('✅ MongoDB connected successfully');
+    })
+    .catch((err) => {
+        console.error('❌ MongoDB connection error:', err);
+        process.exit(1);
+    });
 
 // Remove the health check route - it's causing CORS issues
 // app.use('/health', require('./routes/health.routes'));
@@ -252,11 +240,7 @@ try {
   console.error('❌ Admin routes error:', error.message);
 }
 
-// Add this with your other route imports:
-const voiceSearchRoutes = require('./routes/voiceSearch.routes');
 
-// Add this with your other route definitions:
-app.use('/voice-search', voiceSearchRoutes);
 
 // Debug route to check all registered routes
 app.get('/debug/routes', (req, res) => {

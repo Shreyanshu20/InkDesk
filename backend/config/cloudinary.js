@@ -4,46 +4,27 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Test the connection
-const testConnection = async () => {
-  try {
-    const result = await cloudinary.api.ping();
-    console.log('✅ Cloudinary connection successful:', result);
-  } catch (error) {
-    console.error('❌ Cloudinary connection failed:', error.message);
-  }
-};
-
-// Call test on startup
-testConnection();
-
 // Debug environment variables
 console.log('CLOUDINARY_CLOUD_NAME exists:', !!process.env.CLOUDINARY_CLOUD_NAME);
+console.log('CLOUDINARY_API_KEY exists:', !!process.env.CLOUDINARY_API_KEY);
+console.log('CLOUDINARY_API_SECRET exists:', !!process.env.CLOUDINARY_API_SECRET);
 
 let storage, upload;
 
 try {
-  // Configure Cloudinary with explicit config
-  if (process.env.CLOUDINARY_CLOUD_NAME) {
-    const url = new URL(process.env.CLOUDINARY_CLOUD_NAME);
-    
+  // FIXED: Configure Cloudinary with direct values, not URL parsing
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
     cloudinary.config({
-      cloud_name: url.hostname,
-      api_key: url.username,
-      api_secret: url.password,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // Direct value: "dws2bgxzx"
+      api_key: process.env.CLOUDINARY_API_KEY,       // Direct value: "931944444473962"
+      api_secret: process.env.CLOUDINARY_API_SECRET, // Direct value: "rwydTciUZKbrJuKCDJ-alIsylLM"
       secure: true,
       timeout: 60000
     });
     
-    console.log('✅ Configured Cloudinary with cloud_name:', url.hostname);
+    console.log('✅ Configured Cloudinary with cloud_name:', process.env.CLOUDINARY_CLOUD_NAME);
   } else {
-    throw new Error('CLOUDINARY_CLOUD_NAME is required');
+    throw new Error('Missing Cloudinary environment variables');
   }
 
   // HIGH QUALITY storage configuration for banners/advertisements
@@ -86,6 +67,7 @@ try {
 } catch (error) {
   console.error('💥 Cloudinary configuration failed:', error.message);
   
+  // Fallback upload handlers
   upload = {
     single: () => (req, res, next) => {
       return res.status(500).json({
@@ -103,6 +85,19 @@ try {
     }
   };
 }
+
+// Test the connection AFTER configuration
+const testConnection = async () => {
+  try {
+    const result = await cloudinary.api.ping();
+    console.log('✅ Cloudinary connection successful:', result);
+  } catch (error) {
+    console.error('❌ Cloudinary connection failed:', error.message);
+  }
+};
+
+// Call test on startup (after configuration)
+testConnection();
 
 module.exports = {
   cloudinary,
