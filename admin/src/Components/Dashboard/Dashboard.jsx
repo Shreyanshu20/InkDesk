@@ -171,16 +171,16 @@ function Dashboard() {
     }
   };
 
-  // Fetch low stock products
+  // Fetch low stock products - MODIFY to get ALL products for admin
   const fetchLowStockProducts = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/admin/products?page=1&limit=50&sortBy=product_stock&order=asc`,
+        `${API_BASE_URL}/admin/products?page=1&limit=100&sortBy=product_stock&sortOrder=asc`,
         {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Use cookies
+          credentials: "include",
         }
       );
 
@@ -188,7 +188,7 @@ function Dashboard() {
       if (data.success) {
         const lowStockThreshold = 10;
         return data.products
-          .filter((product) => product.product_stock <= lowStockThreshold)
+          .filter((product) => product.product_stock <= lowStockThreshold && product.product_stock > 0)
           .slice(0, 5)
           .map((product) => ({
             id: product._id,

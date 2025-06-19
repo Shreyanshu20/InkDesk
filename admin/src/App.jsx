@@ -22,6 +22,7 @@ import Reviews from "./Components/Reviews/Reviews";
 import Settings from "./Components/Settings/Settings";
 import AdminLogin from "./Components/Auth/AdminLogin";
 import AdminForgotPassword from "./Components/Auth/AdminForgotPassword";
+import ReadOnlyBanner from "./Components/Common/ReadOnlyBanner";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -131,6 +132,7 @@ function App() {
         {/* Catch all - redirect to admin */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
+      <ReadOnlyBanner />
     </AdminContextProvider>
   );
 }

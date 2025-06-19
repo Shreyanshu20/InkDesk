@@ -19,16 +19,22 @@ function Reviews() {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [totalReviews, setTotalReviews] = useState(0);
 
-  // ADD: Separate state for stats
+  // FIX: Initialize reviewStats with proper default structure
   const [reviewStats, setReviewStats] = useState({
-    totalReviews: 0,
-    averageRating: 0,
-    ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    total: 0,
+    rating5: 0,
+    rating4: 0,
+    rating3: 0,
+    rating2: 0,
+    rating1: 0,
+    averageRating: 0
   });
+
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "descending",
   });
+
   const [activeReview, setActiveReview] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -283,15 +289,15 @@ function Reviews() {
     });
   }, [reviews, sortConfig]);
 
-  // MODIFY: Use stats from API instead of calculated from current page
+  // FIX: Use the correct field names from the stats response
   const reviewCounts = useMemo(() => {
     return {
-      all: reviewStats.totalReviews,
-      5: reviewStats.ratingBreakdown[5],
-      4: reviewStats.ratingBreakdown[4],
-      3: reviewStats.ratingBreakdown[3],
-      2: reviewStats.ratingBreakdown[2],
-      1: reviewStats.ratingBreakdown[1],
+      all: reviewStats.total || 0,
+      5: reviewStats.rating5 || 0,
+      4: reviewStats.rating4 || 0,
+      3: reviewStats.rating3 || 0,
+      2: reviewStats.rating2 || 0,
+      1: reviewStats.rating1 || 0,
     };
   }, [reviewStats]);
 
@@ -304,9 +310,9 @@ function Reviews() {
           Product Reviews
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Manage customer reviews ({reviewStats.totalReviews} total reviews)
+          Manage customer reviews ({reviewStats.total} total reviews)
           {reviewStats.averageRating > 0 && (
-            <> • Average Rating: {reviewStats.averageRating}/5.0</>
+            <> • Average Rating: {Number(reviewStats.averageRating).toFixed(1)}/5.0</>
           )}
         </p>
       </div>

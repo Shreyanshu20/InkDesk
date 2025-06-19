@@ -26,13 +26,14 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (adminData.role !== 'admin') {
+  // Allow both admin and user roles
+  if (!adminData || (adminData.role !== 'admin' && adminData.role !== 'user')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <i className="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h1>
-          <p className="text-gray-600 dark:text-gray-400">You need admin privileges to access this page.</p>
+          <p className="text-gray-600 dark:text-gray-400">You need proper credentials to access this page.</p>
         </div>
       </div>
     );

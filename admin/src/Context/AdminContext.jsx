@@ -16,6 +16,7 @@ export const AdminProvider = ({ children }) => {
   const [adminData, setAdminData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isReadOnlyUser, setIsReadOnlyUser] = useState(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -40,6 +41,7 @@ export const AdminProvider = ({ children }) => {
         console.log('✅ Admin authenticated via cookie:', response.data.user);
         setAdminData(response.data.user);
         setIsAuthenticated(true);
+        setIsReadOnlyUser(response.data.isReadOnly); // ADD this line
         return true;
       } else {
         console.log('❌ Admin authentication failed');
@@ -133,6 +135,25 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const canPerformAction = () => {
+    return adminData?.role === 'admin';
+  };
+
+  const isReadOnly = () => {
+    return adminData?.role === 'user';
+  };
+
+  const showPermissionDenied = () => {
+    toast.error('Only administrators can make changes', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+    });
+  };
+
   // Check auth on mount
   useEffect(() => {
     checkAuth();
@@ -146,6 +167,10 @@ export const AdminProvider = ({ children }) => {
     logout,
     checkAuth,
     refreshAdminData: checkAuth,
+    isReadOnlyUser,
+    canPerformAction,
+    isReadOnly,
+    showPermissionDenied,
   };
 
   return (

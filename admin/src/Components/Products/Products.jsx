@@ -12,6 +12,22 @@ import ProductDetails from "./components/ProductDetails";
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+// Transform product data from backend format to frontend format
+const transformProduct = (product) => ({
+  id: product._id,
+  name: product.product_name,
+  description: product.product_description,
+  price: product.product_price,
+  inventory: product.product_stock,
+  category: product.product_category,
+  brand: product.product_brand || "N/A",
+  image: product.product_image || "/placeholder-product.jpg",
+  createdAt: product.createdAt,
+  updatedAt: product.updatedAt,
+  owner: product.owner ? `${product.owner.first_name} ${product.owner.last_name}` : "Unknown",
+  status: product.product_stock > 0 ? "active" : "out_of_stock",
+});
+
 // Custom debounce hook
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -32,7 +48,7 @@ function useDebounce(value, delay) {
 function Products() {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]); // Store all products for stats calculation
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([]); // KEEP ONLY THIS ONE
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
@@ -65,22 +81,9 @@ function Products() {
     setPage(0); // Reset to first page when search changes
   }, [debouncedSearchInput]);
 
-  // Memoize filter parameters to prevent unnecessary re-renders
-  const filterParams = useMemo(
-    () => ({
-      searchQuery: searchQuery.trim(),
-      categoryFilter,
-      statusFilter,
-      page,
-      rowsPerPage,
-      sortConfig,
-    }),
-    [searchQuery, categoryFilter, statusFilter, page, rowsPerPage, sortConfig]
-  );
-
-  // Calculate stats from all products data
+  // Calculate stats from allProducts (which now comes from the stats API)
   const stats = useMemo(() => {
-    if (!allProducts || allProducts.length === 0) {
+    if (!allProducts || typeof allProducts !== 'object') {
       return {
         totalProducts: 0,
         activeProducts: 0,
@@ -89,254 +92,128 @@ function Products() {
       };
     }
 
-    const totalProducts = allProducts.length;
-    const activeProducts = allProducts.filter((p) => p.inventory > 0).length;
-    const outOfStockProducts = allProducts.filter(
-      (p) => p.inventory === 0
-    ).length;
-
-    // Calculate total inventory value: price × stock for each product
-    const totalInventoryValue = allProducts.reduce((total, product) => {
-      const price = parseFloat(product.price) || 0;
-      const stock = parseInt(product.inventory) || 0;
-      return total + price * stock;
-    }, 0);
-
-    console.log("📊 Calculated stats:", {
-      totalProducts,
-      activeProducts,
-      outOfStockProducts,
-      totalInventoryValue: totalInventoryValue.toFixed(2),
-    });
-
+    // allProducts now contains the stats object from the API
     return {
-      totalProducts,
-      activeProducts,
-      outOfStockProducts,
-      totalInventoryValue,
+      totalProducts: allProducts.totalProducts || 0,
+      activeProducts: allProducts.activeProducts || 0,
+      outOfStockProducts: allProducts.outOfStockProducts || 0,
+      totalInventoryValue: allProducts.totalInventoryValue || 0,
     };
   }, [allProducts]);
 
-  // Fetch ALL admin products for stats calculation (separate from paginated products)
-  const fetchAllProducts = useCallback(async () => {
-    try {
-      console.log("📊 Fetching all products for stats calculation...");
-
-      const response = await axios.get(
-        `${API_BASE_URL}/admin/products?limit=1000&page=1`, // Get a large number of products
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        const transformedProducts = response.data.products.map((product) => ({
-          id: product._id,
-          name: product.product_name,
-          description: product.product_description,
-          price: product.product_price,
-          inventory: product.product_stock,
-          category: product.product_category,
-          subcategory: product.product_subcategory,
-          brand: product.product_brand,
-          images:
-            product.product_images?.length > 0
-              ? product.product_images.map((img) => img.url)
-              : product.product_image
-              ? [product.product_image]
-              : [],
-          rating: product.product_rating || 0,
-          discount: product.product_discount || 0,
-          status: product.product_stock > 0 ? "active" : "out_of_stock",
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt,
-          owner: product.owner,
-        }));
-
-        console.log(
-          `📊 Loaded ${transformedProducts.length} products for stats`
-        );
-        setAllProducts(transformedProducts);
-      }
-    } catch (error) {
-      console.error("❌ Error fetching all products for stats:", error);
-      setAllProducts([]);
-    }
-  }, []);
-
-  // Fetch admin products with enhanced filtering (paginated)
+  // CHANGE: Use admin routes for all product operations
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
 
       const params = new URLSearchParams();
-      params.append("page", filterParams.page + 1);
-      params.append("limit", filterParams.rowsPerPage);
+      params.append("page", page + 1);
+      params.append("limit", rowsPerPage);
 
-      if (filterParams.searchQuery) {
-        params.append("search", filterParams.searchQuery);
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
       }
 
-      if (filterParams.categoryFilter !== "all" && categories.length > 0) {
-        const categoryObj = categories.find(
-          (c) => c.category_name === filterParams.categoryFilter
-        );
-        if (categoryObj) {
-          params.append("selectedCategories", categoryObj._id);
-        }
+      if (categoryFilter !== "all") {
+        params.append("category", categoryFilter);
       }
 
-      if (filterParams.statusFilter !== "all") {
-        params.append("status", filterParams.statusFilter);
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
       }
 
-      if (filterParams.sortConfig.key) {
-        let sortBy = filterParams.sortConfig.key;
-        if (sortBy === "name") sortBy = "product_name";
-        else if (sortBy === "price") sortBy = "product_price";
-        else if (sortBy === "inventory") sortBy = "product_stock";
-        else if (sortBy === "category") sortBy = "product_category";
-
-        params.append("sortBy", sortBy);
-        params.append(
-          "order",
-          filterParams.sortConfig.direction === "ascending" ? "asc" : "desc"
-        );
+      if (sortConfig.key) {
+        params.append("sortBy", sortConfig.key);
+        params.append("sortOrder", sortConfig.direction === "ascending" ? "asc" : "desc");
       }
 
-      console.log("🔍 Fetching admin products with params:", params.toString());
-
+      // CHANGE: Use admin route
       const response = await axios.get(
         `${API_BASE_URL}/admin/products?${params.toString()}`,
         {
           withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
-      console.log("📦 Backend response:", response.data);
-
       if (response.data.success) {
-        const transformedProducts = response.data.products.map((product) => ({
-          id: product._id,
-          name: product.product_name,
-          description: product.product_description,
-          price: product.product_price,
-          inventory: product.product_stock,
-          category: product.product_category,
-          subcategory: product.product_subcategory,
-          brand: product.product_brand,
-          images:
-            product.product_images?.length > 0
-              ? product.product_images.map((img) => img.url)
-              : product.product_image
-              ? [product.product_image]
-              : [],
-          rating: product.product_rating || 0,
-          discount: product.product_discount || 0,
-          status: product.product_stock > 0 ? "active" : "out_of_stock",
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt,
-          owner: product.owner,
-        }));
-
-        console.log(
-          `📊 Found ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`
-        );
-
-        setProducts(transformedProducts);
-        setTotalProducts(response.data.pagination?.totalProducts || 0);
+        setProducts(response.data.products.map(transformProduct));
+        setTotalProducts(response.data.pagination.totalProducts);
       }
     } catch (error) {
-      console.error("❌ Error fetching admin products:", error);
-      if (error.response?.status === 401) {
-        toast.error("Please login to access admin products");
-        navigate("/admin/login");
-      } else {
-        toast.error("Failed to load your products");
-      }
-      setProducts([]);
-      setTotalProducts(0);
+      console.error("❌ Error fetching products:", error);
+      toast.error("Failed to load products");
     } finally {
       setIsLoading(false);
     }
-  }, [filterParams, categories, navigate]);
+  }, [page, rowsPerPage, searchQuery, categoryFilter, statusFilter, sortConfig]);
 
-  // Fetch categories (only once)
-  const fetchCategories = useCallback(async () => {
+  // CHANGE: Use admin route for product stats
+  const fetchAllProducts = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/categories`);
+      console.log("📊 Fetching product statistics...");
+
+      const response = await axios.get(`${API_BASE_URL}/admin/products/stats`, {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      });
+
       if (response.data.success) {
-        setCategories(response.data.categories);
+        setAllProducts(response.data.stats);
+        console.log("📊 Product stats loaded:", response.data.stats);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Failed to load categories");
+      console.error("❌ Error fetching product stats:", error);
     }
   }, []);
 
-  // Fetch single product by ID
-  const fetchProductById = useCallback(
-    async (productId) => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/admin/products/${productId}`,
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+  // CHANGE: Use admin route for single product
+  const fetchProductById = useCallback(async (productId) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/products/${productId}`,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-        if (response.data.success) {
-          const product = response.data.product;
-          const transformedProduct = {
-            id: product._id,
-            name: product.product_name,
-            description: product.product_description,
-            price: product.product_price,
-            inventory: product.product_stock,
-            category: product.product_category,
-            subcategory: product.product_subcategory,
-            brand: product.product_brand,
-            images:
-              product.product_images?.length > 0
-                ? product.product_images.map((img) => img.url)
-                : product.product_image
-                ? [product.product_image]
-                : [],
-            rating: product.product_rating || 0,
-            discount: product.product_discount || 0,
-            status: product.product_stock > 0 ? "active" : "out_of_stock",
-            createdAt: product.createdAt,
-            updatedAt: product.updatedAt,
-          };
-          setCurrentProduct(transformedProduct);
-        }
-      } catch (error) {
-        console.error("Error fetching product:", error);
-        if (error.response?.status === 404) {
-          toast.error(
-            "Product not found or you don't have permission to view it"
-          );
-        } else {
-          toast.error("Failed to load product details");
-        }
-        navigate("/admin/products");
+      if (response.data.success) {
+        const transformedProduct = transformProduct(response.data.product);
+        setCurrentProduct(transformedProduct);
       }
-    },
-    [navigate]
-  );
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      toast.error("Failed to load product details");
+      navigate("/admin/products");
+    }
+  }, [navigate]);
 
-  // Delete single product
+  // ADD: Missing fetchCategories function
+  const fetchCategories = useCallback(async () => {
+    try {
+      console.log("📦 Fetching categories...");
+
+      const response = await axios.get(`${API_BASE_URL}/admin/categories`, {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.data.success) {
+        setCategories(response.data.categories);
+        console.log("📦 Categories loaded:", response.data.categories.length);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching categories:", error);
+      // Don't show toast error for categories as it's not critical
+    }
+  }, []);
+
+  // CHANGE: Use admin route for delete
   const deleteProduct = useCallback(async (productId) => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/products/${productId}`,
+        `${API_BASE_URL}/admin/products/${productId}`,
         {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
@@ -349,15 +226,7 @@ function Products() {
       }
     } catch (error) {
       console.error("Error deleting product:", error);
-      if (error.response?.status === 401) {
-        toast.error("Unauthorized to delete this product");
-      } else if (error.response?.status === 403) {
-        toast.error("You can only delete your own products");
-      } else if (error.response?.status === 404) {
-        toast.error("Product not found");
-      } else {
-        toast.error("Failed to delete product");
-      }
+      toast.error("Failed to delete product");
       return false;
     }
   }, []);
@@ -387,6 +256,29 @@ function Products() {
       } else {
         toast.error("Failed to delete products");
       }
+      return false;
+    }
+  }, []);
+
+  // ADD: Missing updateProduct function
+  const updateProduct = useCallback(async (productId, updateData) => {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/admin/products/${productId}`,
+        updateData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Product updated successfully");
+        return true;
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error("Failed to update product");
       return false;
     }
   }, []);
@@ -623,10 +515,10 @@ function Products() {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-              My Products
+              Products Management
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Manage your product inventory
+              Manage all products in the system
             </p>
           </div>
           <button
@@ -704,12 +596,6 @@ function Products() {
                     maximumFractionDigits: 0,
                   })}
                 </p>
-                {/* Debug info in development */}
-                {process.env.NODE_ENV === "development" && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    From {allProducts.length} products
-                  </p>
-                )}
               </div>
             </div>
           </div>

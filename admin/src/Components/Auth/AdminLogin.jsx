@@ -130,7 +130,7 @@ function AdminLogin() {
   }
 
   return (
-    <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 md:py-12 relative">
+    <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 relative">
       {/* Theme Toggle - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <button

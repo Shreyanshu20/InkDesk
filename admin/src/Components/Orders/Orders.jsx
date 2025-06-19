@@ -56,136 +56,74 @@ function Orders() {
       params.append("page", page + 1);
       params.append("limit", rowsPerPage);
 
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
-      }
-
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
       }
 
       if (sortConfig.key) {
-        let sortBy = sortConfig.key;
-        // Map frontend sort keys to backend fields
-        if (sortBy === "customer") sortBy = "user_id";
-        else if (sortBy === "date") sortBy = "createdAt";
-        else if (sortBy === "total") sortBy = "total_amount";
-        else if (sortBy === "id") sortBy = "order_number";
-
-        params.append("sortBy", sortBy);
+        params.append("sortBy", sortConfig.key);
         params.append(
           "sortOrder",
           sortConfig.direction === "ascending" ? "asc" : "desc"
         );
       }
 
-      console.log("🔍 Fetching orders with params:", params.toString());
-
       const response = await axios.get(
-        `${API_BASE_URL}/admin/orders?${params.toString()}`, // Removed /api prefix
+        `${API_BASE_URL}/admin/orders?${params.toString()}`,
         {
           withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
         }
       );
 
       if (response.data.success) {
-        console.log("📦 Orders response:", response.data);
-
-        // Transform backend data to frontend format
-        const transformedOrders = response.data.orders.map((order) => {
-          let customer = {
-            name: "Unknown Customer",
-            email: "no-email@example.com",
-            id: order.user_id?._id || order.user_id || "unknown",
-          };
-
-          // Try to get customer info from populated user data
-          if (order.user_id && typeof order.user_id === "object") {
-            const firstName = order.user_id.first_name || "";
-            const lastName = order.user_id.last_name || "";
-            customer.name = `${firstName} ${lastName}`.trim() || "Unknown Customer";
-            customer.email = order.user_id.email || "no-email@example.com";
-            customer.id = order.user_id._id;
-          }
-
-          // Fallback to shipping address if user data not populated
-          if (order.shipping_address && order.shipping_address.name) {
-            if (customer.name === "Unknown Customer") {
-              customer.name = order.shipping_address.name;
-            }
-          }
-
-          return {
-            id: order._id,
-            customer: customer,
-            date: order.createdAt,
-            total: order.total_amount || 0,
-            status: order.status,
-            order_number: order.order_number,
-            items: order.items || [],
-            shipping_address: order.shipping_address,
-            user_id: order.user_id,
-          };
-        });
-
-        setOrders(transformedOrders);
-        setTotalOrders(
-          response.data.pagination?.totalOrders || transformedOrders.length
-        );
-
-        console.log(
-          `📊 Loaded ${transformedOrders.length} orders of ${response.data.pagination?.totalOrders} total`
-        );
+        setOrders(response.data.orders);
+        setTotalOrders(response.data.pagination.totalOrders);
       }
     } catch (error) {
       console.error("❌ Error fetching orders:", error);
-      if (error.response?.status === 401) {
-        toast.error("Please login to access orders");
-        navigate("/admin/login");
-      } else {
-        toast.error("Failed to load orders");
-      }
-      setOrders([]);
-      setTotalOrders(0);
+      toast.error("Failed to load orders");
     } finally {
       setIsLoading(false);
     }
-  }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig, navigate]);
+  }, [page, rowsPerPage, statusFilter, sortConfig]);
 
-  // Update the fetchOrderStats function to use the new endpoint
   const fetchOrderStats = useCallback(async () => {
     try {
-      console.log('📊 Fetching order statistics...');
-      
       const response = await axios.get(`${API_BASE_URL}/admin/orders/stats`, {
         withCredentials: true,
-        headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.success) {
-        setStats(response.data.stats);
-        console.log('📊 Order stats loaded:', response.data.stats);
+        setOrderStats(response.data.stats);
       }
     } catch (error) {
       console.error("❌ Error fetching order stats:", error);
-      // Keep default empty stats on error
-      setStats({
-        total: 0,
-        pending: 0,
-        processing: 0,
-        shipped: 0,
-        delivered: 0,
-        cancelled: 0,
-        totalRevenue: 0,
-        averageOrderValue: 0,
-        todaysOrders: 0,
-        thisWeekOrders: 0
-      });
     }
-  }, []); // Remove orders dependency
+  }, []);
+
+  const updateOrderStatus = useCallback(
+    async (orderId, status) => {
+      try {
+        const response = await axios.put(
+          `${API_BASE_URL}/admin/orders/${orderId}/status`,
+          { status },
+          {
+            withCredentials: true,
+          }
+        );
+
+        if (response.data.success) {
+          toast.success("Order status updated successfully");
+          return true;
+        }
+      } catch (error) {
+        console.error("Error updating order status:", error);
+        toast.error("Failed to update order status");
+        return false;
+      }
+    },
+    []
+  );
 
   // Initial data load
   useEffect(() => {
@@ -214,7 +152,7 @@ function Orders() {
 
   // MODIFY: Update the handleRowsPerPageChange function
   const handleRowsPerPageChange = useCallback((newRowsPerPage) => {
-    console.log('📦 Orders: Changing rows per page to:', newRowsPerPage);
+    console.log("📦 Orders: Changing rows per page to:", newRowsPerPage);
     setRowsPerPage(parseInt(newRowsPerPage, 10));
     setPage(0);
   }, []);
@@ -305,7 +243,7 @@ function Orders() {
               prevOrders.filter((order) => order.id !== orderId)
             );
             toast.success("Order deleted successfully");
-            
+
             // Refresh stats
             fetchOrderStats();
           }
@@ -401,7 +339,7 @@ function Orders() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Manage and track all customer orders ({stats.total} total orders)
               {stats.totalRevenue > 0 && (
-                <> • ₹{stats.totalRevenue.toLocaleString('en-IN')} total revenue</>
+                <> • ₹{stats.totalRevenue.toLocaleString("en-IN")} total revenue</>
               )}
               {stats.todaysOrders > 0 && (
                 <> • {stats.todaysOrders} orders today</>

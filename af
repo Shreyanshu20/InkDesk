@@ -1,0 +1,313 @@
+[33mcommit c4fdbc607126d6ec0963d626d126d16487986347[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Wed Jun 18 20:30:58 2025 +0530
+
+    authentication update with appropriate cookie use
+
+[33mcommit 093ba2c9bc81dc1ee36fd15ee64d2733bf27b35d[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Tue Jun 17 18:41:54 2025 +0530
+
+    frontend major updates
+
+[33mcommit a727ea8ad94418e50a9389c1619a32cd69ab8f8d[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Tue Jun 17 01:03:00 2025 +0530
+
+    frontend update
+
+[33mcommit 129f2b0efcebf9885eb630676b0d493f4de79299[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Mon Jun 16 20:08:52 2025 +0530
+
+    major homepage update phase 3
+
+[33mcommit ef9800da2d9aba03b3186aa8f31c42672c849278[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Sun Jun 15 19:45:07 2025 +0530
+
+    major homepage update phase 2
+
+[33mcommit afb3b783045fa9759e32a5a93a0271fcaaad2b6f[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Sat Jun 14 00:55:44 2025 +0530
+
+    major homepage update phase 1
+
+[33mcommit 7e0020d524e013b511d6a2d6df20adf1a4499fff[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri Jun 13 00:11:11 2025 +0530
+
+    admin dashboard update
+
+[33mcommit 46d588e5342d7ca2a3c9e4243d493db293b016d9[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 23:56:11 2025 +0530
+
+    products page fix
+
+[33mcommit 9f861223ae83398a58b7003598fc73be487c8175[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 23:10:54 2025 +0530
+
+    products fix on productspage
+
+[33mcommit bd9dc82c8bc20ddbbe3dd76efbf8c275f8ae12fb[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 21:05:04 2025 +0530
+
+    cookie settings
+
+[33mcommit 6575bd3d7f8bd6a5192df0e38d1977d790544ae4[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:53:18 2025 +0530
+
+    cors policy changes
+
+[33mcommit d92bde4fb6bfc979fdf6a8714748dc73c05351b5[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:34:37 2025 +0530
+
+    base url update
+
+[33mcommit 5334d573c6f1869d5ae5149639b87337929d95ff[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:31:00 2025 +0530
+
+    base url
+
+[33mcommit 11d73ce49e257fd2b6aff0e0b4357b944a2e0796[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:25:33 2025 +0530
+
+    base admim url
+
+[33mcommit 1e90cdfafb5352c3b7b4dd7aa9eb495f9c3092f0[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:21:04 2025 +0530
+
+    api health check removal
+
+[33mcommit 2e175255f9eeae2a22914685c2d17255a26d2070[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:12:33 2025 +0530
+
+    admin url
+
+[33mcommit 4ed8687307f33f4dada534e11859ffe7d37be1aa[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:07:29 2025 +0530
+
+    cors policy update
+
+[33mcommit e904c4ff19385c030a4c691f2b70d42410643cce[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 20:00:17 2025 +0530
+
+    admin authentication
+
+[33mcommit 42df12f3c165972fc552561fa464ac894c6dc3e6[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 19:45:41 2025 +0530
+
+    admin authentication fix
+
+[33mcommit 4d3d2a2149f8754beda147e37d8a16a754525cbf[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu Jun 12 19:34:23 2025 +0530
+
+    authentication through cookies
+
+[33mcommit 80914893b8902dd510fb25c4b7479996c03e2bcc[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Wed Jun 11 00:41:11 2025 +0530
+
+    cookie settings
+
+[33mcommit a2684ab296e2a66f169142ab641064ff7fd596b8[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Wed Jun 11 00:26:50 2025 +0530
+
+    cookie changes for deployment
+
+[33mcommit 7f43a74c408d64a182038d68e8fe2e0fdb943c19[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Wed Jun 11 00:12:29 2025 +0530
+
+    Major Authentication update
+
+[33mcommit b93fc876295bb32c8c9235ef225a50cfd31bc6c6[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 17:40:08 2025 +0530
+
+    admin settings
+
+[33mcommit 30cc3566a55c89531687b7db8cd355b9db77171f[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 17:30:43 2025 +0530
+
+    frontend updates
+
+[33mcommit 941f532ee893833b621572f6ac69d37e01188d9e[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 16:34:40 2025 +0530
+
+    frontend updates
+
+[33mcommit 5c0b6c4ed05d8a723c36256ccf547235b34acfb7[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 14:52:58 2025 +0530
+
+    admin context update
+
+[33mcommit f139b470e285f1ee6e9293f9586ebe9a36af3407[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 14:39:46 2025 +0530
+
+    admin authentication update
+
+[33mcommit 49c87900ad57c6587b4d9992d2e4a9d5c8f2c7f1[m
+Merge: bcd488e d95e104
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 14:19:33 2025 +0530
+
+    Merge branch 'main' of https://github.com/Shreyanshu20/InkDesk
+
+[33mcommit bcd488e852952a7f055517050d5e9fb56a452998[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 14:18:50 2025 +0530
+
+    public change
+
+[33mcommit d95e104c4392c70eacc8091912c170ef89d5989c[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 13:07:35 2025 +0530
+
+    authentication updates
+
+[33mcommit 4617e0c521a53393b54395c97ed20feee52548fe[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 12:57:32 2025 +0530
+
+    cors policy update
+
+[33mcommit 9ab7397d67eeed512796aea206b4493b86a11bf5[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 12:40:52 2025 +0530
+
+    homepage products fix
+
+[33mcommit 281c3150bd353819d305a77067f23c854b192d03[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 12:34:17 2025 +0530
+
+    image path changes
+
+[33mcommit 3173f04ae534f431bdafcd73eb66f9ff6fa02259[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 12:28:30 2025 +0530
+
+    public assets
+
+[33mcommit eb82d77d6f2f72d82881304640cf254d6fbe3404[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 12:20:34 2025 +0530
+
+    deployment updates
+
+[33mcommit 4ad36375c1f35b41920e670c11cfb556680120c3[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 11:56:04 2025 +0530
+
+    admin product update
+
+[33mcommit a8b68e35112e2d0a67b2f963f150c3b3a9e41e22[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 02:59:46 2025 +0530
+
+    authentication update
+
+[33mcommit f72ec0ba599ffff73852a78912c856886960d57f[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 02:26:57 2025 +0530
+
+    authentication update
+
+[33mcommit 945267e0375bc6942a962cd92aef1c2cd22a1d3f[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 01:40:40 2025 +0530
+
+    admin dashboard
+
+[33mcommit ea3f643c685a2569827dabc02bb8bfc7a4ddf8fe[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Fri May 30 01:23:58 2025 +0530
+
+    Banner functoinality
+
+[33mcommit 62593a2ec5c43a4d4026b1b574c29f165e18b611[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 23:57:11 2025 +0530
+
+    admin profile settings control
+
+[33mcommit 58033472ccfb03f5d5199f86f4957da2329a99d1[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 22:40:17 2025 +0530
+
+    table pagination and data stats update
+
+[33mcommit b401862ac84593175d817945c5e692a3cbecee78[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 22:08:37 2025 +0530
+
+    amdin user control and table update
+
+[33mcommit e0f270e8992398ed3b385bc970c11b63e2a4a98f[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 21:42:48 2025 +0530
+
+    admin orders page
+
+[33mcommit 011c580b6d81ea4f1813cd38d84271c327451860[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 20:14:28 2025 +0530
+
+    addition in products page for admin
+
+[33mcommit 003a5eaec4440a2ac28e28d9a881491ca5943336[m
+Merge: d9ca748 5735fc7
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 20:09:14 2025 +0530
+
+    merger
+
+[33mcommit d9ca74843beb828f78a7c340439b626456d17932[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 20:04:06 2025 +0530
+
+    admin products control
+
+[33mcommit 5735fc7ffc6350435be43dd2b1fb64905c52cccd[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 16:33:48 2025 +0530
+
+    init
+
+[33mcommit d2ac5dfc129550772f11a6c3cdec6b6f533c84bf[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 16:32:12 2025 +0530
+
+    init file
+
+[33mcommit 16b6abe0c37ba9011665ade1a11135fcd427d24d[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 16:30:11 2025 +0530
+
+    init changes
+
+[33mcommit 9f80eec1af56dfe0512ac4ec768204b982c7aabf[m
+Author: Mr. Well Known <shreyanshudhawale2@gmail.com>
+Date:   Thu May 29 16:28:22 2025 +0530
+
+    initial dev files

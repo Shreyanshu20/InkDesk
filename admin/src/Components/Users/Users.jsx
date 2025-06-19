@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -73,7 +73,7 @@ function Users() {
   }, []); // Only run once on mount
 
   // Fetch users from backend
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -81,8 +81,8 @@ function Users() {
       params.append("page", page + 1);
       params.append("limit", rowsPerPage);
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
       }
 
       if (statusFilter !== "all") {
@@ -94,48 +94,25 @@ function Users() {
         params.append("sortOrder", sortConfig.direction === "ascending" ? "asc" : "desc");
       }
 
-      console.log('🔍 Fetching users with params:', params.toString());
-
       const response = await axios.get(
         `${API_BASE_URL}/admin/users?${params.toString()}`,
         {
           withCredentials: true,
+          headers: { "Content-Type": "application/json" },
         }
       );
 
       if (response.data.success) {
-        console.log('👥 Users response:', response.data);
-
-        const transformedUsers = response.data.users.map((user) => ({
-          id: user._id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
-          email: user.email,
-          role: user.role || "customer",
-          status: user.status || "active",
-          avatar: user.avatar || null,
-          phone: user.phone || "N/A",
-          createdAt: user.createdAt,
-          lastLogin: user.lastLogin || user.updatedAt,
-          address: user.address_details || [],
-          orders: user.orders || [],
-          first_name: user.first_name,
-          last_name: user.last_name,
-        }));
-
-        setUsers(transformedUsers);
-        setTotalUsers(response.data.pagination?.total || transformedUsers.length);
-
-        console.log(`📊 Loaded ${transformedUsers.length} users of ${response.data.pagination?.total} total`);
+        setUsers(response.data.users);
+        setTotalUsers(response.data.pagination.totalUsers);
       }
     } catch (error) {
       console.error("❌ Error fetching users:", error);
       toast.error("Failed to load users");
-      setUsers([]);
-      setTotalUsers(0);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig]);
 
   // Fetch single user by ID
   const fetchUserById = async (userId) => {
@@ -177,7 +154,7 @@ function Users() {
   };
 
   // MODIFY: Delete user function to refresh stats after deletion
-  const deleteUser = async (userId) => {
+  const deleteUser = useCallback(async (userId) => {
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/admin/users/${userId}`,
@@ -200,7 +177,7 @@ function Users() {
       toast.error("Failed to delete user");
       return false;
     }
-  };
+  }, []);
 
   // MODIFY: Update user status function to refresh stats
   const updateUserStatus = async (userId, newStatus) => {
