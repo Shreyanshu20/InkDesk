@@ -1,67 +1,109 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { getStatusColor } from "./utils";
+import Loader from "../../Common/Loader";
+import Table from "../../Common/Table";
+import Pagination from "../../Common/Pagination";
+import { getOrderTableConfig } from "../../Common/tableConfig";
 import StatusUpdateModal from "./StatusUpdateModal";
+import { getStatusColor } from "./utils";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-function OrderDetails() {
-  const location = useLocation();
+function Orders() {
   const navigate = useNavigate();
   const { id } = useParams();
-  
-  const [orderData, setOrderData] = useState(location.state?.orderData || null);
-  const [loading, setLoading] = useState(!orderData);
+
+  const [orders, setOrders] = useState([]);
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [ordersPerPage] = useState(10);
 
-  const orderStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+  const orderStatuses = [
+    "pending",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
 
-  // Fetch order details if not passed via state
+  // Fetch orders on mount and page change
   useEffect(() => {
-    if (!orderData && id) {
-      fetchOrderDetails();
-    }
-  }, [id, orderData]);
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${API_BASE_URL}/admin/orders`, {
+          withCredentials: true,
+          params: {
+            page: currentPage,
+            limit: ordersPerPage,
+          },
+        });
 
-  const fetchOrderDetails = async () => {
+        if (response.data.success) {
+          setOrders(response.data.orders);
+          setTotalOrders(response.data.totalOrders);
+        } else {
+          toast.error("Failed to fetch orders");
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast.error("Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [currentPage, ordersPerPage]);
+
+  // Fetch order data on mount
+  useEffect(() => {
+    if (id) {
+      fetchOrderData();
+    }
+  }, [id]);
+
+  const fetchOrderData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await axios.get(`${API_BASE_URL}/admin/orders/${id}`, {
-        withCredentials: true
+        withCredentials: true,
       });
 
       if (response.data.success) {
         const order = response.data.order;
-        
-        // Transform to match expected format
-        const transformedOrder = {
-          id: order._id,
-          order_number: order.order_number,
+        const customer = order.user_id || {};
+        const customerName =
+          `${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
+          "Unknown Customer";
+
+        // Format the order data to match what the StatusUpdateModal expects
+        const formattedOrderData = {
+          ...order,
+          id: order._id, // Make sure id is available
           customer: {
-            name: order.user_id?.first_name 
-              ? `${order.user_id.first_name} ${order.user_id.last_name || ''}`.trim()
-              : order.shipping_address?.name || 'Customer',
-            email: order.user_id?.email || order.shipping_address?.email || 'customer@example.com',
-            phone: order.shipping_address?.phone || 'N/A'
+            name: customerName,
+            email: customer.email || "Not provided",
+            id: customer._id || "unknown",
           },
-          date: order.createdAt,
-          total: order.total_amount,
-          status: order.status,
-          items: order.items || [],
-          shipping_address: order.shipping_address,
-          user_id: order.user_id
         };
-        
-        setOrderData(transformedOrder);
+
+        setOrderData(formattedOrderData);
+        console.log("📦 Order data loaded:", formattedOrderData);
       } else {
         toast.error("Order not found");
         navigate("/admin/orders");
       }
     } catch (error) {
-      console.error("Error fetching order details:", error);
+      console.error("❌ Error fetching order data:", error);
       toast.error("Failed to load order details");
       navigate("/admin/orders");
     } finally {
@@ -71,68 +113,80 @@ function OrderDetails() {
 
   const handleStatusUpdate = async (newStatus) => {
     try {
+      console.log("🔄 Updating order status to:", newStatus);
+
       const response = await axios.put(
-        `${API_BASE_URL}/admin/orders/${orderData.id}/status`,
+        `${API_BASE_URL}/admin/orders/${id}/status`,
         { status: newStatus },
-        { withCredentials: true }
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
       );
 
+      console.log("✅ Status update response:", response.data);
+
       if (response.data.success) {
-        setOrderData({ ...orderData, status: newStatus });
-        toast.success("Order status updated successfully");
+        setOrderData((prev) => ({
+          ...prev,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+        }));
+        toast.success(`Order status updated to ${newStatus}`);
+      } else {
+        toast.error("Failed to update order status");
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
-      toast.error("Failed to update order status");
+      console.error("❌ Error updating order status:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update order status"
+      );
+    } finally {
+      setStatusModalOpen(false);
     }
-    setStatusModalOpen(false);
+  };
+
+  const handleBack = () => {
+    navigate("/admin/orders");
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price || 0);
+    return `₹${(price || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const tableConfig = useMemo(() => getOrderTableConfig(), []);
+
   if (loading) {
-    return (
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <i className="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
-            <p className="text-gray-600 dark:text-gray-400">Loading order details...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (!orderData) {
     return (
       <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-            Order Not Found
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            The requested order does not exist or has been removed.
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">Order not found</p>
           <button
-            onClick={() => navigate("/admin/orders")}
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md"
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
           >
             Back to Orders
           </button>
@@ -141,155 +195,294 @@ function OrderDetails() {
     );
   }
 
+  const customer = orderData.user_id || {};
+  const customerName =
+    `${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
+    "Unknown Customer";
+
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div className="flex items-center mb-6">
-        <button
-          onClick={() => navigate("/admin/orders")}
-          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-4"
-        >
-          <i className="fas fa-arrow-left"></i>
-        </button>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          Order Details: #{orderData.order_number || orderData.id.slice(-8).toUpperCase()}
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <button
+            onClick={handleBack}
+            className="mr-4 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <i className="fas fa-arrow-left text-lg"></i>
+          </button>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Order Details
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Order #
+              {orderData.order_number ||
+                orderData._id?.slice(-8)?.toUpperCase() ||
+                "N/A"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setStatusModalOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <i className="fas fa-edit"></i>
+            Update Status
+          </button>
+          <button
+            onClick={fetchOrderData}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
+          >
+            <i className="fas fa-refresh"></i>
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {/* Order Info */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Customer Info */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Customer Information
-            </h3>
-            <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-medium">Name:</span> {orderData.customer.name}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Email:</span> {orderData.customer.email}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Phone:</span> {orderData.customer.phone}
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Order Summary */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Info Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Order Information
+              </h2>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  orderData.status
+                )}`}
+              >
+                {orderData.status?.charAt(0)?.toUpperCase() +
+                  orderData.status?.slice(1)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Order Date:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {formatDate(orderData.createdAt)}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Payment Method:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {orderData.payment_method || "Not specified"}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Payment Status:
+                </span>
+                <p
+                  className={`font-medium ${
+                    orderData.payment_status === "paid"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-yellow-600 dark:text-yellow-400"
+                  }`}
+                >
+                  {orderData.payment_status || "Pending"}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Total Amount:
+                </span>
+                <p className="font-bold text-lg text-gray-900 dark:text-white">
+                  {formatPrice(orderData.total_amount)}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Order Info */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Order Information
-            </h3>
-            <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-medium">Order Date:</span> {formatDate(orderData.date)}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Total Amount:</span> {formatPrice(orderData.total)}
-              </p>
-              <div className="flex items-center">
-                <span className="font-medium text-sm mr-2">Status:</span>
-                <button
-                  onClick={() => setStatusModalOpen(true)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(orderData.status)} hover:opacity-80 transition-opacity`}
-                >
-                  {orderData.status.charAt(0).toUpperCase() + orderData.status.slice(1)}
-                  <i className="fas fa-edit ml-1"></i>
-                </button>
+          {/* Order Items */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Order Items ({orderData.items?.length || 0})
+            </h2>
+
+            <div className="space-y-4">
+              {orderData.items && orderData.items.length > 0 ? (
+                orderData.items.map((item, index) => {
+                  const product = item.product_id || {};
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
+                          {product.product_image ? (
+                            <img
+                              src={product.product_image}
+                              alt={product.product_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <i className="fas fa-box text-gray-400 text-xl"></i>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-white">
+                            {product.product_name ||
+                              item.product_name ||
+                              "Unknown Product"}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Quantity: {item.quantity || 1}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Price:{" "}
+                            {formatPrice(item.price || product.product_price)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {formatPrice(
+                            (item.price || product.product_price || 0) *
+                              (item.quantity || 1)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                  No items found in this order
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Customer & Shipping Info */}
+        <div className="space-y-6">
+          {/* Customer Info */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Customer Information
+            </h2>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {customerName}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {customer.email || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {customer.phone || "Not provided"}
+                </p>
               </div>
             </div>
           </div>
 
           {/* Shipping Address */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Shipping Address
-            </h3>
+            </h2>
             {orderData.shipping_address ? (
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{orderData.shipping_address.name}</p>
-                <p>{orderData.shipping_address.address}</p>
-                <p>{orderData.shipping_address.city}</p>
+              <div className="text-sm space-y-2">
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {orderData.shipping_address.name}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {orderData.shipping_address.address}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {orderData.shipping_address.city},{" "}
+                  {orderData.shipping_address.state}{" "}
+                  {orderData.shipping_address.pincode}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {orderData.shipping_address.country}
+                </p>
                 {orderData.shipping_address.phone && (
-                  <p>Phone: {orderData.shipping_address.phone}</p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Phone: {orderData.shipping_address.phone}
+                  </p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No shipping address available</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                No shipping address provided
+              </p>
             )}
+          </div>
+
+          {/* Order Summary */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Order Summary
+            </h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Subtotal:
+                </span>
+                <span className="text-gray-900 dark:text-white">
+                  {formatPrice(orderData.subtotal || orderData.total_amount)}
+                </span>
+              </div>
+              {orderData.shipping_cost && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Shipping:
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {formatPrice(orderData.shipping_cost)}
+                  </span>
+                </div>
+              )}
+              {orderData.tax_amount && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Tax:</span>
+                  <span className="text-gray-900 dark:text-white">
+                    {formatPrice(orderData.tax_amount)}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    Total:
+                  </span>
+                  <span className="font-bold text-lg text-gray-900 dark:text-white">
+                    {formatPrice(orderData.total_amount)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Order Items */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Order Items ({orderData.items?.length || 0} items)
-        </h3>
-        
-        {orderData.items && orderData.items.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Quantity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {orderData.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 mr-4">
-                          <img
-                            src={item.product_id?.product_image || "/api/placeholder/100/100"}
-                            alt={item.product_id?.product_name || "Product"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = "/api/placeholder/100/100";
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {item.product_id?.product_name || "Product Name"}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {item.product_id?.product_brand || "Unknown Brand"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {formatPrice(item.price)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.quantity}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {formatPrice(item.price * item.quantity)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400">No items found for this order</p>
-        )}
+      {/* Order Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <Table
+          data={orders}
+          config={tableConfig}
+          rowKey="id"
+          onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
+        />
       </div>
 
       {/* Status Update Modal */}
@@ -305,4 +498,4 @@ function OrderDetails() {
   );
 }
 
-export default OrderDetails;
+export default Orders;

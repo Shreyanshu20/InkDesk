@@ -1,7 +1,83 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 
-const UserDetails = ({ user, onBack }) => {
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const UserDetails = ({ user: propUser, onBack: propOnBack }) => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  
+  const [user, setUser] = useState(propUser || null);
+  const [loading, setLoading] = useState(!propUser);
   const [activeTab, setActiveTab] = useState("profile");
+
+  // Function to go back
+  const handleBack = () => {
+    if (propOnBack) {
+      propOnBack();
+    } else {
+      navigate("/admin/users");
+    }
+  };
+
+  // Fetch user data if not provided as prop
+  useEffect(() => {
+    if (!propUser && id) {
+      fetchUserData();
+    }
+  }, [id, propUser]);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/users/${id}`,
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        const userData = response.data.user;
+        
+        // Transform data to match component expectations
+        const transformedUser = {
+          ...userData,
+          name: `${userData.first_name || ""} ${userData.last_name || ""}`.trim() || "Unknown User",
+          avatar: userData.avatar || null,
+          address: userData.address || null,
+          orders: userData.orders || [],
+          activityLog: userData.activityLog || [],
+          twoFactorEnabled: userData.twoFactorEnabled || false,
+          sessions: userData.sessions || [],
+          notes: userData.notes || ''
+        };
+        
+        setUser(transformedUser);
+        console.log('👤 User data loaded:', transformedUser);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user data:', error);
+      toast.error('Failed to load user details');
+      handleBack();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <i className="fas fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+            <p className="text-gray-500 dark:text-gray-400">Loading user details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Safety check for user object
   if (!user) {
@@ -10,7 +86,7 @@ const UserDetails = ({ user, onBack }) => {
         <div className="text-center">
           <p className="text-gray-500 dark:text-gray-400">User data not found</p>
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
           >
             Go Back
@@ -44,7 +120,7 @@ const UserDetails = ({ user, onBack }) => {
       {/* Header with back button */}
       <div className="flex items-center mb-6">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <i className="fas fa-arrow-left text-xl"></i>
@@ -303,65 +379,148 @@ const UserDetails = ({ user, onBack }) => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Order ID
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Order Details
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Date
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Items
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {safeUser.orders.map((order) => (
-                      <tr key={order.id || order._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          #{(order.id || order._id)?.slice(-8)?.toUpperCase() || 'N/A'}
+                      <tr key={order.id || order._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {/* Order Details Column */}
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col space-y-1">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              #{(order.order_number || order.id || order._id)?.slice(-8)?.toUpperCase() || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {order.date || order.createdAt 
+                                ? new Date(order.date || order.createdAt).toLocaleDateString('en-IN', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })
+                                : 'N/A'
+                              }
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {order.date || order.createdAt 
+                                ? new Date(order.date || order.createdAt).toLocaleTimeString('en-IN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : ''
+                              }
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {order.date || order.createdAt 
-                            ? new Date(order.date || order.createdAt).toLocaleDateString()
-                            : 'N/A'
-                          }
+
+                        {/* Items Column */}
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col space-y-1">
+                            {order.items && order.items.length > 0 ? (
+                              <>
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {order.items.slice(0, 2).map((item, idx) => (
+                                    <div key={idx} className="truncate max-w-32">
+                                      {item.product_id?.product_name || item.product_name || 'Unknown Product'}
+                                      {item.quantity && ` (×${item.quantity})`}
+                                    </div>
+                                  ))}
+                                  {order.items.length > 2 && (
+                                    <div className="text-xs text-gray-400">
+                                      +{order.items.length - 2} more...
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                No items
+                              </div>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              order.status === "completed"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                : order.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                : order.status === "cancelled"
-                                ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                            }`}
-                          >
-                            {order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1) || 'Unknown'}
-                          </span>
+
+                        {/* Status Column */}
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col space-y-1">
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                order.status === "delivered"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                  : order.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                  : order.status === "processing"
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                                  : order.status === "shipped"
+                                  ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                                  : order.status === "cancelled"
+                                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+                              }`}
+                            >
+                              {order.status?.charAt(0)?.toUpperCase() + order.status?.slice(1) || 'Unknown'}
+                            </span>
+                            {order.payment_status && (
+                              <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                order.payment_status === 'paid' 
+                                  ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                  : order.payment_status === 'pending'
+                                  ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                  : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                              }`}>
+                                {order.payment_status}
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {order.total !== undefined && order.total !== null 
-                            ? `$${Number(order.total).toFixed(2)}`
-                            : order.total_amount !== undefined && order.total_amount !== null
-                            ? `$${Number(order.total_amount).toFixed(2)}`
-                            : 'N/A'
-                          }
+
+                        {/* Total Column */}
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col space-y-1">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {order.total !== undefined && order.total !== null 
+                                ? `₹${Number(order.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                : order.total_amount !== undefined && order.total_amount !== null
+                                ? `₹${Number(order.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                : 'N/A'
+                              }
+                            </div>
+                            {order.payment_method && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                via {order.payment_method.toUpperCase()}
+                              </div>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <a
-                            href={`/admin/orders/${order.id || order._id}`}
-                            className="text-primary hover:text-primary/80"
-                          >
-                            View
-                          </a>
+
+                        {/* Actions Column */}
+                        <td className="px-4 py-4">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => navigate(`/admin/orders/view/${order.id || order._id}`)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-primary bg-primary/10 hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                            >
+                              <i className="fas fa-eye mr-1"></i>
+                              View
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -369,9 +528,14 @@ const UserDetails = ({ user, onBack }) => {
                 </table>
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 italic mt-4">
-                This user hasn't placed any orders yet.
-              </p>
+              <div className="mt-4 text-center py-8">
+                <div className="text-gray-400 dark:text-gray-500 mb-2">
+                  <i className="fas fa-shopping-cart text-3xl"></i>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 italic">
+                  This user hasn't placed any orders yet.
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -432,7 +596,8 @@ const UserDetails = ({ user, onBack }) => {
                               </p>
                             </div>
                             <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-                              {new Date(activity.timestamp).toLocaleString()}
+                              {new Date(activity.timestamp).toLocaleString()
+                              }
                             </div>
                           </div>
                         </div>

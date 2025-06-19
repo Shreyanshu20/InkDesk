@@ -6,7 +6,7 @@ const adminController = require('../controllers/admin.controller');
 
 router.use(userAuth);
 
-// ========== PRODUCT MANAGEMENT ROUTES ==========
+// ========== PRODUCT MANAGEMENT ROUTES ==========//
 router.get('/products', adminController.getAdminProducts);
 router.get('/products/stats', adminController.getAdminStats);
 router.get('/products/:id', adminController.getAdminProductById);
@@ -15,7 +15,7 @@ router.put('/products/:id', adminController.updateProduct);
 router.delete('/products/:id', adminController.deleteProduct);
 router.post('/products/bulk-delete', adminController.bulkDeleteProducts);
 
-// ========== CATEGORY MANAGEMENT ROUTES ==========
+// ========== CATEGORY MANAGEMENT ROUTES ==========//
 router.get('/categories', adminController.getAdminCategories);
 router.get('/categories/:id', adminController.getAdminCategoryById);
 router.get('/categories/:id/subcategories', adminController.getAdminSubCategories);
@@ -23,7 +23,7 @@ router.post('/categories', adminController.createAdminCategory);
 router.put('/categories/:id', adminController.updateAdminCategory);
 router.delete('/categories/:id', adminController.deleteAdminCategory);
 
-// ========== SUBCATEGORY MANAGEMENT ROUTES ==========
+// ========== SUBCATEGORY MANAGEMENT ROUTES ==========//
 router.get('/subcategories', adminController.getAdminSubcategoriesList);
 router.get('/subcategories/:id', adminController.getAdminSubcategoryById);
 router.post('/subcategories', adminController.createAdminSubcategory);
@@ -37,12 +37,15 @@ router.get('/orders/:id', adminController.getAdminOrderById);
 router.put('/orders/:id/status', adminController.updateAdminOrderStatus);
 router.delete('/orders/:id', adminController.deleteAdminOrder);
 
-// ========== USER MANAGEMENT ROUTES ==========
-router.get('/users', adminController.getAdminUsers);
+// ========== USER MANAGEMENT ROUTES ==========//
+router.get('/users', adminController.getUsers);
 router.get('/users/stats', adminController.getUserStats);
-router.get('/users/:id', adminController.getAdminUserById);
+router.get('/users/:id', adminController.getUserById);
+router.put('/users/:id', adminController.updateUser);
+router.put('/users/:id/status', adminController.updateUserStatus); 
+router.delete('/users/:id', adminController.deleteUser); 
 
-// ========== REVIEW MANAGEMENT ROUTES ==========
+// ========== REVIEW MANAGEMENT ROUTES ==========//
 router.get('/reviews', adminController.getAdminReviews);
 router.get('/reviews/stats', adminController.getReviewStats);
 router.delete('/reviews/:id', adminController.deleteAdminReview);

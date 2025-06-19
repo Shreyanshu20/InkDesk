@@ -9,7 +9,6 @@ import BulkActions from "../Common/BulkActions";
 import { getOrderTableConfig } from "../Common/tableConfig";
 import StatusUpdateModal from "./components/StatusUpdateModal";
 import { getStatusColor } from "./components/utils";
-import OrderDetails from "./components/OrderDetails";
 
 // Update the API calls to use the correct base URL
 const API_BASE_URL =
@@ -40,9 +39,6 @@ function Orders() {
     delivered: 0,
     cancelled: 0,
   });
-  const [view, setView] = useState("list");
-  const [currentOrder, setCurrentOrder] = useState(null);
-  const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   const orderStatuses = [
     "pending",
@@ -201,16 +197,6 @@ function Orders() {
   useEffect(() => {
     fetchOrderStats(); // Load stats once
   }, []); // Only run once on mount
-
-  // Add useEffect to handle view route
-  useEffect(() => {
-    const pathParts = location.pathname.split('/');
-    if (pathParts[3] === 'view' && pathParts[4]) {
-      const orderId = pathParts[4];
-      console.log("🔍 Loading order for view:", orderId);
-      fetchOrderById(orderId);
-    }
-  }, [location.pathname]);
 
   // Event handlers
   const handleSearchChange = useCallback((e) => {
@@ -398,26 +384,6 @@ function Orders() {
       getOrderTableConfig(handleViewOrder, handleDeleteOrder, openStatusModal),
     [handleViewOrder, handleDeleteOrder, openStatusModal]
   );
-
-  // Add fetchOrderById function
-  const fetchOrderById = useCallback(async (orderId) => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/admin/orders/${orderId}`,
-        { withCredentials: true }
-      );
-      
-      if (response.data.success) {
-        setCurrentOrder(response.data.order);
-        setView("view");
-        setShowOrderDetails(true);
-      }
-    } catch (error) {
-      console.error("Error fetching order:", error);
-      toast.error("Failed to load order details");
-      navigate("/admin/orders");
-    }
-  }, [navigate]);
 
   // UPDATE: Enhanced header with more meaningful stats
   return (
@@ -671,40 +637,6 @@ function Orders() {
         handleStatusUpdate={handleStatusUpdate}
         getStatusColor={getStatusColor}
       />
-
-      {/* Order Details View */}
-      {view === "view" && currentOrder && (
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <button
-                onClick={() => {
-                  setView("list");
-                  setCurrentOrder(null);
-                  setShowOrderDetails(false);
-                  navigate("/admin/orders");
-                }}
-                className="mr-4 text-gray-600 hover:text-gray-800"
-              >
-                <i className="fas fa-arrow-left text-lg"></i>
-              </button>
-              <h1 className="text-2xl font-semibold text-text">
-                Order Details
-              </h1>
-            </div>
-          </div>
-          
-          <OrderDetails 
-            orderData={currentOrder} 
-            onBack={() => {
-              setView("list");
-              setCurrentOrder(null);
-              setShowOrderDetails(false);
-              navigate("/admin/orders");
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

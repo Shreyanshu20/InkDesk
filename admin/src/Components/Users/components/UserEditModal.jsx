@@ -17,8 +17,8 @@ const UserEditModal = ({
 
   const [loading, setLoading] = useState(false);
 
-  const userRoles = ["customer", "admin", "manager"];
-  const userStatuses = ["active", "inactive", "suspended", "pending"];
+  const userRoles = ["user", "admin"];
+  const userStatuses = ["active", "inactive", "suspended"];
 
   // Update form data when selected user changes
   useEffect(() => {

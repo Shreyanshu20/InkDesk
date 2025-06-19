@@ -254,6 +254,7 @@ function Users() {
   // Handle user actions
   const handleViewUser = (userId) => {
     console.log("👁️ Viewing user:", userId);
+    // Navigate to user details route instead of setting local state
     navigate(`/admin/users/view/${userId}`);
   };
 

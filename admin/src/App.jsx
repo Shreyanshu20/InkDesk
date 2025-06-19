@@ -13,9 +13,10 @@ import Products from "./Components/Products/Products";
 import ProductForm from "./Components/Products/components/ProductForm";
 import Categories from "./Components/Categories/Categories";
 import CategoryForm from "./Components/Categories/components/CategoryForm";
-import CategoryDetails from "./Components/Categories/components/CategoryDetails";
 import Orders from "./Components/Orders/Orders";
+import OrderDetails from "./Components/Orders/components/OrderDetails"; // Import OrderDetails component
 import Users from "./Components/Users/Users";
+import UserDetails from "./Components/Users/components/UserDetails"; // Import UserDetails component
 import Banners from "./Components/Banners/Banners";
 import BannerForm from "./Components/Banners/components/BannerForm";
 import Reviews from "./Components/Reviews/Reviews";
@@ -105,13 +106,13 @@ function App() {
           {/* Orders routes */}
           <Route path="orders">
             <Route index element={<Orders />} />
-            <Route path="view/:id" element={<Orders view="view" />} />
+            <Route path="view/:id" element={<OrderDetails />} />
           </Route>
 
           {/* Users routes */}
           <Route path="users">
             <Route index element={<Users />} />
-            <Route path="view/:id" element={<Users view="view" />} />
+            <Route path="view/:id" element={<UserDetails />} />
           </Route>
 
           {/* Categories routes */}
