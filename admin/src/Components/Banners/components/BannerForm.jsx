@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useAdmin } from '../../../context/AdminContext';
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -9,6 +10,18 @@ function BannerForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = Boolean(id);
+  const { adminData } = useAdmin(); // Get current user from context
+  const isAdmin = adminData?.role === 'admin';
+
+  // Add role check function
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true; // Admin can do everything
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false; // User is restricted
+    }
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -374,6 +387,10 @@ function BannerForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check admin access before submission
+    const action = isEditing ? 'update banners' : 'create banners';
+    if (!checkAdminAccess(action)) return;
+
     if (!validateForm()) {
       toast.error("Please fix the form errors before submitting");
       return;
@@ -456,12 +473,24 @@ function BannerForm() {
           navigate("/admin/banners");
         }, 1500);
       } else {
-        setErrors({ submit: data.message || "Failed to save banner" });
-        toast.error("Failed to save banner");
+        // Handle specific error cases
+        if (response.status === 403) {
+          toast.error(`Access denied. Admin privileges required to ${action}.`);
+        } else {
+          setErrors({ submit: data.message || "Failed to save banner" });
+          toast.error("Failed to save banner");
+        }
       }
     } catch (error) {
-      setErrors({ submit: "Failed to save banner: " + error.message });
-      toast.error("Failed to save banner");
+      console.error("Error saving banner:", error);
+      
+      // Handle network errors
+      if (error.response?.status === 403) {
+        toast.error(`Access denied. Admin privileges required to ${action}.`);
+      } else {
+        setErrors({ submit: "Failed to save banner: " + error.message });
+        toast.error("Failed to save banner");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -578,6 +607,19 @@ function BannerForm() {
 
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* Remove the warning banner - users can access the form */}
+      {/* Show a subtle info banner instead */}
+      {!isAdmin && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <div className="flex items-center">
+            <i className="fas fa-info-circle text-blue-400 mr-2"></i>
+            <p className="text-blue-700 dark:text-blue-300 text-sm">
+              You can view and explore this form. Admin privileges are required to save changes.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <button
@@ -979,8 +1021,13 @@ function BannerForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  disabled={isSubmitting} // Remove the !isAdmin disable condition
+                  className={`px-4 py-2 rounded-md flex items-center transition-colors ${
+                    isAdmin 
+                      ? 'bg-primary hover:bg-primary-dark text-white' 
+                      : 'bg-primary hover:bg-primary-dark text-white opacity-90' // Show as normal button for users
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  // Remove the onClick toast for non-admin
                 >
                   {isSubmitting ? (
                     <>

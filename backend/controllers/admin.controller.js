@@ -27,8 +27,8 @@ module.exports.getAdminProducts = async (req, res) => {
         const userId = req.userId; // From userAuth middleware
         console.log('🔑 Admin products request - User ID:', userId);
 
-        // Build filter object - only show products owned by this user
-        let filter = { owner: userId };
+        // FIXED: Build filter object - show ALL products, not just owned by this user
+        let filter = {}; // Remove the owner filter
 
         // Search filter
         if (search && search.trim()) {
@@ -103,9 +103,10 @@ module.exports.getAdminProducts = async (req, res) => {
             sort = { createdAt: order === 'asc' ? 1 : -1 };
         }
 
-        // Execute query
+        // Execute query - FIXED: Remove owner filter to show ALL products
         const products = await Product.find(filter)
             .populate('category', 'category_name')
+            .populate('owner', 'first_name last_name email') // Add owner info for display
             .sort(sort)
             .skip(skip)
             .limit(parseInt(limit));
@@ -114,7 +115,7 @@ module.exports.getAdminProducts = async (req, res) => {
         const totalProducts = await Product.countDocuments(filter);
         const totalPages = Math.ceil(totalProducts / parseInt(limit));
 
-        console.log(`✅ Found ${products.length} admin products (${totalProducts} total) for user ${userId}`);
+        console.log(`✅ Found ${products.length} products (${totalProducts} total) - ALL PRODUCTS`);
 
         res.json({
             success: true,
@@ -346,17 +347,21 @@ module.exports.getAdminProductById = async (req, res) => {
         const { id } = req.params;
         const userId = req.userId;
 
-        console.log(`🔍 Fetching product ${id} for admin ${userId}`);
+        console.log(`🔍 Fetching product ${id} for admin panel`);
 
-        const product = await Product.findOne({ _id: id, owner: userId })
-            .populate('category', 'category_name');
+        // FIXED: Find ANY product by ID, not just owned by user
+        const product = await Product.findById(id)
+            .populate('category', 'category_name')
+            .populate('owner', 'first_name last_name email'); // Add owner info
 
         if (!product) {
             return res.status(404).json({
                 success: false,
-                message: 'Product not found or you do not have permission to view it'
+                message: 'Product not found'
             });
         }
+
+        console.log(`✅ Product found - Owner: ${product.owner?.email || 'Unknown'}, Viewer: ${userId}`);
 
         res.json({
             success: true,
@@ -437,12 +442,12 @@ module.exports.getAdminStats = async (req, res) => {
     try {
         const userId = req.userId;
 
+        // FIXED: Get stats for ALL products, not just user's products
         const stats = await Promise.all([
-            Product.countDocuments({ owner: userId }),
-            Product.countDocuments({ owner: userId, product_stock: { $gt: 0 } }),
-            Product.countDocuments({ owner: userId, product_stock: { $lte: 0 } }),
+            Product.countDocuments({}), // All products
+            Product.countDocuments({ product_stock: { $gt: 0 } }), // All active products
+            Product.countDocuments({ product_stock: { $lte: 0 } }), // All out of stock products
             Product.aggregate([
-                { $match: { owner: userId } },
                 { $group: { _id: null, totalValue: { $sum: { $multiply: ['$product_price', '$product_stock'] } } } }
             ])
         ]);
@@ -451,6 +456,13 @@ module.exports.getAdminStats = async (req, res) => {
         const activeProducts = stats[1];
         const outOfStockProducts = stats[2];
         const totalInventoryValue = stats[3][0]?.totalValue || 0;
+
+        console.log('📊 Admin stats (ALL PRODUCTS):', {
+            totalProducts,
+            activeProducts,
+            outOfStockProducts,
+            totalInventoryValue
+        });
 
         res.json({
             success: true,

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useAdmin } from "../../../context/AdminContext.jsx";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -17,6 +18,8 @@ function ProductImageUpload({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState({});
+  const { user } = useAdmin();
+  const isAdmin = user?.role === "admin";
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -189,8 +192,42 @@ function ProductImageUpload({
   const safePreviewImages = Array.isArray(previewImages) ? previewImages : [];
   const hasError = touched && error;
 
+  const handleFileSelect = (e) => {
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to upload images.");
+      e.target.value = ""; // Clear the file input
+      return;
+    }
+    handleImageUpload(e);
+  };
+
+  const handleUpload = async () => {
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to upload images.");
+      return;
+    }
+    handleImageUpload();
+  };
+
+  const handleRemoveImage = (index) => {
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to remove images.");
+      return;
+    }
+    removeImage(index);
+  };
+
   return (
     <div className="space-y-4">
+      {!isAdmin && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-yellow-700 text-sm">
+            <i className="fas fa-lock mr-1"></i>
+            Image upload is restricted to admin users only.
+          </p>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Product Images<span className="text-red-500">*</span>
@@ -244,9 +281,9 @@ function ProductImageUpload({
             type="file"
             multiple
             accept="image/jpeg,image/jpg,image/png,image/webp"
-            onChange={handleImageUpload}
+            onChange={handleFileSelect}
             className="hidden"
-            disabled={uploading || safeUploadedImages.length >= 6}
+            disabled={uploading || safeUploadedImages.length >= 6 || !isAdmin} // Disable for non-admin
           />
         </div>
 
@@ -285,7 +322,7 @@ function ProductImageUpload({
 
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
+                  onClick={() => handleRemoveImage(index)}
                   disabled={deleting[index]}
                   className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Remove image ${index + 1}`}

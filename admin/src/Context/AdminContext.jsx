@@ -9,13 +9,17 @@ export const useAdmin = () => {
   if (!context) {
     throw new Error('useAdmin must be used within an AdminProvider');
   }
+  
+  // ADD DEBUG
+  console.log('🐛 useAdmin hook called, returning:', context);
+  
   return context;
 };
 
 export const AdminProvider = ({ children }) => {
   const [adminData, setAdminData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isReadOnlyUser, setIsReadOnlyUser] = useState(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -24,27 +28,47 @@ export const AdminProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       setIsLoading(true);
-      console.log('🔐 Checking admin authentication via cookies...');
+      console.log('🔐 Checking admin panel authentication...');
 
       const response = await axios.post(
-        `${backendUrl}/auth/is-admin`,
+        `${backendUrl}/auth/is-auth`,
         {},
         {
-          withCredentials: true, // This uses cookies ONLY
+          withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
           },
         }
       );
 
+      console.log('🔍 Full auth response:', response.data);
+
       if (response.data.success) {
-        console.log('✅ Admin authenticated via cookie:', response.data.user);
-        setAdminData(response.data.user);
+        const user = response.data.user;
+        
+        console.log('🔍 User data from backend:', user);
+        console.log('🔍 User role from backend:', user.role);
+        
+        // Check if user can access admin panel
+        if (!['admin', 'user'].includes(user.role)) {
+          console.log('❌ User role not allowed for admin panel:', user.role);
+          setAdminData(null);
+          setIsAuthenticated(false);
+          return false;
+        }
+
+        console.log('✅ Setting admin data:', user);
+        setAdminData(user); // This should set the user data
         setIsAuthenticated(true);
-        setIsReadOnlyUser(response.data.isReadOnly); // ADD this line
+        setIsReadOnlyUser(user.role === 'user');
+        
+        // ADD VERIFICATION LOG
+        console.log('✅ AdminData set to:', user);
+        console.log('✅ Role should be:', user.role);
+        
         return true;
       } else {
-        console.log('❌ Admin authentication failed');
+        console.log('❌ Auth response not successful');
         setAdminData(null);
         setIsAuthenticated(false);
         return false;
@@ -53,8 +77,6 @@ export const AdminProvider = ({ children }) => {
       console.error('❌ Auth check error:', error);
       setAdminData(null);
       setIsAuthenticated(false);
-      
-      // Don't redirect automatically - let the component handle it
       return false;
     } finally {
       setIsLoading(false);
@@ -62,16 +84,16 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Login function - ONLY set cookies, no localStorage
-  const login = async (email, password) => {
+  const login = async (email, password) => { // Remove role parameter completely
     try {
-      console.log('🔐 Admin login attempt...');
+      console.log('🔐 Admin panel login attempt');
       
       const response = await axios.post(
         `${backendUrl}/auth/login`,
         { 
           email, 
-          password,
-          role: 'admin' // Explicitly set role for admin login
+          password
+          // Don't send role at all - let backend handle it based on user's actual role
         },
         {
           withCredentials: true,
@@ -84,14 +106,16 @@ export const AdminProvider = ({ children }) => {
       if (response.data.success) {
         const user = response.data.user;
         
-        if (user.role !== 'admin') {
-          toast.error('Access denied. Admin privileges required.');
+        // FIXED: Allow both admin and user roles for admin panel
+        if (!['admin', 'user'].includes(user.role)) {
+          toast.error('Access denied. Admin panel access requires admin or user role.');
           return { success: false, message: 'Access denied' };
         }
 
-        console.log('✅ Admin login successful:', user);
+        console.log('✅ Admin panel login successful:', user);
         setAdminData(user);
         setIsAuthenticated(true);
+        setIsReadOnlyUser(user.role === 'user'); // Set read-only flag for users only
         
         return { success: true };
       } else {
@@ -159,6 +183,15 @@ export const AdminProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // ADD DEBUG EFFECT
+  useEffect(() => {
+    console.log('🐛 AdminContext State Update:');
+    console.log('  - adminData:', adminData);
+    console.log('  - isAuthenticated:', isAuthenticated);
+    console.log('  - isReadOnlyUser:', isReadOnlyUser);
+    console.log('  - User role:', adminData?.role);
+  }, [adminData, isAuthenticated, isReadOnlyUser]);
+
   const value = {
     adminData,
     isLoading,
@@ -173,8 +206,20 @@ export const AdminProvider = ({ children }) => {
     showPermissionDenied,
   };
 
+  // Fix AdminContext.jsx - Update the context provider value
   return (
-    <AdminContext.Provider value={value}>
+    <AdminContext.Provider
+      value={{
+        user: adminData, // ✅ This should be adminData
+        adminData,
+        isAuthenticated,
+        isLoading,
+        isReadOnlyUser, // ✅ Make sure this is included
+        login,
+        logout,
+        checkAuth,
+      }}
+    >
       {children}
     </AdminContext.Provider>
   );

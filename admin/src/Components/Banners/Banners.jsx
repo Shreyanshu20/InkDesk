@@ -4,12 +4,25 @@ import { toast } from "react-toastify";
 import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
+import { useAdmin } from '../../context/AdminContext';
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Banners() {
   const navigate = useNavigate();
+  const { adminData } = useAdmin(); // Get current user from context
+  const isAdmin = adminData?.role === 'admin';
+
+  // Add role check function
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true; // Admin can do everything
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false; // User is restricted
+    }
+  };
 
   const [banners, setBanners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,15 +128,19 @@ function Banners() {
   );
 
   const handleEditBanner = (id) => {
+    // Remove the role check here - let users access the form
     navigate(`/admin/banners/edit/${id}`);
   };
 
   const handleAddBanner = () => {
+    // Remove the role check here - let users access the form
     navigate("/admin/banners/add");
   };
 
   // Toggle banner active status
   const handleToggleStatus = async (id) => {
+    if (!checkAdminAccess('change banner status')) return;
+    
     try {
       const token =
         localStorage.getItem("token") ||
@@ -155,7 +172,12 @@ function Banners() {
           }
         );
       } else {
-        toast.error("Failed to update banner status");
+        const errorData = await response.json();
+        if (response.status === 403) {
+          toast.error("Access denied. Admin privileges required to change banner status.");
+        } else {
+          toast.error(errorData.message || "Failed to update banner status");
+        }
       }
     } catch (error) {
       console.error("Error toggling banner status:", error);
@@ -168,7 +190,10 @@ function Banners() {
     const banner = banners.find((b) => b._id === id);
     const bannerTitle = banner?.title || "banner";
 
+    // Don't check role here - let user see confirm dialog first
     if (window.confirm(`Are you sure you want to delete "${bannerTitle}"?`)) {
+      if (!checkAdminAccess('delete banners')) return; // Check here after confirmation
+      
       try {
         const token =
           localStorage.getItem("token") ||
@@ -195,7 +220,12 @@ function Banners() {
             icon: "🗑️",
           });
         } else {
-          toast.error("Failed to delete banner");
+          const errorData = await response.json();
+          if (response.status === 403) {
+            toast.error("Access denied. Admin privileges required to delete banners.");
+          } else {
+            toast.error(errorData.message || "Failed to delete banner");
+          }
         }
       } catch (error) {
         console.error("Error deleting banner:", error);
@@ -206,9 +236,12 @@ function Banners() {
 
   // Bulk operations
   const handleBulkDelete = async (ids) => {
+    // Don't check role here - let user see confirm dialog first
     if (
       window.confirm(`Are you sure you want to delete ${ids.length} banners?`)
     ) {
+      if (!checkAdminAccess('delete banners')) return; // Check here after confirmation
+      
       // Show loading toast
       const toastId = toast.loading(`Deleting ${ids.length} banners...`);
 
@@ -235,10 +268,10 @@ function Banners() {
         );
 
         const successCount = results.filter(
-          (result) => result.status === "fulfilled"
+          (result) => result.status === "fulfilled" && result.value.ok
         ).length;
         const failureCount = results.filter(
-          (result) => result.status === "rejected"
+          (result) => result.status === "rejected" || !result.value.ok
         ).length;
 
         await fetchBanners();
@@ -268,6 +301,8 @@ function Banners() {
 
   // Bulk activate
   const handleBulkActivate = async (ids) => {
+    if (!checkAdminAccess('activate banners')) return; // Check role immediately
+    
     const inactiveBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
       return banner && !banner.isActive;
@@ -325,6 +360,8 @@ function Banners() {
 
   // Bulk deactivate
   const handleBulkDeactivate = async (ids) => {
+    if (!checkAdminAccess('deactivate banners')) return; // Check role immediately
+    
     const activeBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
       return banner && banner.isActive;
@@ -682,7 +719,7 @@ function Banners() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggleStatus(banner._id);
+                  handleToggleStatus(banner._id); // Role check happens inside the function
                 }}
                 className={`mt-1 relative inline-flex items-center h-4 rounded-full w-8 transition-colors duration-200 ${
                   banner.isActive
@@ -792,7 +829,7 @@ function Banners() {
 
           {/* Add button */}
           <button
-            onClick={handleAddBanner}
+            onClick={handleAddBanner} // No role check - users can access the form
             className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md flex items-center transition-colors"
           >
             <i className="fas fa-plus mr-2"></i>

@@ -4,7 +4,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // Import the admin context
-import { AdminContextProvider, useAdmin } from "./Context/AdminContext";
+import { AdminContextProvider, useAdmin } from "./Context/AdminContext.jsx";
 
 // Import components
 import Layout from "./Layouts";
@@ -23,7 +23,6 @@ import Reviews from "./Components/Reviews/Reviews";
 import Settings from "./Components/Settings/Settings";
 import AdminLogin from "./Components/Auth/AdminLogin";
 import AdminForgotPassword from "./Components/Auth/AdminForgotPassword";
-import ReadOnlyBanner from "./Components/Common/ReadOnlyBanner";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -79,7 +78,10 @@ function App() {
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminLogin />} />
-        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+        <Route
+          path="/admin/forgot-password"
+          element={<AdminForgotPassword />}
+        />
 
         {/* Root redirect */}
         <Route path="/" element={<RedirectToAdmin />} />
@@ -140,7 +142,6 @@ function App() {
         {/* Catch all - redirect to admin */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
-      <ReadOnlyBanner />
     </AdminContextProvider>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useAdmin } from "../../Context/AdminContext";
+import {  useAdmin } from "../../Context/AdminContext";
 import { ThemeContext } from "../../Context/ThemeContext";
 
 function AdminLogin() {
@@ -85,8 +85,8 @@ function AdminLogin() {
       setIsSubmitting(true);
 
       try {
-        // Login logic
-        const result = await login(formData.email, formData.password);
+        // FIXED: Don't send any role parameter - let backend determine access
+        const result = await login(formData.email, formData.password); // Remove role parameter
         
         if (result.success) {
           toast.success("Login successful! Redirecting to dashboard...");

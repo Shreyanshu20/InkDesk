@@ -195,7 +195,7 @@ module.exports.register = async (req, res) => {
 module.exports.login = async (req, res) => {
     console.log('🔐 Login request received:', { email: req.body.email, rememberMe: req.body.rememberMe });
 
-    const { email, password, role, rememberMe = true } = req.body;
+    const { email, password, rememberMe = true } = req.body;
 
     if (!email || !password) {
         console.log('❌ Missing email or password');
@@ -217,14 +217,6 @@ module.exports.login = async (req, res) => {
             });
         }
 
-        if (role !== user.role) {
-            console.log('❌ User role mismatch:', user.role, 'expected:', role);
-            return res.status(403).json({
-                success: false,
-                message: "Access denied. Incorrect user role"
-            });
-        }
-
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
@@ -235,10 +227,15 @@ module.exports.login = async (req, res) => {
             });
         }
 
-        // FIXED: Use JWT_SECRET_USER from .env
+        // FIX: Create JWT with consistent field names
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
-            process.env.JWT_SECRET_USER, // FIXED: Use correct env variable
+            { 
+                id: user._id,           // Use 'id' as primary
+                userId: user._id,       // Also include 'userId' for compatibility
+                email: user.email, 
+                role: user.role 
+            },
+            process.env.JWT_SECRET_USER,
             { expiresIn: rememberMe ? '7d' : '1d' }
         );
 
@@ -561,7 +558,6 @@ module.exports.isAuth = async (req, res) => {
         }
 
         console.log('🎫 Verifying token...');
-        // FIXED: Use JWT_SECRET_USER from .env
         const decoded = jwt.verify(token, process.env.JWT_SECRET_USER);
         console.log('✅ Token verified, user ID:', decoded.userId || decoded.id);
 
@@ -578,12 +574,16 @@ module.exports.isAuth = async (req, res) => {
 
         // Check if this is an admin check request
         const isAdminCheck = req.path === '/is-admin';
-        if (isAdminCheck && user.role !== 'admin') {
-            console.log('❌ User is not admin, role:', user.role);
-            return res.status(403).json({
-                success: false,
-                message: "Access denied. Admin privileges required."
-            });
+        if (isAdminCheck) {
+            // For admin panel access, allow both admin and user roles
+            if (!['admin', 'user'].includes(user.role)) {
+                console.log('❌ User role not allowed for admin panel:', user.role);
+                return res.status(403).json({
+                    success: false,
+                    message: "Access denied. Invalid role for admin panel access."
+                });
+            }
+            console.log('✅ Admin panel access granted for role:', user.role);
         }
 
         console.log('✅ User authenticated:', user.email);

@@ -6,7 +6,6 @@ const userAuth = async (req, res, next) => {
         console.log('🔐 UserAuth middleware - checking authentication');
         console.log('🍪 Cookies received:', req.cookies);
 
-        // Get token from cookies or Authorization header
         let token = req.cookies.userToken || req.cookies.token;
 
         if (!token && req.headers.authorization) {
@@ -26,12 +25,14 @@ const userAuth = async (req, res, next) => {
         }
 
         console.log('🎫 Verifying token...');
-        // FIXED: Use JWT_SECRET_USER from .env file
         const decoded = jwt.verify(token, process.env.JWT_SECRET_USER);
-        console.log('✅ Token verified successfully. User ID:', decoded.id);
+        console.log('✅ Token verified successfully. Decoded:', decoded);
 
-        // Find user and attach to request
-        const user = await User.findById(decoded.id).select('-password');
+        // FIX: Handle both possible ID field names
+        const userId = decoded.id || decoded.userId;
+        console.log('🆔 Using user ID:', userId);
+
+        const user = await User.findById(userId).select('-password');
         if (!user) {
             console.log('❌ User not found for token');
             return res.status(401).json({
@@ -40,11 +41,11 @@ const userAuth = async (req, res, next) => {
             });
         }
 
-        // Attach user info to request
-        req.userId = decoded.id;
+        // FIX: Set both req.userId and req.user consistently
+        req.userId = userId;
         req.user = user;
         
-        console.log('✅ User authenticated:', user.email);
+        console.log('✅ User authenticated:', user.email, 'Role:', user.role);
         next();
 
     } catch (error) {
@@ -71,5 +72,72 @@ const userAuth = async (req, res, next) => {
     }
 };
 
-module.exports = { userAuth };
+// NEW: Admin-only middleware for write operations
+const adminOnly = async (req, res, next) => {
+    try {
+        console.log('🛡️ AdminOnly middleware - checking admin privileges');
+        
+        if (!req.user) {
+            console.log('❌ No user found in request');
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required.'
+            });
+        }
+
+        if (req.user.role !== 'admin') {
+            console.log('❌ Access denied. User role:', req.user.role);
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Admin privileges required for this operation.'
+            });
+        }
+
+        console.log('✅ Admin access granted for:', req.user.email);
+        next();
+
+    } catch (error) {
+        console.error('❌ Admin check error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error checking admin privileges.'
+        });
+    }
+};
+
+// NEW: Admin panel access middleware (allows both admin and user roles)
+const adminPanelAuth = async (req, res, next) => {
+    try {
+        console.log('🏢 AdminPanel auth middleware - checking panel access');
+        
+        if (!req.user) {
+            console.log('❌ No user found in request');
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required to access admin panel.'
+            });
+        }
+
+        // Allow both admin and user roles to access admin panel
+        if (!['admin', 'user'].includes(req.user.role)) {
+            console.log('❌ Invalid role for admin panel:', req.user.role);
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Invalid role for admin panel access.'
+            });
+        }
+
+        console.log('✅ Admin panel access granted for:', req.user.email, 'Role:', req.user.role);
+        next();
+
+    } catch (error) {
+        console.error('❌ Admin panel auth error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error checking admin panel access.'
+        });
+    }
+};
+
+module.exports = { userAuth, adminOnly, adminPanelAuth };
 

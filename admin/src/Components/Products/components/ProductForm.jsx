@@ -4,6 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import ProductFormFields from "./ProductFormFields";
 import ProductImageUpload from "./ProductImageUpload";
+import { useAdmin } from "../../../context/AdminContext.jsx";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -11,6 +12,9 @@ const API_BASE_URL =
 function ProductForm({ mode: propMode }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAdmin();
+  const isAdmin = user?.role === "admin";
+
   const [mode, setMode] = useState(propMode || "add");
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -244,7 +248,7 @@ function ProductForm({ mode: propMode }) {
         const price = parseFloat(value);
         if (isNaN(price)) return "Price must be a valid number";
         if (price <= 0) return "Price must be greater than 0";
-        if (price > 1000000) return "Price seems too high";
+        if (price > 1000000) return "Price seems to high";
         return null;
 
       case "stock":
@@ -253,7 +257,7 @@ function ProductForm({ mode: propMode }) {
         const stock = parseInt(value);
         if (isNaN(stock)) return "Stock must be a valid number";
         if (stock < 0) return "Stock cannot be negative";
-        if (stock > 100000) return "Stock quantity seems too high";
+        if (stock > 100000) return "Stock quantity seems to high";
         return null;
 
       case "category":
@@ -376,6 +380,12 @@ function ProductForm({ mode: propMode }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check admin access before submission
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to save products.");
+      return;
+    }
+
     console.log("🚀 Form submission started");
     console.log("📝 Form data:", formData);
     console.log("🖼️ Uploaded images:", uploadedImages);
@@ -426,13 +436,15 @@ function ProductForm({ mode: propMode }) {
 
       let response;
       if (mode === "add") {
-        response = await axios.post(`${API_BASE_URL}/products`, productData, {
+        // FIX: Use admin endpoint for creating products
+        response = await axios.post(`${API_BASE_URL}/admin/products`, productData, {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         });
       } else {
+        // FIX: Use admin endpoint for updating products
         response = await axios.put(
-          `${API_BASE_URL}/products/${id}`,
+          `${API_BASE_URL}/admin/products/${id}`,
           productData,
           {
             withCredentials: true,
@@ -518,6 +530,19 @@ function ProductForm({ mode: propMode }) {
           {mode === "add" ? "Add New Product" : "Edit Product"}
         </h1>
       </div>
+
+      {/* Show warning for non-admin users */}
+      {!isAdmin && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <div className="flex">
+            <i className="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+            <p className="text-yellow-700 text-sm">
+              You are viewing this form in read-only mode. Admin privileges are
+              required to save changes.
+            </p>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -606,8 +631,12 @@ function ProductForm({ mode: propMode }) {
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-primary border border-transparent rounded-md text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isAdmin} // Disable for non-admin
+            className={`px-6 py-2 rounded-md flex items-center gap-2 ${
+              isAdmin
+                ? "bg-primary hover:bg-primary/90 text-white"
+                : "bg-gray-400 text-gray-600 cursor-not-allowed"
+            }`}
           >
             {isSubmitting ? (
               <>
@@ -615,7 +644,10 @@ function ProductForm({ mode: propMode }) {
                 <span>{mode === "add" ? "Adding..." : "Updating..."}</span>
               </>
             ) : (
-              <span>{mode === "add" ? "Add Product" : "Update Product"}</span>
+              <>
+                <i className="fas fa-save"></i>
+                {mode === "edit" ? "Update Product" : "Create Product"}
+              </>
             )}
           </button>
         </div>

@@ -231,7 +231,7 @@ export const getProductTableConfig = (
 });
 
 // User Table Configuration
-export const getUserTableConfig = (handlers) => ({
+export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus }) => ({
   columns: [
     {
       key: "avatar",
@@ -256,7 +256,7 @@ export const getUserTableConfig = (handlers) => ({
     {
       key: "name",
       label: "Name",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
       customRenderer: (user) => (
         <div>
           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -271,7 +271,7 @@ export const getUserTableConfig = (handlers) => ({
     {
       key: "role",
       label: "Role",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
       customRenderer: (user) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           user.role === 'admin' 
@@ -287,13 +287,10 @@ export const getUserTableConfig = (handlers) => ({
     {
       key: "status",
       label: "Status",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
       customRenderer: (user) => (
         <button
-          onClick={() => {
-            const newStatus = user.status === 'active' ? 'inactive' : 'active';
-            handlers.onUpdateStatus(user.id, newStatus);
-          }}
+          onClick={() => onUpdateStatus(user.id, user.status === 'active' ? 'inactive' : 'active')}
           className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
             user.status === 'active'
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200'
@@ -321,7 +318,7 @@ export const getUserTableConfig = (handlers) => ({
     {
       key: "createdAt",
       label: "Joined",
-      sortable: true, // ✅ Make sortable
+      sortable: true,
       customRenderer: (user) => (
         <div className="text-sm">
           <div className="text-gray-900 dark:text-gray-100">
@@ -337,26 +334,31 @@ export const getUserTableConfig = (handlers) => ({
       key: "actions",
       label: "Actions",
       sortable: false,
-      customRenderer: (user) => (
-        <div className="flex items-center space-x-2">
+      customRenderer: (user) => (  // FIXED: Use customRenderer, not render
+        <div className="flex space-x-2">
+          {/* View button - always visible and clickable */}
           <button
-            onClick={() => handlers.onView(user.id)}
-            className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
-            title="View user"
+            onClick={() => onView(user.id)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+            title="View User"
           >
             <i className="fas fa-eye"></i>
           </button>
+          
+          {/* Edit button - always visible and clickable */}
           <button
-            onClick={() => handlers.onEdit(user.id)}
-            className="text-primary hover:text-primary/80 p-1 rounded transition-colors"
-            title="Edit user"
+            onClick={() => onEdit(user.id)}
+            className="text-green-600 hover:text-green-800 font-medium"
+            title="Edit User"
           >
             <i className="fas fa-edit"></i>
           </button>
+          
+          {/* Delete button - always visible and clickable */}
           <button
-            onClick={() => handlers.onDelete(user.id)}
-            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
-            title="Delete user"
+            onClick={() => onDelete(user.id)}
+            className="text-red-600 hover:text-red-800 font-medium"
+            title="Delete User"
           >
             <i className="fas fa-trash"></i>
           </button>
@@ -463,66 +465,82 @@ export const getBannerTableConfig = (
 };
 
 // Reviews Table Configuration
-export const getReviewsTableConfig = (handlers) => ({
+export const getReviewsTableConfig = ({ onView, onDelete }) => ({
   columns: [
     {
-      key: "id",
-      label: "ID",
+      key: "customer",
+      label: "Customer",
       sortable: false,
-      width: "w-20",
       customRenderer: (review) => (
-        <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-          RW-{review.id.slice(-6).toUpperCase()}
-        </div>
-      ),
-    },
-    {
-      key: "customer_review",
-      label: "CUSTOMER REVIEW",
-      sortable: false,
-      maxWidth: "xs",
-      truncate: true,
-      customRenderer: (review) => (
-        <div className="flex items-start space-x-3">
-          <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+        <div className="flex items-center">
+          <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
             {review.customer.avatar ? (
               <img
                 src={review.customer.avatar}
                 alt={review.customer.name}
-                className="h-10 w-10 object-cover"
+                className="h-8 w-8 object-cover"
               />
             ) : (
-              <div className="h-10 w-10 flex items-center justify-center bg-primary/10">
-                <span className="text-primary font-semibold text-sm">
-                  {review.customer.name?.charAt(0)?.toUpperCase() || 'U'}
+              <div className="h-8 w-8 flex items-center justify-center bg-primary/10">
+                <span className="text-primary font-semibold text-xs">
+                  {review.customer.name.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <div>
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
               {review.customer.name}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-              {review.content}
-            </p>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {review.customer.email}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "product",
+      label: "Product",
+      sortable: false,
+      customRenderer: (review) => (
+        <div className="flex items-center">
+          <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
+            {review.product.image ? (
+              <img
+                src={review.product.image}
+                alt={review.product.name}
+                className="h-8 w-8 object-cover"
+              />
+            ) : (
+              <div className="h-8 w-8 flex items-center justify-center">
+                <i className="fas fa-box text-gray-400 text-xs"></i>
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {review.product.name}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {review.product.category}
+            </div>
           </div>
         </div>
       ),
     },
     {
       key: "rating",
-      label: "RATING",
+      label: "Rating",
       sortable: true,
-      width: "w-24",
       customRenderer: (review) => (
         <div className="flex items-center">
-          <span className="text-lg font-medium mr-2">{review.rating}</span>
+          <span className="text-sm font-medium mr-2">{review.rating}</span>
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <span
                 key={star}
-                className={`text-sm ${
+                className={`text-xs ${
                   star <= review.rating ? "text-yellow-400" : "text-gray-300"
                 }`}
               >
@@ -534,84 +552,51 @@ export const getReviewsTableConfig = (handlers) => ({
       ),
     },
     {
-      key: "product",
-      label: "PRODUCT",
+      key: "content",
+      label: "Review",
       sortable: false,
-      maxWidth: "sm",
-      truncate: true,
       customRenderer: (review) => (
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 flex-shrink-0">
-            {review.product.image ? (
-              <img
-                src={review.product.image}
-                alt={review.product.name}
-                className="h-10 w-10 rounded-md object-cover"
-              />
-            ) : (
-              <div className="h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                <i className="fas fa-box text-gray-400"></i>
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-              {review.product.name}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {review.product.category}
-            </div>
-          </div>
+        <div className="max-w-xs">
+          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+            {review.content}
+          </p>
         </div>
       ),
     },
     {
       key: "date",
-      label: "CREATED",
+      label: "Date",
       sortable: true,
-      width: "w-32",
-      customRenderer: (review) => {
-        const date = new Date(review.date);
-        const formattedDate = date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-        const formattedTime = date.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "numeric",
-          hour12: true,
-        });
-
-        return (
-          <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {formattedDate}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {formattedTime}
-            </div>
+      customRenderer: (review) => (
+        <div className="text-sm">
+          <div className="text-gray-900 dark:text-gray-100">
+            {new Date(review.date).toLocaleDateString()}
           </div>
-        );
-      },
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {new Date(review.date).toLocaleTimeString()}
+          </div>
+        </div>
+      ),
     },
     {
       key: "actions",
-      label: "ACTIONS",
+      label: "Actions",
       sortable: false,
-      width: "w-20",
       customRenderer: (review) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex space-x-2">
+          {/* View button - always visible and clickable */}
           <button
-            onClick={() => handlers.onView(review)}
-            className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
+            onClick={() => onView(review)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
             title="View Review"
           >
             <i className="fas fa-eye"></i>
           </button>
+          
+          {/* Delete button - always visible and clickable */}
           <button
-            onClick={() => handlers.onDelete(review.id)}
-            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+            onClick={() => onDelete(review.id)}
+            className="text-red-600 hover:text-red-800 font-medium"
             title="Delete Review"
           >
             <i className="fas fa-trash"></i>

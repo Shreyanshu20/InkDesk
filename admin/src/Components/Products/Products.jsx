@@ -8,6 +8,7 @@ import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getProductTableConfig } from "../Common/tableConfig.jsx";
 import ProductDetails from "./components/ProductDetails";
+import { useAdmin } from "../../context/AdminContext"; // Adjust path as needed
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -30,6 +31,22 @@ function useDebounce(value, delay) {
 }
 
 function Products() {
+  const { user, adminData, isAuthenticated } = useAdmin(); // Get all context values
+  const isAdmin = adminData?.role === "admin";
+
+  // TEMPORARY: Override the role check
+  // const isAdmin = true; // Force admin to true
+
+  // ADD DETAILED DEBUG LOGGING
+  useEffect(() => {
+    console.log('🐛 Products Debug Info:');
+    console.log('  - user object:', user);
+    console.log('  - adminData object:', adminData);
+    console.log('  - adminData.role:', adminData?.role);
+    console.log('  - isAuthenticated:', isAuthenticated);
+    console.log('  - isAdmin calculated:', isAdmin);
+  }, [user, adminData, isAuthenticated, isAdmin]);
+
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]); // Store all products for stats calculation
   const [categories, setCategories] = useState([]);
@@ -335,8 +352,9 @@ function Products() {
   // Delete single product
   const deleteProduct = useCallback(async (productId) => {
     try {
+      // FIX: Use admin endpoint for deleting products
       const response = await axios.delete(
-        `${API_BASE_URL}/products/${productId}`,
+        `${API_BASE_URL}/admin/products/${productId}`,
         {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
@@ -353,8 +371,6 @@ function Products() {
         toast.error("Unauthorized to delete this product");
       } else if (error.response?.status === 403) {
         toast.error("You can only delete your own products");
-      } else if (error.response?.status === 404) {
-        toast.error("Product not found");
       } else {
         toast.error("Failed to delete product");
       }
@@ -365,8 +381,9 @@ function Products() {
   // Bulk delete products
   const bulkDeleteProducts = useCallback(async (productIds) => {
     try {
+      // FIX: Use admin endpoint for bulk deleting products
       const response = await axios.post(
-        `${API_BASE_URL}/products/bulk-delete`,
+        `${API_BASE_URL}/admin/products/bulk-delete`,
         { productIds },
         {
           withCredentials: true,
@@ -479,66 +496,76 @@ function Products() {
     [navigate]
   );
 
+  const handleCreateProduct = () => {
+    if (!checkAdminAccess("create products")) return;
+    navigate("/admin/products/create");
+  };
+
   const handleEditProduct = useCallback(
     (productId) => {
+      if (!checkAdminAccess("edit products")) return;
       navigate(`/admin/products/edit/${productId}`);
     },
     [navigate]
   );
 
-  const handleDeleteProduct = useCallback(
-    async (productId) => {
-      if (window.confirm("Are you sure you want to delete this product?")) {
-        const success = await deleteProduct(productId);
+  const handleDeleteProduct = async (productId) => {
+    if (!checkAdminAccess("delete products")) return;
+
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      const success = await deleteProduct(productId);
+      if (success) {
+        fetchProducts();
+        fetchAllProducts(); // Refresh stats after deletion
+      }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!checkAdminAccess("delete products")) return;
+
+    if (selectedProducts.length === 0) {
+      toast.error("Please select products to delete");
+      return;
+    }
+    const isMultiple = selectedProducts.length > 1;
+    const message = isMultiple
+      ? `Delete ${selectedProducts.length} products?`
+      : "Delete this product?";
+
+    if (window.confirm(message)) {
+      try {
+        let success;
+        if (isMultiple) {
+          success = await bulkDeleteProducts(selectedProducts);
+        } else {
+          success = await deleteProduct(selectedProducts[0]);
+        }
+
         if (success) {
+          setSelectedProducts([]);
           fetchProducts();
           fetchAllProducts(); // Refresh stats after deletion
-        }
-      }
-    },
-    [deleteProduct, fetchProducts, fetchAllProducts]
-  );
 
-  const handleDelete = useCallback(
-    async (ids) => {
-      const isMultiple = ids.length > 1;
-      const message = isMultiple
-        ? `Delete ${ids.length} products?`
-        : "Delete this product?";
-
-      if (window.confirm(message)) {
-        try {
-          let success;
-          if (isMultiple) {
-            success = await bulkDeleteProducts(ids);
-          } else {
-            success = await deleteProduct(ids[0]);
+          if (view === "view" && selectedProducts.includes(currentProduct?.id)) {
+            navigate("/admin/products");
           }
-
-          if (success) {
-            setSelectedProducts([]);
-            fetchProducts();
-            fetchAllProducts(); // Refresh stats after deletion
-
-            if (view === "view" && ids.includes(currentProduct?.id)) {
-              navigate("/admin/products");
-            }
-          }
-        } catch (error) {
-          toast.error("Some products could not be deleted");
         }
+      } catch (error) {
+        toast.error("Some products could not be deleted");
       }
-    },
-    [
-      bulkDeleteProducts,
-      deleteProduct,
-      fetchProducts,
-      fetchAllProducts,
-      view,
-      currentProduct,
-      navigate,
-    ]
-  );
+    }
+  };
+
+  // Check admin access - FIXED LOGIC
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true; // Admin can do everything
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false; // User is restricted
+    }
+  };
 
   // Selection handlers
   const handleSelectProduct = useCallback((id, selected) => {
@@ -636,13 +663,17 @@ function Products() {
               Manage your product inventory
             </p>
           </div>
-          <button
-            onClick={() => navigate("/admin/products/add")}
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium transition-colors"
-          >
-            <i className="fas fa-plus"></i>
-            <span>Add Product</span>
-          </button>
+
+          {/* Add Product button - show for admin, hide for user */}
+          {isAdmin && (
+            <button
+              onClick={handleCreateProduct}
+              className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2"
+            >
+              <i className="fas fa-plus"></i>
+              Add Product
+            </button>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -819,6 +850,62 @@ function Products() {
               enableSelection={true}
               enableSorting={true}
               itemKey="id"
+              // In the table configuration where you have action buttons:
+              // Update the actions column to conditionally show edit/delete buttons:
+              renderRowActions={(product) => (
+                <div className="flex space-x-2">
+                  {/* View button - always visible */}
+                  <button
+                    onClick={() => handleViewProduct(product.id)}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                    title="View Product"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
+
+                  {/* Edit button - show for admin, disabled for user */}
+                  <button
+                    onClick={() => {
+                      if (isAdmin) {
+                        handleEditProduct(product.id);
+                      } else {
+                        toast.error(
+                          "Access denied. Admin privileges required to edit products."
+                        );
+                      }
+                    }}
+                    className={`font-medium ${
+                      isAdmin
+                        ? "text-green-600 hover:text-green-800 cursor-pointer"
+                        : "text-gray-400 cursor-not-allowed"
+                    }`}
+                    title={isAdmin ? "Edit Product" : "Edit Product (Admin Only)"}
+                  >
+                    <i className="fas fa-edit"></i>
+                  </button>
+
+                  {/* Delete button - show for admin, disabled for user */}
+                  <button
+                    onClick={() => {
+                      if (isAdmin) {
+                        handleDeleteProduct(product.id);
+                      } else {
+                        toast.error(
+                          "Access denied. Admin privileges required to delete products."
+                        );
+                      }
+                    }}
+                    className={`font-medium ${
+                      isAdmin
+                        ? "text-red-600 hover:text-red-800 cursor-pointer"
+                        : "text-gray-400 cursor-not-allowed"
+                    }`}
+                    title={isAdmin ? "Delete Product" : "Delete Product (Admin Only)"}
+                  >
+                    <i className="fas fa-trash"></i>
+                  </button>
+                </div>
+              )}
             />
 
             {/* Pagination */}
@@ -834,15 +921,15 @@ function Products() {
         )}
       </div>
 
-      {/* Bulk Actions */}
-      {selectedProducts.length > 0 && (
+      {/* Bulk Actions - show for admin only */}
+      {isAdmin && selectedProducts.length > 0 && (
         <BulkActions
           selectedItems={selectedProducts}
           entityName="products"
           actions={[
             {
               label: "Delete",
-              onClick: handleDelete,
+              onClick: handleBulkDelete,
               className:
                 "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
               icon: "fas fa-trash",

@@ -5,11 +5,25 @@ import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getReviewsTableConfig } from "../Common/tableConfig";
+import { useAdmin } from '../../context/AdminContext';
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Reviews() {
+  const { adminData } = useAdmin(); // Get current user from context
+  const isAdmin = adminData?.role === 'admin';
+
+  // Add role check function
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true; // Admin can do everything
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false; // User is restricted
+    }
+  };
+
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -149,6 +163,8 @@ function Reviews() {
 
   // DELETE review function (existing code...)
   const deleteReview = async (reviewId) => {
+    if (!checkAdminAccess('delete reviews')) return false; // Add role check
+    
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/admin/reviews/${reviewId}`,
@@ -168,7 +184,13 @@ function Reviews() {
       }
     } catch (error) {
       console.error("❌ Error deleting review:", error);
-      toast.error("Failed to delete review");
+      
+      // Handle specific error cases
+      if (error.response?.status === 403) {
+        toast.error("Access denied. Admin privileges required to delete reviews.");
+      } else {
+        toast.error("Failed to delete review");
+      }
       return false;
     }
   };
@@ -181,8 +203,9 @@ function Reviews() {
   };
 
   const handleDeleteReview = async (reviewId) => {
+    // Don't check role here - let user click and see confirm dialog
     if (window.confirm("Are you sure you want to delete this review?")) {
-      const success = await deleteReview(reviewId);
+      const success = await deleteReview(reviewId); // Role check happens inside deleteReview
       if (success) {
         fetchReviews(); // Refresh the list
       }
@@ -190,11 +213,14 @@ function Reviews() {
   };
 
   const handleDelete = async (ids) => {
+    // Don't check role here - let user click and see confirm dialog
     if (
       window.confirm(
         `Delete ${ids.length > 1 ? "these reviews" : "this review"}?`
       )
     ) {
+      if (!checkAdminAccess('delete reviews')) return; // Check here after confirmation
+      
       let successCount = 0;
       for (const id of ids) {
         const success = await deleteReview(id);

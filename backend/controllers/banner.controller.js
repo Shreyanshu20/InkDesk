@@ -3,6 +3,7 @@ const Banner = require('../models/banner.model.js');
 // Get banners for frontend (public endpoint)
 module.exports.getBanners = async (req, res) => {
   try {
+    console.log('🎯 Public banners request');
     const { location } = req.query;
     const now = new Date();
     
@@ -18,13 +19,16 @@ module.exports.getBanners = async (req, res) => {
     
     const banners = await Banner.find(query)
       .sort({ position: 1, createdAt: -1 })
-      .select('title subtitle image mobileImage url buttonText textPosition location position'); // ADD position field
+      .select('title subtitle image mobileImage url buttonText textPosition location position');
+    
+    console.log(`✅ Found ${banners.length} active banners`);
     
     return res.json({
       success: true,
       banners
     });
   } catch (error) {
+    console.error('❌ Error fetching public banners:', error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch banners"
@@ -32,9 +36,13 @@ module.exports.getBanners = async (req, res) => {
   }
 };
 
-// Admin: Get all banners
+// Admin: Get all banners (READ - accessible by admin and user roles)
 module.exports.getAdminBanners = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`🔑 Admin banners request - User: ${userId}, Role: ${userRole}`);
+    
     const { location, page = 1, limit = 10 } = req.query;
     
     const query = {};
@@ -50,6 +58,8 @@ module.exports.getAdminBanners = async (req, res) => {
     
     const total = await Banner.countDocuments(query);
     
+    console.log(`✅ Found ${banners.length} banners (${total} total) for admin panel`);
+    
     return res.json({
       success: true,
       banners,
@@ -58,6 +68,7 @@ module.exports.getAdminBanners = async (req, res) => {
       pages: Math.ceil(total / limit)
     });
   } catch (error) {
+    console.error('❌ Error fetching admin banners:', error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch banners"
@@ -65,23 +76,31 @@ module.exports.getAdminBanners = async (req, res) => {
   }
 };
 
-// Admin: Get single banner
+// Admin: Get single banner (READ - accessible by admin and user roles)
 module.exports.getAdminBanner = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`🔍 Fetching banner ${req.params.id} - User: ${userId}, Role: ${userRole}`);
+    
     const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
+      console.log('❌ Banner not found');
       return res.status(404).json({
         success: false,
         message: "Banner not found"
       });
     }
     
+    console.log('✅ Banner found successfully');
+    
     return res.json({
       success: true,
       banner
     });
   } catch (error) {
+    console.error('❌ Error fetching banner:', error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch banner"
@@ -89,21 +108,34 @@ module.exports.getAdminBanner = async (req, res) => {
   }
 };
 
-// Admin: Create banner
+// Admin: Create banner (WRITE - admin only, protected by adminOnly middleware)
 module.exports.createBanner = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`➕ Creating banner - User: ${userId}, Role: ${userRole}`);
+    
     const bannerData = req.body;
     
     // Validate required fields
     if (!bannerData.title || !bannerData.location) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         success: false,
         message: "Title and location are required"
       });
     }
     
-    const banner = new Banner(bannerData);
+    // Add creator information
+    const banner = new Banner({
+      ...bannerData,
+      createdBy: userId,
+      updatedBy: userId
+    });
+    
     await banner.save();
+    
+    console.log('✅ Banner created successfully:', banner._id);
     
     return res.status(201).json({
       success: true,
@@ -111,30 +143,46 @@ module.exports.createBanner = async (req, res) => {
       banner
     });
   } catch (error) {
+    console.error('❌ Error creating banner:', error);
     return res.status(500).json({
       success: false,
-      message: "Failed to create banner"
+      message: "Failed to create banner",
+      error: error.message
     });
   }
 };
 
-// Admin: Update banner
+// Admin: Update banner (WRITE - admin only, protected by adminOnly middleware)
 module.exports.updateBanner = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`✏️ Updating banner ${req.params.id} - User: ${userId}, Role: ${userRole}`);
+    
     const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
+      console.log('❌ Banner not found');
       return res.status(404).json({
         success: false,
         message: "Banner not found"
       });
     }
     
+    // Add updater information
+    const updateData = {
+      ...req.body,
+      updatedBy: userId,
+      updatedAt: new Date()
+    };
+    
     const updatedBanner = await Banner.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
+    
+    console.log('✅ Banner updated successfully');
     
     return res.json({
       success: true,
@@ -142,19 +190,26 @@ module.exports.updateBanner = async (req, res) => {
       banner: updatedBanner
     });
   } catch (error) {
+    console.error('❌ Error updating banner:', error);
     return res.status(500).json({
       success: false,
-      message: "Failed to update banner"
+      message: "Failed to update banner",
+      error: error.message
     });
   }
 };
 
-// Admin: Delete banner
+// Admin: Delete banner (WRITE - admin only, protected by adminOnly middleware)
 module.exports.deleteBanner = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`🗑️ Deleting banner ${req.params.id} - User: ${userId}, Role: ${userRole}`);
+    
     const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
+      console.log('❌ Banner not found');
       return res.status(404).json({
         success: false,
         message: "Banner not found"
@@ -163,24 +218,33 @@ module.exports.deleteBanner = async (req, res) => {
     
     await Banner.findByIdAndDelete(req.params.id);
     
+    console.log('✅ Banner deleted successfully');
+    
     return res.json({
       success: true,
       message: "Banner deleted successfully"
     });
   } catch (error) {
+    console.error('❌ Error deleting banner:', error);
     return res.status(500).json({
       success: false,
-      message: "Failed to delete banner"
+      message: "Failed to delete banner",
+      error: error.message
     });
   }
 };
 
-// Admin: Toggle banner status
+// Admin: Toggle banner status (WRITE - admin only, protected by adminOnly middleware)
 module.exports.toggleBannerStatus = async (req, res) => {
   try {
+    const userId = req.userId;
+    const userRole = req.user?.role;
+    console.log(`🔄 Toggling banner status ${req.params.id} - User: ${userId}, Role: ${userRole}`);
+    
     const banner = await Banner.findById(req.params.id);
     
     if (!banner) {
+      console.log('❌ Banner not found');
       return res.status(404).json({
         success: false,
         message: "Banner not found"
@@ -188,7 +252,12 @@ module.exports.toggleBannerStatus = async (req, res) => {
     }
     
     banner.isActive = !banner.isActive;
+    banner.updatedBy = userId;
+    banner.updatedAt = new Date();
+    
     await banner.save();
+    
+    console.log(`✅ Banner ${banner.isActive ? 'activated' : 'deactivated'} successfully`);
     
     return res.json({
       success: true,
@@ -196,9 +265,11 @@ module.exports.toggleBannerStatus = async (req, res) => {
       banner
     });
   } catch (error) {
+    console.error('❌ Error toggling banner status:', error);
     return res.status(500).json({
       success: false,
-      message: "Failed to toggle banner status"
+      message: "Failed to toggle banner status",
+      error: error.message
     });
   }
 };
