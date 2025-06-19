@@ -40,6 +40,107 @@ module.exports.uploadImage = async (req, res) => {
   }
 };
 
+// Upload product images (existing function - add if missing)
+module.exports.uploadProductImages = async (req, res) => {
+  try {
+    console.log('📤 Product image upload request received');
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No images provided'
+      });
+    }
+
+    const uploadPromises = req.files.map(file => {
+      return cloudinary.uploader.upload(file.path, {
+        folder: 'inkdesk/products',
+        transformation: [
+          { width: 1000, height: 1000, crop: 'limit' },
+          { quality: 'auto:good' }, // Good quality for products
+          { format: 'auto' }
+        ]
+      });
+    });
+
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Clean up temporary files
+    req.files.forEach(file => {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (error) {
+        console.warn('Failed to delete temp file:', file.path);
+      }
+    });
+
+    const images = uploadResults.map((result, index) => ({
+      url: result.secure_url,
+      public_id: result.public_id,
+      alt_text: `Product Image ${index + 1}`
+    }));
+
+    res.json({
+      success: true,
+      images,
+      message: `Successfully uploaded ${images.length} image(s)`
+    });
+
+  } catch (error) {
+    console.error('❌ Product image upload error:', error);
+
+    if (req.files) {
+      req.files.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup temp file:', file.path);
+        }
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading product images',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Delete product image (existing function - add if missing)
+module.exports.deleteProductImage = async (req, res) => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId || publicId === 'undefined' || publicId === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid public_id provided'
+      });
+    }
+
+    const deleteResult = await cloudinary.uploader.destroy(publicId);
+
+    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
+      res.json({
+        success: true,
+        message: 'Product image deleted successfully',
+        result: deleteResult
+      });
+    } else {
+      throw new Error('Failed to delete from Cloudinary');
+    }
+
+  } catch (error) {
+    console.error('❌ Error deleting product image:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete product image',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // Category images with moderate quality
 module.exports.uploadCategoryImages = async (req, res) => {
   try {
@@ -93,7 +194,7 @@ module.exports.uploadCategoryImages = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Category image upload error:', error);
-    
+
     // Clean up temp files on error
     if (req.files) {
       req.files.forEach(file => {
@@ -108,6 +209,45 @@ module.exports.uploadCategoryImages = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error uploading category images',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Delete category image - ADD THIS FUNCTION
+module.exports.deleteCategoryImage = async (req, res) => {
+  try {
+    const { publicId } = req.params;
+
+    console.log('🗑️ Delete category image request for public_id:', publicId);
+
+    if (!publicId || publicId === 'undefined' || publicId === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid public_id provided'
+      });
+    }
+
+    // Delete from Cloudinary
+    const deleteResult = await cloudinary.uploader.destroy(publicId);
+
+    console.log('🗑️ Cloudinary deletion result:', deleteResult);
+
+    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
+      res.json({
+        success: true,
+        message: 'Category image deleted successfully',
+        result: deleteResult
+      });
+    } else {
+      throw new Error('Failed to delete from Cloudinary');
+    }
+
+  } catch (error) {
+    console.error('❌ Error deleting category image:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete category image',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -129,11 +269,11 @@ module.exports.uploadSubcategoryImages = async (req, res) => {
     // Upload each file to Cloudinary (should be only 1 for subcategories)
     const uploadPromises = req.files.map(file => {
       return cloudinary.uploader.upload(file.path, {
-        folder: 'subcategories',
+        folder: 'inkdesk/subcategories', // Change from 'subcategories' to 'inkdesk/subcategories'
         transformation: [
           { width: 600, height: 400, crop: 'limit' },
-          { quality: 'auto' },
-          { format: 'auto' }
+          { quality: 'auto:best' },
+          { format: 'auto:best' }
         ]
       });
     });
@@ -166,7 +306,7 @@ module.exports.uploadSubcategoryImages = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Subcategory image upload error:', error);
-    
+
     // Clean up temp files on error
     if (req.files) {
       req.files.forEach(file => {
@@ -186,50 +326,11 @@ module.exports.uploadSubcategoryImages = async (req, res) => {
   }
 };
 
-// Delete category image - ADD THIS FUNCTION
-module.exports.deleteCategoryImage = async (req, res) => {
-  try {
-    const { publicId } = req.params;
-    
-    console.log('🗑️ Delete category image request for public_id:', publicId);
-
-    if (!publicId || publicId === 'undefined' || publicId === 'null') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid public_id provided'
-      });
-    }
-
-    // Delete from Cloudinary
-    const deleteResult = await cloudinary.uploader.destroy(publicId);
-    
-    console.log('🗑️ Cloudinary deletion result:', deleteResult);
-
-    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
-      res.json({
-        success: true,
-        message: 'Category image deleted successfully',
-        result: deleteResult
-      });
-    } else {
-      throw new Error('Failed to delete from Cloudinary');
-    }
-
-  } catch (error) {
-    console.error('❌ Error deleting category image:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete category image',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
 // Delete subcategory image - ADD THIS FUNCTION
 module.exports.deleteSubcategoryImage = async (req, res) => {
   try {
     const { publicId } = req.params;
-    
+
     console.log('🗑️ Delete subcategory image request for public_id:', publicId);
 
     if (!publicId || publicId === 'undefined' || publicId === 'null') {
@@ -241,7 +342,7 @@ module.exports.deleteSubcategoryImage = async (req, res) => {
 
     // Delete from Cloudinary
     const deleteResult = await cloudinary.uploader.destroy(publicId);
-    
+
     console.log('🗑️ Cloudinary deletion result:', deleteResult);
 
     if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
@@ -259,108 +360,8 @@ module.exports.deleteSubcategoryImage = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete subcategory image',
-      error: process.env.NODE_ENV === 'development' ? error.message: undefined
-    });
-  }
-};
-
-// Upload product images (existing function - add if missing)
-module.exports.uploadProductImages = async (req, res) => {
-  try {
-    console.log('📤 Product image upload request received');
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No images provided'
-      });
-    }
-
-    const uploadPromises = req.files.map(file => {
-      return cloudinary.uploader.upload(file.path, {
-        folder: 'inkdesk/products',
-        transformation: [
-          { width: 1000, height: 1000, crop: 'limit' },
-          { quality: 'auto:good' }, // Good quality for products
-          { format: 'auto' }
-        ]
-      });
-    });
-
-    const uploadResults = await Promise.all(uploadPromises);
-
-    // Clean up temporary files
-    req.files.forEach(file => {
-      try {
-        fs.unlinkSync(file.path);
-      } catch (error) {
-        console.warn('Failed to delete temp file:', file.path);
-      }
-    });
-
-    const images = uploadResults.map((result, index) => ({
-      url: result.secure_url,
-      public_id: result.public_id,
-      alt_text: `Product Image ${index + 1}`
-    }));
-
-    res.json({
-      success: true,
-      images,
-      message: `Successfully uploaded ${images.length} image(s)`
-    });
-
-  } catch (error) {
-    console.error('❌ Product image upload error:', error);
-    
-    if (req.files) {
-      req.files.forEach(file => {
-        try {
-          fs.unlinkSync(file.path);
-        } catch (cleanupError) {
-          console.warn('Failed to cleanup temp file:', file.path);
-        }
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading product images',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// Delete product image (existing function - add if missing)
-module.exports.deleteProductImage = async (req, res) => {
-  try {
-    const { publicId } = req.params;
-    
-    if (!publicId || publicId === 'undefined' || publicId === 'null') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid public_id provided'
-      });
-    }
-
-    const deleteResult = await cloudinary.uploader.destroy(publicId);
-    
-    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
-      res.json({
-        success: true,
-        message: 'Product image deleted successfully',
-        result: deleteResult
-      });
-    } else {
-      throw new Error('Failed to delete from Cloudinary');
-    }
-
-  } catch (error) {
-    console.error('❌ Error deleting product image:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete product image',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};

@@ -111,7 +111,7 @@ app.get('/test-cors', (req, res) => {
 
 // Upload routes (need to be registered early)
 try {
-  app.use('/api/upload', require('./routes/upload.routes'));
+  app.use('/upload', require('./routes/upload.routes'));
   console.log('✅ Upload routes registered at /api/upload');
 } catch (error) {
   console.error('❌ Upload routes error:', error.message);

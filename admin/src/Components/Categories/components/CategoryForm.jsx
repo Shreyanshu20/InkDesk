@@ -24,6 +24,7 @@ function CategoryForm({ mode: propMode }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [category, setCategory] = useState(null);
   const [showSubcategoryTable, setShowSubcategoryTable] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch category for editing
   useEffect(() => {
@@ -34,38 +35,32 @@ function CategoryForm({ mode: propMode }) {
 
   const fetchCategory = async (categoryId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/admin/categories/${categoryId}`, {
-        withCredentials: true
-      });
+      setIsLoading(true);
+      console.log("🔍 Fetching category for edit:", categoryId);
       
-      if (response.data.success && response.data.category) {
-        const cat = response.data.category;
-        
-        // Extract subcategory names from populated subcategories
-        const subcategoryNames = cat.subcategories ? 
-          cat.subcategories.map(sub => sub.subcategory_name) : [];
-        
-        setCategory(cat);
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/categories/${categoryId}`, // Add /admin prefix
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        const category = response.data.category;
         setFormData({
-          name: cat.category_name || "",
-          subcategories: subcategoryNames,
+          name: category.category_name || '',
+          subcategories: category.subcategories?.map(sub => 
+            typeof sub === 'string' ? sub : sub.subcategory_name
+          ) || [],
           newSubcategory: "",
         });
-
-        // Handle existing image
-        if (cat.category_image) {
-          setPreviewImage(cat.category_image);
-          setUploadedImage({
-            url: cat.category_image,
-            public_id: '',
-            alt_text: ''
-          });
-        }
+        setPreviewImage(category.category_image || '');
+        setCategory(category);
       }
     } catch (error) {
       console.error("Error fetching category:", error);
-      toast.error("Failed to load category");
+      toast.error("Failed to load category for editing");
       navigate("/admin/categories");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,39 +100,50 @@ function CategoryForm({ mode: propMode }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormTouched(true);
     
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      const categoryData = {
-        category_name: formData.name,
-        category_image: uploadedImage?.url || previewImage || "",
-        subcategories: formData.subcategories || [],
+      setIsSubmitting(true);
+      
+      const submitData = {
+        category_name: formData.name.trim(),
+        category_image: uploadedImage?.url || previewImage || '',
+        subcategories: formData.subcategories.filter(sub => sub.trim())
       };
 
       let response;
-      if (mode === "add") {
-        response = await axios.post(`${API_BASE_URL}/admin/categories`, categoryData, {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        });
+      if (mode === "edit" && id) {
+        console.log("✏️ Updating category:", id);
+        response = await axios.put(
+          `${API_BASE_URL}/admin/categories/${id}`, // Add /admin prefix
+          submitData,
+          { withCredentials: true }
+        );
       } else {
-        response = await axios.put(`${API_BASE_URL}/admin/categories/${id}`, categoryData, {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        });
+        console.log("➕ Creating new category");
+        response = await axios.post(
+          `${API_BASE_URL}/admin/categories`, // Add /admin prefix
+          submitData,
+          { withCredentials: true }
+        );
       }
 
       if (response.data.success) {
-        toast.success(`Category ${mode === "add" ? "created" : "updated"} successfully!`);
+        toast.success(
+          mode === "edit" 
+            ? "Category updated successfully!" 
+            : "Category created successfully!"
+        );
         navigate("/admin/categories");
       }
     } catch (error) {
-      console.error("Error saving category:", error);
-      toast.error(`Failed to ${mode === "add" ? "create" : "update"} category`);
+      console.error("Error submitting category:", error);
+      const message = error.response?.data?.message || 
+        `Failed to ${mode === "edit" ? "update" : "create"} category`;
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

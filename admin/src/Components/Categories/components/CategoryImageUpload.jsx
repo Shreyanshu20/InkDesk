@@ -45,7 +45,7 @@ function CategoryImageUpload({
 
       // FIX: Use your actual backend API path
       const response = await axios.post(
-        `${API_BASE_URL}/api/upload/category-images`,
+        `${API_BASE_URL}/upload/category-images`, // Remove /api prefix
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -78,7 +78,7 @@ function CategoryImageUpload({
     try {
       if (uploadedImage?.public_id) {
         await axios.delete(
-          `${API_BASE_URL}/api/upload/category-images/${uploadedImage.public_id}`,
+          `${API_BASE_URL}/upload/category-images/${uploadedImage.public_id}`, // Remove /api prefix
           { withCredentials: true }
         );
       }

@@ -32,9 +32,10 @@ function Categories({ view: propView }) {
     try {
       setIsLoading(true);
 
-      // First, get categories with subcategories
+      // Use admin route to get categories with full data
       const response = await axios.get(
-        `${API_BASE_URL}/categories/with-subcategories`
+        `${API_BASE_URL}/admin/categories?limit=100`, // Get more categories and use admin route
+        { withCredentials: true }
       );
 
       if (response.data.success) {
@@ -55,7 +56,7 @@ function Categories({ view: propView }) {
                 id: category._id,
                 name: category.category_name,
                 description: category.description || "No description provided",
-                image: category.category_image || "",
+                image: category.category_image || "", // This should now have the image
                 subcategories: category.subcategories || [],
                 subcategoryCount: category.subcategories
                   ? category.subcategories.length
@@ -79,7 +80,7 @@ function Categories({ view: propView }) {
                 subcategoryCount: category.subcategories
                   ? category.subcategories.length
                   : 0,
-                productCount: 0, // Default to 0 if failed
+                productCount: 0,
                 createdAt: category.createdAt,
                 updatedAt: category.updatedAt,
               };
@@ -87,38 +88,12 @@ function Categories({ view: propView }) {
           })
         );
 
-        console.log("📊 Categories with product counts:", categoriesWithCounts);
+        console.log("📊 Categories with images:", categoriesWithCounts);
         setCategories(categoriesWithCounts);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
-
-      // Fallback: try to get categories without subcategories
-      try {
-        const fallbackResponse = await axios.get(`${API_BASE_URL}/categories`);
-        if (fallbackResponse.data.success) {
-          const transformedCategories = fallbackResponse.data.categories.map(
-            (category) => ({
-              id: category._id,
-              name: category.category_name,
-              description: category.description || "No description provided",
-              image: category.category_image || "",
-              subcategories: category.subcategories || [],
-              subcategoryCount: category.subcategories
-                ? category.subcategories.length
-                : 0,
-              productCount: 0, // No product count in fallback
-              createdAt: category.createdAt,
-              updatedAt: category.updatedAt,
-            })
-          );
-
-          setCategories(transformedCategories);
-        }
-      } catch (fallbackError) {
-        console.error("Fallback failed:", fallbackError);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +107,7 @@ function Categories({ view: propView }) {
   const deleteCategory = async (categoryId) => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/categories/${categoryId}`,
+        `${API_BASE_URL}/admin/categories/${categoryId}`, // Add /admin prefix
         {
           withCredentials: true,
         }
@@ -282,12 +257,19 @@ function Categories({ view: propView }) {
                 alt={category.name}
                 className="h-full w-full object-cover"
                 loading="lazy"
+                onError={(e) => {
+                  console.log('Image failed to load:', category.image);
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
               />
-            ) : (
-              <div className="h-full w-full bg-primary/10 rounded-md flex items-center justify-center text-primary">
-                <i className="fas fa-folder"></i>
-              </div>
-            )}
+            ) : null}
+            <div 
+              className="h-full w-full bg-primary/10 rounded-md flex items-center justify-center text-primary"
+              style={{ display: category.image ? 'none' : 'flex' }}
+            >
+              <i className="fas fa-folder"></i>
+            </div>
           </div>
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">

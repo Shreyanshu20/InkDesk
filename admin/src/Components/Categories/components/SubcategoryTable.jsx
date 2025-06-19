@@ -124,9 +124,8 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       const formData = new FormData();
       formData.append('images', file);
 
-      // FIX: Use your actual backend API path
       const response = await axios.post(
-        `${API_BASE_URL}/api/upload/subcategory-images`,
+        `${API_BASE_URL}/upload/subcategory-images`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

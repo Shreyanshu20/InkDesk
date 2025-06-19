@@ -99,6 +99,19 @@ function App() {
             <Route index element={<Products />} />
             <Route path="add" element={<ProductForm mode="add" />} />
             <Route path="edit/:id" element={<ProductForm mode="edit" />} />
+            <Route path="view/:id" element={<Products view="view" />} />
+          </Route>
+
+          {/* Orders routes */}
+          <Route path="orders">
+            <Route index element={<Orders />} />
+            <Route path="view/:id" element={<Orders view="view" />} />
+          </Route>
+
+          {/* Users routes */}
+          <Route path="users">
+            <Route index element={<Users />} />
+            <Route path="view/:id" element={<Users view="view" />} />
           </Route>
 
           {/* Categories routes */}
@@ -106,14 +119,8 @@ function App() {
             <Route index element={<Categories />} />
             <Route path="add" element={<CategoryForm mode="add" />} />
             <Route path="edit/:id" element={<CategoryForm mode="edit" />} />
-            <Route path=":id" element={<CategoryDetails />} />
+            <Route path="view/:id" element={<Categories view="view" />} />
           </Route>
-
-          {/* Orders routes */}
-          <Route path="orders" element={<Orders />} />
-
-          {/* Users routes */}
-          <Route path="users" element={<Users />} />
 
           {/* Banners routes */}
           <Route path="banners">

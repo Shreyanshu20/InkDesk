@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Table from "../Common/Table";
@@ -44,6 +44,7 @@ function Users() {
 
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ADD: Fetch user statistics (separate from paginated users)
   const fetchUserStats = async () => {
@@ -73,7 +74,7 @@ function Users() {
   }, []); // Only run once on mount
 
   // Fetch users from backend
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = async () => {
     try {
       setIsLoading(true);
 
@@ -81,8 +82,8 @@ function Users() {
       params.append("page", page + 1);
       params.append("limit", rowsPerPage);
 
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
+      if (searchQuery) {
+        params.append("search", searchQuery);
       }
 
       if (statusFilter !== "all") {
@@ -94,25 +95,48 @@ function Users() {
         params.append("sortOrder", sortConfig.direction === "ascending" ? "asc" : "desc");
       }
 
+      console.log('🔍 Fetching users with params:', params.toString());
+
       const response = await axios.get(
         `${API_BASE_URL}/admin/users?${params.toString()}`,
         {
           withCredentials: true,
-          headers: { "Content-Type": "application/json" },
         }
       );
 
       if (response.data.success) {
-        setUsers(response.data.users);
-        setTotalUsers(response.data.pagination.totalUsers);
+        console.log('👥 Users response:', response.data);
+
+        const transformedUsers = response.data.users.map((user) => ({
+          id: user._id,
+          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
+          email: user.email,
+          role: user.role || "customer",
+          status: user.status || "active",
+          avatar: user.avatar || null,
+          phone: user.phone || "N/A",
+          createdAt: user.createdAt,
+          lastLogin: user.lastLogin || user.updatedAt,
+          address: user.address_details || [],
+          orders: user.orders || [],
+          first_name: user.first_name,
+          last_name: user.last_name,
+        }));
+
+        setUsers(transformedUsers);
+        setTotalUsers(response.data.pagination?.total || transformedUsers.length);
+
+        console.log(`📊 Loaded ${transformedUsers.length} users of ${response.data.pagination?.total} total`);
       }
     } catch (error) {
       console.error("❌ Error fetching users:", error);
       toast.error("Failed to load users");
+      setUsers([]);
+      setTotalUsers(0);
     } finally {
       setIsLoading(false);
     }
-  }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig]);
+  };
 
   // Fetch single user by ID
   const fetchUserById = async (userId) => {
@@ -154,7 +178,7 @@ function Users() {
   };
 
   // MODIFY: Delete user function to refresh stats after deletion
-  const deleteUser = useCallback(async (userId) => {
+  const deleteUser = async (userId) => {
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/admin/users/${userId}`,
@@ -177,7 +201,7 @@ function Users() {
       toast.error("Failed to delete user");
       return false;
     }
-  }, []);
+  };
 
   // MODIFY: Update user status function to refresh stats
   const updateUserStatus = async (userId, newStatus) => {
@@ -217,8 +241,19 @@ function Users() {
     }
   }, [id]);
 
+  // ADD: useEffect to handle view route (around line 80)
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    if (pathParts[3] === 'view' && pathParts[4]) {
+      const userId = pathParts[4];
+      console.log("🔍 Loading user for view:", userId);
+      fetchUserById(userId);
+    }
+  }, [location.pathname]);
+
   // Handle user actions
   const handleViewUser = (userId) => {
+    console.log("👁️ Viewing user:", userId);
     navigate(`/admin/users/view/${userId}`);
   };
 

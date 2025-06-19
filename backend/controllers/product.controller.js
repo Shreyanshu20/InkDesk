@@ -121,21 +121,21 @@ const getProducts = async (req, res) => {
     // Format products to include proper image data
     const formattedProducts = products.map(product => {
       const productObj = product.toObject();
-      
+
       // Ensure proper image formatting
       return {
         ...productObj,
-        product_images: productObj.product_images && productObj.product_images.length > 0 
+        product_images: productObj.product_images && productObj.product_images.length > 0
           ? productObj.product_images.map(img => ({
-              url: img.url,
-              public_id: img.public_id,
-              alt_text: img.alt_text || productObj.product_name
-            }))
-          : productObj.product_image 
+            url: img.url,
+            public_id: img.public_id,
+            alt_text: img.alt_text || productObj.product_name
+          }))
+          : productObj.product_image
             ? [{ url: productObj.product_image, alt_text: productObj.product_name }]
             : [],
-        mainImage: productObj.product_images && productObj.product_images.length > 0 
-          ? productObj.product_images[0].url 
+        mainImage: productObj.product_images && productObj.product_images.length > 0
+          ? productObj.product_images[0].url
           : productObj.product_image || '',
       };
     });
@@ -168,340 +168,6 @@ const getProducts = async (req, res) => {
   }
 };
 
-// Get all products with filtering (Admin version)
-const getAdminProducts = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      category,
-      subcategory,
-      brand,
-      maxPrice,
-      inStock,
-      sortBy = 'createdAt',
-      order = 'desc',
-      selectedCategories,
-      status
-    } = req.query;
-
-    const userId = req.userId; // From userAuth middleware
-    console.log('🔑 Admin products request - User ID:', userId);
-
-    // Build filter object - only show products owned by this user
-    let filter = { owner: userId };
-
-    // Search filter
-    if (search && search.trim()) {
-      filter.$or = [
-        { product_name: { $regex: search, $options: 'i' } },
-        { product_description: { $regex: search, $options: 'i' } },
-        { product_brand: { $regex: search, $options: 'i' } },
-        { product_category: { $regex: search, $options: 'i' } },
-        { product_subcategory: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    // Category filter by ObjectId
-    if (selectedCategories && selectedCategories !== 'all') {
-      const categoryIds = Array.isArray(selectedCategories) ? selectedCategories : [selectedCategories];
-      filter.category = { $in: categoryIds };
-    }
-
-    // Category filter by name (fallback)
-    if (category && category !== 'all') {
-      filter.product_category = { $regex: new RegExp(category, 'i') };
-    }
-
-    // Subcategory filter
-    if (subcategory && subcategory !== 'all') {
-      filter.product_subcategory = { $regex: new RegExp(subcategory, 'i') };
-    }
-
-    // Brand filter
-    if (brand && brand !== 'all') {
-      const brands = Array.isArray(brand) ? brand : [brand];
-      filter.product_brand = { $in: brands };
-    }
-
-    // Price filter
-    if (maxPrice) {
-      filter.product_price = { $lte: parseFloat(maxPrice) };
-    }
-
-    // Stock/Status filter
-    if (inStock === 'true') {
-      filter.product_stock = { $gt: 0 };
-    } else if (inStock === 'false') {
-      filter.product_stock = { $lte: 0 };
-    }
-
-    // Status filter (frontend compatibility)
-    if (status === 'active') {
-      filter.product_stock = { $gt: 0 };
-    } else if (status === 'out_of_stock') {
-      filter.product_stock = { $lte: 0 };
-    }
-
-    console.log('🔍 Admin filter object:', JSON.stringify(filter, null, 2));
-
-    // Calculate pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Build sort object
-    let sort = {};
-    if (sortBy === 'product_price') {
-      sort = { product_price: order === 'asc' ? 1 : -1 };
-    } else if (sortBy === 'product_rating') {
-      sort = { product_rating: order === 'asc' ? 1 : -1 };
-    } else if (sortBy === 'product_name') {
-      sort = { product_name: order === 'asc' ? 1 : -1 };
-    } else if (sortBy === 'product_stock') {
-      sort = { product_stock: order === 'asc' ? 1 : -1 };
-    } else if (sortBy === 'product_category') {
-      sort = { product_category: order === 'asc' ? 1 : -1 };
-    } else {
-      sort = { createdAt: order === 'asc' ? 1 : -1 };
-    }
-
-    // Execute query
-    const products = await Product.find(filter)
-      .populate('category', 'category_name')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    // Get total count for pagination
-    const totalProducts = await Product.countDocuments(filter);
-    const totalPages = Math.ceil(totalProducts / parseInt(limit));
-
-    console.log(`✅ Found ${products.length} admin products (${totalProducts} total) for user ${userId}`);
-
-    res.json({
-      success: true,
-      products,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalProducts,
-        hasNextPage: parseInt(page) < totalPages,
-        hasPrevPage: parseInt(page) > 1,
-        limit: parseInt(limit)
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching admin products:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching admin products',
-      error: error.message
-    });
-  }
-};
-
-// Create product (Admin)
-const createProduct = async (req, res) => {
-  try {
-    const userId = req.userId;
-    console.log('➕ Creating product for user:', userId);
-
-    // Validate required fields
-    const {
-      product_name,
-      product_description,
-      product_price,
-      product_stock,
-      product_category,
-      product_images, // Add this to handle multiple images
-      product_image    // Keep for backward compatibility
-    } = req.body;
-
-    if (!product_name || !product_description || !product_price || product_stock === undefined || !product_category) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: name, description, price, stock, category'
-      });
-    }
-
-    // Find category by name to get ObjectId
-    let categoryId = null;
-    if (product_category) {
-      const category = await Category.findOne({
-        category_name: { $regex: new RegExp(`^${product_category}$`, 'i') }
-      });
-      if (category) {
-        categoryId = category._id;
-        console.log('📂 Found category:', category.category_name);
-      } else {
-        console.log('⚠️ Category not found, will use string:', product_category);
-      }
-    }
-
-    // Handle images - process both new array format and old single image
-    let processedImages = [];
-    
-    if (product_images && Array.isArray(product_images) && product_images.length > 0) {
-      // New multiple images format
-      processedImages = product_images.map((img, index) => ({
-        url: img.url || img,
-        public_id: img.public_id || '',
-        alt_text: img.alt_text || `${product_name} - Image ${index + 1}`
-      }));
-      console.log('📸 Using multiple images:', processedImages.length);
-    } else if (product_image) {
-      // Backward compatibility - single image
-      processedImages = [{
-        url: product_image,
-        public_id: '',
-        alt_text: product_name
-      }];
-      console.log('📸 Using single image as array');
-    }
-
-    const productData = {
-      ...req.body,
-      owner: userId,
-      category: categoryId,
-      product_images: processedImages, // Store processed images array
-      product_image: processedImages.length > 0 ? processedImages[0].url : '', // Keep main image for compatibility
-      product_rating: 0,
-      review_count: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    const product = new Product(productData);
-    const savedProduct = await product.save();
-
-    // Populate category for response
-    const populatedProduct = await Product.findById(savedProduct._id)
-      .populate('category', 'category_name');
-
-    console.log(`✅ Product created with ${processedImages.length} images:`, savedProduct._id);
-
-    res.status(201).json({
-      success: true,
-      message: 'Product created successfully',
-      product: populatedProduct
-    });
-
-  } catch (error) {
-    console.error('❌ Error creating product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating product',
-      error: error.message
-    });
-  }
-};
-
-// Update product (Admin)
-const updateProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId;
-
-    console.log(`🔄 Updating product ${id} by user ${userId}`);
-
-    // Find the product
-    const product = await Product.findById(id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    // Check if user owns this product
-    if (product.owner.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only update your own products'
-      });
-    }
-
-    // Find category by name if category is being updated
-    let updateData = { ...req.body, updatedAt: new Date() };
-
-    if (req.body.product_category) {
-      const category = await Category.findOne({
-        category_name: { $regex: new RegExp(`^${req.body.product_category}$`, 'i') }
-      });
-      if (category) {
-        updateData.category = category._id;
-      }
-    }
-
-    // Update the product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('category', 'category_name');
-
-    console.log(`✅ Product ${id} updated successfully`);
-
-    res.json({
-      success: true,
-      message: 'Product updated successfully',
-      product: updatedProduct
-    });
-
-  } catch (error) {
-    console.error('❌ Error updating product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating product',
-      error: error.message
-    });
-  }
-};
-
-// Delete product function
-const deleteProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId; // From userAuth middleware
-
-    // Find the product
-    const product = await Product.findById(id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    // Check if user owns this product
-    if (product.owner.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only delete your own products'
-      });
-    }
-
-    // Delete the product
-    await Product.findByIdAndDelete(id);
-
-    res.json({
-      success: true,
-      message: 'Product deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('❌ Error deleting product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting product',
-      error: error.message
-    });
-  }
-};
-
 // Get single product by ID
 const getProductById = async (req, res) => {
   try {
@@ -523,18 +189,18 @@ const getProductById = async (req, res) => {
     const productData = {
       ...product.toObject(),
       // Ensure images array is properly formatted
-      product_images: product.product_images && product.product_images.length > 0 
+      product_images: product.product_images && product.product_images.length > 0
         ? product.product_images.map(img => ({
-            url: img.url,
-            public_id: img.public_id,
-            alt_text: img.alt_text || product.product_name
-          }))
-        : product.product_image 
+          url: img.url,
+          public_id: img.public_id,
+          alt_text: img.alt_text || product.product_name
+        }))
+        : product.product_image
           ? [{ url: product.product_image, alt_text: product.product_name }]
           : [],
       // Add mainImage virtual for backward compatibility
-      mainImage: product.product_images && product.product_images.length > 0 
-        ? product.product_images[0].url 
+      mainImage: product.product_images && product.product_images.length > 0
+        ? product.product_images[0].url
         : product.product_image || '',
     };
 
@@ -550,138 +216,6 @@ const getProductById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch product',
-      error: error.message
-    });
-  }
-};
-
-// Get single product by ID (Admin)
-const getAdminProductById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId;
-
-    console.log(`🔍 Fetching product ${id} for admin ${userId}`);
-
-    const product = await Product.findOne({ _id: id, owner: userId })
-      .populate('category', 'category_name');
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found or you do not have permission to view it'
-      });
-    }
-
-    res.json({
-      success: true,
-      product
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching product',
-      error: error.message
-    });
-  }
-};
-
-// Bulk delete products (Admin)
-const bulkDeleteProducts = async (req, res) => {
-  try {
-    const { productIds } = req.body;
-    const userId = req.userId;
-
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product IDs array is required'
-      });
-    }
-
-    console.log(`🗑️ Bulk deleting ${productIds.length} products for user ${userId}`);
-
-    // Find products that belong to this user
-    const products = await Product.find({
-      _id: { $in: productIds },
-      owner: userId
-    });
-
-    if (products.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No products found or you do not have permission to delete them'
-      });
-    }
-
-    if (products.length !== productIds.length) {
-      return res.status(403).json({
-        success: false,
-        message: `You can only delete your own products. Found ${products.length} of ${productIds.length} products.`
-      });
-    }
-
-    // Delete the products
-    const deleteResult = await Product.deleteMany({
-      _id: { $in: productIds },
-      owner: userId
-    });
-
-    console.log(`✅ Bulk deleted ${deleteResult.deletedCount} products`);
-
-    res.json({
-      success: true,
-      message: `Successfully deleted ${deleteResult.deletedCount} products`,
-      deletedCount: deleteResult.deletedCount
-    });
-
-  } catch (error) {
-    console.error('❌ Error bulk deleting products:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting products',
-      error: error.message
-    });
-  }
-};
-
-// Get admin dashboard stats
-const getAdminStats = async (req, res) => {
-  try {
-    const userId = req.userId;
-
-    const stats = await Promise.all([
-      Product.countDocuments({ owner: userId }),
-      Product.countDocuments({ owner: userId, product_stock: { $gt: 0 } }),
-      Product.countDocuments({ owner: userId, product_stock: { $lte: 0 } }),
-      Product.aggregate([
-        { $match: { owner: userId } },
-        { $group: { _id: null, totalValue: { $sum: { $multiply: ['$product_price', '$product_stock'] } } } }
-      ])
-    ]);
-
-    const totalProducts = stats[0];
-    const activeProducts = stats[1];
-    const outOfStockProducts = stats[2];
-    const totalInventoryValue = stats[3][0]?.totalValue || 0;
-
-    res.json({
-      success: true,
-      stats: {
-        totalProducts,
-        activeProducts,
-        outOfStockProducts,
-        totalInventoryValue
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching admin stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching statistics',
       error: error.message
     });
   }
@@ -804,6 +338,9 @@ const searchProducts = async (req, res) => {
   }
 };
 
+
+
+
 module.exports = {
   // Public routes
   getProducts,
@@ -813,12 +350,4 @@ module.exports = {
   getProductsBySubcategory,
   searchProducts,
 
-  // Admin routes
-  getAdminProducts,
-  getAdminProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  bulkDeleteProducts,
-  getAdminStats
 };

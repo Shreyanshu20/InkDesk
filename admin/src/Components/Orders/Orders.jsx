@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Loader from "../Common/Loader";
@@ -9,6 +9,7 @@ import BulkActions from "../Common/BulkActions";
 import { getOrderTableConfig } from "../Common/tableConfig";
 import StatusUpdateModal from "./components/StatusUpdateModal";
 import { getStatusColor } from "./components/utils";
+import OrderDetails from "./components/OrderDetails";
 
 // Update the API calls to use the correct base URL
 const API_BASE_URL =
@@ -16,6 +17,7 @@ const API_BASE_URL =
 
 function Orders() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -38,6 +40,9 @@ function Orders() {
     delivered: 0,
     cancelled: 0,
   });
+  const [view, setView] = useState("list");
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   const orderStatuses = [
     "pending",
@@ -56,74 +61,136 @@ function Orders() {
       params.append("page", page + 1);
       params.append("limit", rowsPerPage);
 
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
+      }
+
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
       }
 
       if (sortConfig.key) {
-        params.append("sortBy", sortConfig.key);
+        let sortBy = sortConfig.key;
+        // Map frontend sort keys to backend fields
+        if (sortBy === "customer") sortBy = "user_id";
+        else if (sortBy === "date") sortBy = "createdAt";
+        else if (sortBy === "total") sortBy = "total_amount";
+        else if (sortBy === "id") sortBy = "order_number";
+
+        params.append("sortBy", sortBy);
         params.append(
           "sortOrder",
           sortConfig.direction === "ascending" ? "asc" : "desc"
         );
       }
 
+      console.log("🔍 Fetching orders with params:", params.toString());
+
       const response = await axios.get(
-        `${API_BASE_URL}/admin/orders?${params.toString()}`,
+        `${API_BASE_URL}/admin/orders?${params.toString()}`, // Removed /api prefix
         {
           withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (response.data.success) {
-        setOrders(response.data.orders);
-        setTotalOrders(response.data.pagination.totalOrders);
+        console.log("📦 Orders response:", response.data);
+
+        // Transform backend data to frontend format
+        const transformedOrders = response.data.orders.map((order) => {
+          let customer = {
+            name: "Unknown Customer",
+            email: "no-email@example.com",
+            id: order.user_id?._id || order.user_id || "unknown",
+          };
+
+          // Try to get customer info from populated user data
+          if (order.user_id && typeof order.user_id === "object") {
+            const firstName = order.user_id.first_name || "";
+            const lastName = order.user_id.last_name || "";
+            customer.name = `${firstName} ${lastName}`.trim() || "Unknown Customer";
+            customer.email = order.user_id.email || "no-email@example.com";
+            customer.id = order.user_id._id;
+          }
+
+          // Fallback to shipping address if user data not populated
+          if (order.shipping_address && order.shipping_address.name) {
+            if (customer.name === "Unknown Customer") {
+              customer.name = order.shipping_address.name;
+            }
+          }
+
+          return {
+            id: order._id,
+            customer: customer,
+            date: order.createdAt,
+            total: order.total_amount || 0,
+            status: order.status,
+            order_number: order.order_number,
+            items: order.items || [],
+            shipping_address: order.shipping_address,
+            user_id: order.user_id,
+          };
+        });
+
+        setOrders(transformedOrders);
+        setTotalOrders(
+          response.data.pagination?.totalOrders || transformedOrders.length
+        );
+
+        console.log(
+          `📊 Loaded ${transformedOrders.length} orders of ${response.data.pagination?.totalOrders} total`
+        );
       }
     } catch (error) {
       console.error("❌ Error fetching orders:", error);
-      toast.error("Failed to load orders");
+      if (error.response?.status === 401) {
+        toast.error("Please login to access orders");
+        navigate("/admin/login");
+      } else {
+        toast.error("Failed to load orders");
+      }
+      setOrders([]);
+      setTotalOrders(0);
     } finally {
       setIsLoading(false);
     }
-  }, [page, rowsPerPage, statusFilter, sortConfig]);
+  }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig, navigate]);
 
+  // Update the fetchOrderStats function to use the new endpoint
   const fetchOrderStats = useCallback(async () => {
     try {
+      console.log('📊 Fetching order statistics...');
+      
       const response = await axios.get(`${API_BASE_URL}/admin/orders/stats`, {
         withCredentials: true,
+        headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.success) {
-        setOrderStats(response.data.stats);
+        setStats(response.data.stats);
+        console.log('📊 Order stats loaded:', response.data.stats);
       }
     } catch (error) {
       console.error("❌ Error fetching order stats:", error);
+      // Keep default empty stats on error
+      setStats({
+        total: 0,
+        pending: 0,
+        processing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        todaysOrders: 0,
+        thisWeekOrders: 0
+      });
     }
-  }, []);
-
-  const updateOrderStatus = useCallback(
-    async (orderId, status) => {
-      try {
-        const response = await axios.put(
-          `${API_BASE_URL}/admin/orders/${orderId}/status`,
-          { status },
-          {
-            withCredentials: true,
-          }
-        );
-
-        if (response.data.success) {
-          toast.success("Order status updated successfully");
-          return true;
-        }
-      } catch (error) {
-        console.error("Error updating order status:", error);
-        toast.error("Failed to update order status");
-        return false;
-      }
-    },
-    []
-  );
+  }, []); // Remove orders dependency
 
   // Initial data load
   useEffect(() => {
@@ -134,6 +201,16 @@ function Orders() {
   useEffect(() => {
     fetchOrderStats(); // Load stats once
   }, []); // Only run once on mount
+
+  // Add useEffect to handle view route
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    if (pathParts[3] === 'view' && pathParts[4]) {
+      const orderId = pathParts[4];
+      console.log("🔍 Loading order for view:", orderId);
+      fetchOrderById(orderId);
+    }
+  }, [location.pathname]);
 
   // Event handlers
   const handleSearchChange = useCallback((e) => {
@@ -152,7 +229,7 @@ function Orders() {
 
   // MODIFY: Update the handleRowsPerPageChange function
   const handleRowsPerPageChange = useCallback((newRowsPerPage) => {
-    console.log("📦 Orders: Changing rows per page to:", newRowsPerPage);
+    console.log('📦 Orders: Changing rows per page to:', newRowsPerPage);
     setRowsPerPage(parseInt(newRowsPerPage, 10));
     setPage(0);
   }, []);
@@ -165,14 +242,10 @@ function Orders() {
   // CRUD Operations
   const handleViewOrder = useCallback(
     (orderId) => {
-      const order = orders.find((o) => o.id === orderId);
-      if (order) {
-        navigate(`/admin/orders/${orderId}`, { state: { orderData: order } });
-      } else {
-        toast.error("Order not found");
-      }
+      console.log("👁️ Viewing order:", orderId);
+      navigate(`/admin/orders/view/${orderId}`);
     },
-    [orders, navigate]
+    [navigate]
   );
 
   const openStatusModal = useCallback((order, e) => {
@@ -243,7 +316,7 @@ function Orders() {
               prevOrders.filter((order) => order.id !== orderId)
             );
             toast.success("Order deleted successfully");
-
+            
             // Refresh stats
             fetchOrderStats();
           }
@@ -326,6 +399,26 @@ function Orders() {
     [handleViewOrder, handleDeleteOrder, openStatusModal]
   );
 
+  // Add fetchOrderById function
+  const fetchOrderById = useCallback(async (orderId) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/orders/${orderId}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        setCurrentOrder(response.data.order);
+        setView("view");
+        setShowOrderDetails(true);
+      }
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      toast.error("Failed to load order details");
+      navigate("/admin/orders");
+    }
+  }, [navigate]);
+
   // UPDATE: Enhanced header with more meaningful stats
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -339,7 +432,7 @@ function Orders() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Manage and track all customer orders ({stats.total} total orders)
               {stats.totalRevenue > 0 && (
-                <> • ₹{stats.totalRevenue.toLocaleString("en-IN")} total revenue</>
+                <> • ₹{stats.totalRevenue.toLocaleString('en-IN')} total revenue</>
               )}
               {stats.todaysOrders > 0 && (
                 <> • {stats.todaysOrders} orders today</>
@@ -578,6 +671,40 @@ function Orders() {
         handleStatusUpdate={handleStatusUpdate}
         getStatusColor={getStatusColor}
       />
+
+      {/* Order Details View */}
+      {view === "view" && currentOrder && (
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  setView("list");
+                  setCurrentOrder(null);
+                  setShowOrderDetails(false);
+                  navigate("/admin/orders");
+                }}
+                className="mr-4 text-gray-600 hover:text-gray-800"
+              >
+                <i className="fas fa-arrow-left text-lg"></i>
+              </button>
+              <h1 className="text-2xl font-semibold text-text">
+                Order Details
+              </h1>
+            </div>
+          </div>
+          
+          <OrderDetails 
+            orderData={currentOrder} 
+            onBack={() => {
+              setView("list");
+              setCurrentOrder(null);
+              setShowOrderDetails(false);
+              navigate("/admin/orders");
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
