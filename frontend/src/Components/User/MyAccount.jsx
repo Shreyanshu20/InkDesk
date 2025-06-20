@@ -19,43 +19,40 @@ function MyAccount() {
     role: "",
     isAccountVerified: false,
     status: "",
-    createdAt: "",
-    address_line1: "",
-    address_line2: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
+    createdAt: ""
   });
 
   // Profile form state (email readonly)
   const [profileForm, setProfileForm] = useState({
     first_name: "",
     last_name: "",
-    phone: "",
+    phone: ""
   });
 
-  // Address form state
+  // Address form state - ADD THIS
   const [addressForm, setAddressForm] = useState({
-    address_line1: "",
-    address_line2: "",
+    first_name: "",
+    last_name: "",
+    phone: "",
+    address_line_1: "",
+    address_line_2: "",
     city: "",
     state: "",
     postal_code: "",
-    country: "",
+    country: "India"
   });
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
-    confirmPassword: "",
+    confirmPassword: ""
   });
 
   // Delete account form state
   const [deleteForm, setDeleteForm] = useState({
     password: "",
-    confirmText: "",
+    confirmText: ""
   });
 
   // Load user profile data on component mount
@@ -68,12 +65,8 @@ function MyAccount() {
     try {
       setIsLoading(true);
 
-      console.log("🔄 Fetching user data from backend...");
-      console.log("🌐 Backend URL:", backendUrl);
-
-      // Get user profile and auth data
       const [profileResponse, authResponse] = await Promise.all([
-        axios.get(`${backendUrl}/auth/profile`, {
+        axios.get(`${backendUrl}/user/profile`, {
           withCredentials: true,
           headers: {
             "Content-Type": "application/json",
@@ -91,9 +84,6 @@ function MyAccount() {
         ),
       ]);
 
-      console.log("📊 Profile response:", profileResponse.data);
-      console.log("🔐 Auth response:", authResponse.data);
-
       if (profileResponse.data.success && authResponse.data.success) {
         const user = {
           ...profileResponse.data.user,
@@ -102,36 +92,32 @@ function MyAccount() {
 
         setProfileData(user);
 
-        // Set form data
+        // Set profile form data
         setProfileForm({
           first_name: user.first_name || "",
           last_name: user.last_name || "",
           phone: user.phone || "",
         });
 
-        // Set address form data
-        setAddressForm({
-          address_line1: user.address_line1 || "",
-          address_line2: user.address_line2 || "",
-          city: user.city || "",
-          state: user.state || "",
-          postal_code: user.postal_code || "",
-          country: user.country || "",
-        });
+        // Set address form data with user info - ADD THIS
+        setAddressForm(prev => ({
+          ...prev,
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          phone: user.phone || ""
+        }));
 
         // Update context with fresh data
         setUserData(user);
 
-        console.log("✅ User data loaded successfully");
+        // Fetch addresses after setting user data
+        await fetchUserAddresses();
       }
     } catch (error) {
       console.error("❌ Error fetching user data:", error);
 
       if (error.response?.status === 401) {
-        console.log("🔓 User not authenticated, redirecting to login");
         toast.error("Please login to access your account");
-        // Optionally redirect to login
-        // navigate('/login');
       } else {
         toast.error("Failed to load profile data");
       }
@@ -140,12 +126,44 @@ function MyAccount() {
     }
   };
 
+  // Fetch user addresses
+  const fetchUserAddresses = async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/user/addresses`, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.success && response.data.addresses.length > 0) {
+        // Get the primary address or the first address
+        const primaryAddress = response.data.addresses.find(addr => addr.is_primary) || response.data.addresses[0];
+        
+        setAddressForm({
+          first_name: primaryAddress.first_name || "",
+          last_name: primaryAddress.last_name || "",
+          phone: primaryAddress.phone || "",
+          address_line_1: primaryAddress.address_line_1 || "",
+          address_line_2: primaryAddress.address_line_2 || "",
+          city: primaryAddress.city || "",
+          state: primaryAddress.state || "",
+          postal_code: primaryAddress.postal_code || "",
+          country: primaryAddress.country || "India",
+        });
+      }
+    } catch (error) {
+      // Silent fail - no addresses found is OK
+      console.log("No addresses found or error fetching addresses");
+    }
+  };
+
   // Handle profile form changes
   const handleProfileChange = (field, value) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle address form changes
+  // Handle address form changes - ADD THIS FUNCTION
   const handleAddressChange = (field, value) => {
     setAddressForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -162,13 +180,9 @@ function MyAccount() {
 
   // Validate phone number
   const validatePhone = (phone) => {
-    // Remove all spaces and special characters except +
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-
-    // Allow international format with + or without
     const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
 
-    // Additional validation - check length
     if (cleanPhone.length < 8 || cleanPhone.length > 16) {
       return false;
     }
@@ -180,22 +194,18 @@ function MyAccount() {
   const validatePostalCode = (code, country) => {
     if (!code) return false;
 
-    // Basic validation - at least 3 characters
     if (code.length < 3) return false;
 
-    // India postal code validation
     if (country === "India") {
       const indiaPostalRegex = /^[1-9][0-9]{5}$/;
       return indiaPostalRegex.test(code);
     }
 
-    // US postal code validation
     if (country === "United States") {
       const usPostalRegex = /^\d{5}(-\d{4})?$/;
       return usPostalRegex.test(code);
     }
 
-    // Basic validation for other countries
     return code.length >= 3 && code.length <= 10;
   };
 
@@ -203,7 +213,6 @@ function MyAccount() {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!profileForm.first_name.trim()) {
       toast.error("First name is required");
       return;
@@ -226,14 +235,9 @@ function MyAccount() {
 
     try {
       setIsLoading(true);
-      console.log("📝 Updating profile with data:", {
-        first_name: profileForm.first_name.trim(),
-        last_name: profileForm.last_name.trim(),
-        phone: profileForm.phone.trim(),
-      });
 
       const response = await axios.post(
-        `${backendUrl}/auth/update-profile`,
+        `${backendUrl}/user/update-profile`,
         {
           first_name: profileForm.first_name.trim(),
           last_name: profileForm.last_name.trim(),
@@ -245,7 +249,6 @@ function MyAccount() {
       if (response.data.success) {
         toast.success("Profile updated successfully!");
 
-        // Update local state with the returned user data
         const updatedUser = {
           ...profileData,
           first_name: response.data.user.first_name,
@@ -255,8 +258,6 @@ function MyAccount() {
 
         setProfileData(updatedUser);
         setUserData(updatedUser);
-
-        console.log("✅ Profile updated successfully");
       }
     } catch (error) {
       console.error("❌ Error updating profile:", error);
@@ -268,61 +269,83 @@ function MyAccount() {
     }
   };
 
-  // Update address
+  // Handle address submit - ADD THIS FUNCTION
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-
+    
     // Validation
-    if (!addressForm.address_line1.trim()) {
+    if (!addressForm.first_name.trim()) {
+      toast.error("First name is required");
+      return;
+    }
+    
+    if (!addressForm.last_name.trim()) {
+      toast.error("Last name is required");
+      return;
+    }
+    
+    if (!addressForm.phone.trim()) {
+      toast.error("Phone number is required");
+      return;
+    }
+    
+    if (!validatePhone(addressForm.phone)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+    
+    if (!addressForm.address_line_1.trim()) {
       toast.error("Address line 1 is required");
       return;
     }
-
+    
     if (!addressForm.city.trim()) {
       toast.error("City is required");
       return;
     }
-
+    
     if (!addressForm.postal_code.trim()) {
       toast.error("Postal code is required");
       return;
     }
-
-    if (!addressForm.country) {
-      toast.error("Please select a country");
+    
+    if (!validatePostalCode(addressForm.postal_code, addressForm.country)) {
+      toast.error("Please enter a valid postal code");
       return;
     }
-
-    if (!validatePostalCode(addressForm.postal_code, addressForm.country)) {
-      toast.error("Please enter a valid postal code for the selected country");
+    
+    if (!addressForm.country) {
+      toast.error("Country is required");
       return;
     }
 
     try {
       setIsLoading(true);
+
       const response = await axios.post(
-        `${backendUrl}/auth/update-address`,
+        `${backendUrl}/user/addresses`, 
         {
-          address_line1: addressForm.address_line1.trim(),
-          address_line2: addressForm.address_line2.trim(),
+          first_name: addressForm.first_name.trim(),
+          last_name: addressForm.last_name.trim(),
+          phone: addressForm.phone.trim(),
+          address_line_1: addressForm.address_line_1.trim(),
+          address_line_2: addressForm.address_line_2.trim(),
           city: addressForm.city.trim(),
           state: addressForm.state.trim(),
           postal_code: addressForm.postal_code.trim(),
           country: addressForm.country,
+          is_primary: true
         },
         { withCredentials: true }
       );
 
       if (response.data.success) {
-        toast.success("Address updated successfully!");
-
-        const updatedUser = { ...profileData, ...addressForm };
-        setProfileData(updatedUser);
-        setUserData(updatedUser);
+        toast.success("Address saved successfully!");
       }
     } catch (error) {
-      console.error("❌ Error updating address:", error);
-      toast.error(error.response?.data?.message || "Failed to update address");
+      console.error("❌ Error saving address:", error);
+      const errorMessage = error.response?.data?.message || "Failed to save address";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -354,7 +377,7 @@ function MyAccount() {
     try {
       setIsLoading(true);
       const response = await axios.put(
-        `${backendUrl}/auth/change-password`,
+        `${backendUrl}/user/change-password`,
         {
           oldPassword: passwordForm.oldPassword,
           newPassword: passwordForm.newPassword,
@@ -402,7 +425,7 @@ function MyAccount() {
 
     try {
       setIsLoading(true);
-      const response = await axios.delete(`${backendUrl}/auth/delete-account`, {
+      const response = await axios.delete(`${backendUrl}/user/delete-account`, {
         data: { password: deleteForm.password },
         withCredentials: true,
       });
@@ -412,13 +435,9 @@ function MyAccount() {
           "Account deleted successfully. You will be redirected..."
         );
 
-        // Clear form
         setDeleteForm({ password: "", confirmText: "" });
-
-        // Clear user data
         setUserData(null);
 
-        // Redirect to home after 2 seconds
         setTimeout(() => {
           window.location.href = "/";
         }, 2000);
@@ -431,11 +450,10 @@ function MyAccount() {
     }
   };
 
-  // Send verification email - FIXED ENDPOINT
+  // Send verification email
   const handleSendVerificationEmail = async () => {
     try {
       setIsLoading(true);
-      // CORRECT ENDPOINT: /auth/sendVerificationEmail
       const response = await axios.post(
         `${backendUrl}/auth/sendVerificationEmail`,
         {},
@@ -675,15 +693,64 @@ function MyAccount() {
                   onSubmit={handleAddressSubmit}
                   className="space-y-4 sm:space-y-6"
                 >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-text mb-2">
+                        First Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.first_name}
+                        onChange={(e) =>
+                          handleAddressChange("first_name", e.target.value)
+                        }
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
+                        placeholder="Enter first name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-text mb-2">
+                        Last Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.last_name}
+                        onChange={(e) =>
+                          handleAddressChange("last_name", e.target.value)
+                        }
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
+                        placeholder="Enter last name"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={addressForm.phone}
+                      onChange={(e) =>
+                        handleAddressChange("phone", e.target.value)
+                      }
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
+                      placeholder="Enter phone number"
+                      required
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Address Line 1 <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      value={addressForm.address_line1}
+                      value={addressForm.address_line_1}
                       onChange={(e) =>
-                        handleAddressChange("address_line1", e.target.value)
+                        handleAddressChange("address_line_1", e.target.value)
                       }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                       placeholder="Street address, P.O. Box, company name"
@@ -697,9 +764,9 @@ function MyAccount() {
                     </label>
                     <input
                       type="text"
-                      value={addressForm.address_line2}
+                      value={addressForm.address_line_2}
                       onChange={(e) =>
-                        handleAddressChange("address_line2", e.target.value)
+                        handleAddressChange("address_line_2", e.target.value)
                       }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-text transition-colors text-sm sm:text-base"
                       placeholder="Apartment, suite, unit, building, floor, etc."
@@ -798,7 +865,7 @@ function MyAccount() {
                     >
                       {isLoading && <i className="fas fa-spinner fa-spin"></i>}
                       <i className="fas fa-map-marker-alt"></i>
-                      Update Address
+                      Save Address
                     </button>
                   </div>
                 </form>

@@ -3,10 +3,10 @@ const router = express.Router();
 const bannerController = require('../controllers/banner.controller.js');
 const { userAuth, adminOnly, adminPanelAuth } = require('../middleware/userAuth.js');
 
-// Public routes - no authentication required
+// Public routes 
 router.get('/', bannerController.getBanners);
 
-// Apply authentication and admin panel access to all admin routes
+// authentication and authorization middleware
 router.use('/admin', userAuth);
 router.use('/admin', adminPanelAuth);
 

@@ -50,7 +50,6 @@ const orderSchema = new Schema({
   timestamps: true
 });
 
-// Alternative approach: Generate order number in pre-save if not provided
 orderSchema.pre('save', function(next) {
   if (!this.order_number) {
     this.order_number = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

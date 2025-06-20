@@ -1,58 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const { userAuth } = require('../middleware/userAuth');
-const {
-  addToCart,
-  getCartItems,
-  updateCartItem,
-  removeFromCart,
-  clearCart,
-  getCartCount
-} = require('../controllers/cart.controller');
+const cartController = require('../controllers/cart.controller');
 
 // All cart routes require authentication
 router.use(userAuth);
 
 // Add item to cart
-router.post('/add', addToCart);
+router.post('/add', cartController.addToCart);
 
 // Get cart items
-router.get('/', getCartItems);
+router.get('/', cartController.getCartItems);
 
 // Get cart count (for navbar badge)
-router.get('/count', getCartCount);
+router.get('/count', cartController.getCartCount);
 
 // Update cart item quantity
-router.put('/:cartItemId', updateCartItem);
+router.put('/:cartItemId', cartController.updateCartItem);
 
 // Remove item from cart
-router.delete('/:cartItemId', removeFromCart);
+router.delete('/:cartItemId', cartController.removeFromCart);
 
 // Clear entire cart
-router.post('/clear', clearCart); // Use the controller function
-
-// Debug route to get raw shopping cart data for the logged-in user
-router.get('/debug-raw', async (req, res) => {
-  try {
-    const userId = req.userId;
-    const User = require('../models/user.model');
-    
-    const user = await User.findById(userId);
-    
-    res.json({
-      success: true,
-      debug: {
-        userId,
-        userExists: !!user,
-        shoppingCartLength: user?.shopping_cart?.length || 0,
-        shoppingCartRaw: user?.shopping_cart || [],
-        firstItemDetails: user?.shopping_cart?.[0] || null
-      }
-    });
-    
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+router.post('/clear', cartController.clearCart);
 
 module.exports = router;

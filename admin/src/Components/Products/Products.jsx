@@ -8,7 +8,7 @@ import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getProductTableConfig } from "../Common/tableConfig.jsx";
 import ProductDetails from "./components/ProductDetails";
-import { useAdmin } from "../../context/AdminContext"; // Adjust path as needed
+import { useAdmin } from "../../Context/AdminContext"; // Adjust path as needed
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";

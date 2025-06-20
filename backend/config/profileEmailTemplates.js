@@ -1,292 +1,377 @@
-const profileChangeEmailTemplate = (user, changeType, details = {}) => {
-  const formatDate = (date) => {
-    return new Date(date).toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Kolkata'
-    });
-  };
+module.exports.profileEmailTemplates = {
 
-  let subject, html, text;
-  const timestamp = formatDate(new Date());
+    // Profile Update Success Email Template
+    profileUpdateSuccess: (user, updatedFields) => {
+        const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Profile Updated Successfully</title>
+          <style>
+              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
+              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
+              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
+              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
+              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
+              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
+              @keyframes bounce {
+                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                  40% { transform: translateY(-10px); }
+                  60% { transform: translateY(-5px); }
+              }
+              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
+              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              .update-card { 
+                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
+                  border: 2px solid #dc2626; 
+                  border-radius: 16px; 
+                  padding: 32px; 
+                  margin: 40px 0; 
+                  text-align: left;
+                  position: relative;
+              }
+              .update-card::before {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  height: 4px;
+                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
+                  border-radius: 16px 16px 0 0;
+              }
+              .update-title { font-size: 20px; color: #dc2626; font-weight: 600; margin-bottom: 16px; text-align: center; }
+              .update-list { list-style: none; padding: 0; margin: 0; }
+              .update-list li { font-size: 16px; color: #64748b; margin-bottom: 12px; padding-left: 24px; position: relative; }
+              .update-list li::before { content: '✓'; position: absolute; left: 0; top: 0; color: #dc2626; font-weight: bold; }
+              .update-time { font-size: 14px; color: #64748b; text-align: center; margin-top: 16px; font-weight: 500; }
+              .cta-button { 
+                  display: inline-block; 
+                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
+                  color: #ffffff; 
+                  padding: 18px 36px; 
+                  border-radius: 50px; 
+                  text-decoration: none; 
+                  font-weight: 600; 
+                  font-size: 18px; 
+                  margin-top: 32px; 
+                  font-family: 'Red Rose', serif; 
+                  transition: all 0.3s ease;
+                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+              }
+              .cta-button:hover { 
+                  transform: translateY(-3px); 
+                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
+              }
+              .footer { 
+                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
+                  color: #fef2f2; 
+                  text-align: center; 
+                  padding: 40px 32px; 
+                  position: relative;
+              }
+              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
+              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
+              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
+              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
+              .footer-links a { 
+                  color: #fecaca; 
+                  text-decoration: none; 
+                  font-size: 16px; 
+                  font-weight: 500; 
+                  transition: all 0.3s ease;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+              }
+              .footer-links a:hover { 
+                  color: #ffffff; 
+                  background: rgba(255, 255, 255, 0.1);
+                  transform: translateY(-2px);
+              }
+              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
+              @media (max-width: 600px) {
+                  .container { margin: 20px; border-radius: 16px; }
+                  .header, .content { padding: 40px 24px; }
+                  .footer-links { flex-direction: column; gap: 16px; }
+                  .greeting { font-size: 28px; }
+                  .success-icon { font-size: 64px; }
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="header">
+                  <div class="logo">InkDesk</div>
+                  <div class="tagline">Premium Stationery & Office Supplies</div>
+              </div>
 
-  switch (changeType) {
-    case 'profile':
-      subject = '✅ Profile Updated Successfully - InkDesk';
-      html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Profile Updated - InkDesk</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; }
-                .header h1 { font-size: 24px; margin-bottom: 10px; }
-                .content { padding: 30px 20px; }
-                .change-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745; }
-                .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
-                .detail-label { font-weight: bold; color: #555; }
-                .detail-value { color: #333; }
-                .security-notice { background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
-                .footer { background-color: #343a40; color: white; padding: 20px; text-align: center; }
-                .btn { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>✅ Profile Updated</h1>
-                    <p>Your account information has been successfully updated</p>
-                </div>
-                
-                <div class="content">
-                    <p>Hello <strong>${user.first_name || 'User'}</strong>,</p>
-                    <p>Your profile information has been successfully updated on <strong>${timestamp}</strong>.</p>
-                    
-                    <div class="change-details">
-                        <h3 style="color: #28a745; margin-bottom: 15px;">📝 Updated Information</h3>
-                        ${details.first_name ? `<div class="detail-row"><span class="detail-label">First Name:</span><span class="detail-value">${details.first_name}</span></div>` : ''}
-                        ${details.last_name ? `<div class="detail-row"><span class="detail-label">Last Name:</span><span class="detail-value">${details.last_name}</span></div>` : ''}
-                        ${details.phone ? `<div class="detail-row"><span class="detail-label">Phone Number:</span><span class="detail-value">${details.phone}</span></div>` : ''}
-                        <div class="detail-row"><span class="detail-label">Email Address:</span><span class="detail-value">${user.email} (unchanged)</span></div>
-                    </div>
-                    
-                    <div class="security-notice">
-                        <h4 style="color: #856404; margin-bottom: 10px;">🔒 Security Notice</h4>
-                        <p style="color: #856404;">If you didn't make these changes, please contact our support team immediately.</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/settings" class="btn">View Profile Settings</a>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p><strong>InkDesk</strong> - Your trusted online bookstore</p>
-                    <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">This email was sent to ${user.email}</p>
-                </div>
-            </div>
-        </body>
-        </html>
-      `;
-      text = `Profile Updated - InkDesk\n\nHello ${user.first_name || 'User'},\n\nYour profile has been updated on ${timestamp}.\n\nUpdated Information:\n${details.first_name ? `- First Name: ${details.first_name}\n` : ''}${details.last_name ? `- Last Name: ${details.last_name}\n` : ''}${details.phone ? `- Phone: ${details.phone}\n` : ''}\nIf you didn't make these changes, contact support immediately.\n\nBest regards,\nInkDesk Team`;
-      break;
+              <div class="content">
+                  <div class="success-icon">👤</div>
+                  <div class="greeting">Profile Updated!</div>
+                  <div class="message">
+                      Hello ${user.first_name}! Your InkDesk profile has been successfully updated with the latest information.
+                  </div>
 
-    case 'address':
-      subject = '🏠 Address Updated Successfully - InkDesk';
-      html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Address Updated - InkDesk</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; }
-                .header h1 { font-size: 24px; margin-bottom: 10px; }
-                .content { padding: 30px 20px; }
-                .address-box { background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #17a2b8; }
-                .security-notice { background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
-                .footer { background-color: #343a40; color: white; padding: 20px; text-align: center; }
-                .btn { display: inline-block; padding: 12px 24px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏠 Address Updated</h1>
-                    <p>Your shipping address has been successfully updated</p>
-                </div>
-                
-                <div class="content">
-                    <p>Hello <strong>${user.first_name || 'User'}</strong>,</p>
-                    <p>Your shipping address has been successfully updated on <strong>${timestamp}</strong>.</p>
-                    
-                    <div class="address-box">
-                        <h3 style="color: #17a2b8; margin-bottom: 15px;">📍 Updated Address</h3>
-                        <div style="background-color: white; padding: 15px; border-radius: 5px;">
-                            ${details.address_line1}<br>
-                            ${details.address_line2 ? `${details.address_line2}<br>` : ''}
-                            ${details.city}${details.state ? `, ${details.state}` : ''}<br>
-                            ${details.postal_code}<br>
-                            <strong>${details.country}</strong>
-                        </div>
-                    </div>
-                    
-                    <div class="security-notice">
-                        <h4 style="color: #856404; margin-bottom: 10px;">🔒 Security Notice</h4>
-                        <p style="color: #856404;">This address will be used for all future orders. If you didn't make this change, please contact support immediately.</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/settings" class="btn">Manage Address</a>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p><strong>InkDesk</strong> - Your trusted online bookstore</p>
-                    <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">This email was sent to ${user.email}</p>
-                </div>
-            </div>
-        </body>
-        </html>
-      `;
-      text = `Address Updated - InkDesk\n\nHello ${user.first_name || 'User'},\n\nYour address has been updated on ${timestamp}.\n\nUpdated Address:\n${details.address_line1}\n${details.address_line2 ? `${details.address_line2}\n` : ''}${details.city}${details.state ? `, ${details.state}` : ''}\n${details.postal_code}\n${details.country}\n\nIf you didn't make this change, contact support immediately.\n\nBest regards,\nInkDesk Team`;
-      break;
+                  <div class="update-card">
+                      <div class="update-title">📝 Updated Information</div>
+                      <ul class="update-list">
+                          ${updatedFields.map(field => `<li>${field}</li>`).join('')}
+                      </ul>
+                      <div class="update-time">
+                          Updated on ${new Date().toLocaleDateString('en-IN', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                          })}
+                      </div>
+                  </div>
 
-    case 'password':
-      subject = '🔐 Password Changed Successfully - InkDesk';
-      html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Changed - InkDesk</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; padding: 30px 20px; text-align: center; }
-                .header h1 { font-size: 24px; margin-bottom: 10px; }
-                .content { padding: 30px 20px; }
-                .security-alert { background-color: #f8d7da; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545; }
-                .security-tips { background-color: #d1ecf1; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #17a2b8; }
-                .footer { background-color: #343a40; color: white; padding: 20px; text-align: center; }
-                .btn { display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🔐 Password Changed</h1>
-                    <p>Your account password has been successfully updated</p>
-                </div>
-                
-                <div class="content">
-                    <p>Hello <strong>${user.first_name || 'User'}</strong>,</p>
-                    <p>Your account password was successfully changed on <strong>${timestamp}</strong>.</p>
-                    
-                    <div class="security-alert">
-                        <h3 style="color: #721c24; margin-bottom: 15px;">🚨 Important Security Notice</h3>
-                        <ul style="color: #721c24; margin-left: 20px;">
-                            <li style="margin-bottom: 8px;"><strong>If this was you:</strong> Your account is now more secure with your new password.</li>
-                            <li style="margin-bottom: 8px;"><strong>If this wasn't you:</strong> Someone may have unauthorized access to your account. Please contact support immediately.</li>
-                            <li>All active sessions have been logged out for security.</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="security-tips">
-                        <h4 style="color: #0c5460; margin-bottom: 10px;">💡 Security Tips</h4>
-                        <ul style="color: #0c5460; margin-left: 20px; font-size: 14px;">
-                            <li>Never share your password with anyone</li>
-                            <li>Use a unique password for your InkDesk account</li>
-                            <li>Consider enabling two-factor authentication</li>
-                            <li>Log out from shared devices</li>
-                        </ul>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/login" class="btn">Login with New Password</a>
-                    </div>
-                    
-                    <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-                        <p><strong>Need Help?</strong></p>
-                        <p style="margin: 10px 0;">If you didn't make this change or need assistance:</p>
-                        <p>📧 <a href="mailto:support@inkdesk.com" style="color: #dc3545;">support@inkdesk.com</a></p>
-                        <p>📞 +91 98765 43210</p>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p><strong>InkDesk</strong> - Your trusted online bookstore</p>
-                    <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">This email was sent to ${user.email}</p>
-                </div>
-            </div>
-        </body>
-        </html>
-      `;
-      text = `Password Changed - InkDesk\n\nHello ${user.first_name || 'User'},\n\nYour password was changed on ${timestamp}.\n\nIMPORTANT:\n- If this was you: Your account is now more secure\n- If this wasn't you: Contact support immediately\n\nSecurity Tips:\n- Never share your password\n- Use unique passwords\n- Log out from shared devices\n\nNeed help? Email: support@inkdesk.com\n\nBest regards,\nInkDesk Team`;
-      break;
+                  <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/profile" class="cta-button">
+                      View Profile
+                  </a>
+              </div>
 
-    case 'account_deleted':
-      subject = '👋 Account Deleted Successfully - InkDesk';
-      html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Account Deleted - InkDesk</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; padding: 30px 20px; text-align: center; }
-                .header h1 { font-size: 24px; margin-bottom: 10px; }
-                .content { padding: 30px 20px; }
-                .farewell-box { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d; }
-                .footer { background-color: #343a40; color: white; padding: 20px; text-align: center; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>👋 Account Deleted</h1>
-                    <p>Your InkDesk account has been permanently deleted</p>
-                </div>
-                
-                <div class="content">
-                    <p>Hello <strong>${user.first_name || 'User'}</strong>,</p>
-                    <p>Your InkDesk account has been permanently deleted on <strong>${timestamp}</strong> as requested.</p>
-                    
-                    <div class="farewell-box">
-                        <h3 style="color: #495057; margin-bottom: 15px;">📚 Thank You</h3>
-                        <p>We're sorry to see you go! Thank you for being part of the InkDesk community.</p>
-                        <p style="margin-top: 15px;"><strong>What's been deleted:</strong></p>
-                        <ul style="margin-left: 20px; margin-top: 10px;">
-                            <li>Your account and profile information</li>
-                            <li>Your order history and preferences</li>
-                            <li>Your saved addresses and payment methods</li>
-                            <li>Your wishlist and cart items</li>
-                        </ul>
-                    </div>
-                    
-                    <div style="background-color: #d1ecf1; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #17a2b8;">
-                        <h4 style="color: #0c5460; margin-bottom: 10px;">💫 Come Back Anytime</h4>
-                        <p style="color: #0c5460;">If you ever want to return, you can create a new account anytime. We'd love to welcome you back to our community of book lovers!</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <p style="color: #6c757d; font-style: italic;">"A reader lives a thousand lives before he dies... The man who never reads lives only one." - George R.R. Martin</p>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p><strong>InkDesk</strong> - Your trusted online bookstore</p>
-                    <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">This was sent to ${user.email}</p>
-                </div>
-            </div>
-        </body>
-        </html>
-      `;
-      text = `Account Deleted - InkDesk\n\nHello ${user.first_name || 'User'},\n\nYour account was deleted on ${timestamp}.\n\nThank you for being part of InkDesk. We're sorry to see you go!\n\nWhat's been deleted:\n- Your account and profile\n- Order history\n- Saved addresses\n- Wishlist and cart\n\nYou can create a new account anytime if you want to return.\n\nBest regards,\nInkDesk Team`;
-      break;
-  }
+              <div class="footer">
+                  <div class="footer-logo">InkDesk</div>
+                  <div class="footer-text">Your trusted partner for quality stationery</div>
+                  <div class="footer-links">
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
+                  </div>
+                  <div class="footer-bottom">
+                      © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
+                      This email was sent to ${user.email}
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
 
-  return { subject, html, text };
-};
+        const text = `
+      Profile Updated Successfully!
 
-module.exports = {
-  profileChangeEmailTemplate
+      Hello ${user.first_name},
+
+      Your InkDesk profile has been successfully updated.
+
+      Updated Information:
+      ${updatedFields.map(field => `- ${field}`).join('\n')}
+
+      Updated on ${new Date().toLocaleDateString('en-IN', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+      })}
+
+      View your profile: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/profile
+
+      Best regards,
+      The InkDesk Team
+    `;
+
+        return {
+            subject: '👤 Profile Updated Successfully - InkDesk',
+            html,
+            text
+        };
+    },
+
+    // Password Change Success Email Template  
+    passwordChangeSuccess: (user) => {
+        const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Password Changed Successfully</title>
+          <style>
+              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
+              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
+              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
+              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
+              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
+              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
+              @keyframes bounce {
+                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                  40% { transform: translateY(-10px); }
+                  60% { transform: translateY(-5px); }
+              }
+              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
+              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              .success-card { 
+                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
+                  border: 2px solid #dc2626; 
+                  border-radius: 16px; 
+                  padding: 32px; 
+                  margin: 40px 0; 
+                  position: relative;
+              }
+              .success-card::before {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  height: 4px;
+                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
+                  border-radius: 16px 16px 0 0;
+              }
+              .success-text { font-size: 18px; color: #dc2626; font-weight: 500; margin-bottom: 16px; }
+              .change-time { font-size: 16px; color: #64748b; font-weight: 400; }
+              .security-tips { 
+                  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
+                  border: 2px solid #ef4444; 
+                  border-radius: 12px; 
+                  padding: 24px; 
+                  margin: 32px 0; 
+                  text-align: left;
+              }
+              .security-title { font-size: 18px; color: #b91c1c; font-weight: 600; margin-bottom: 12px; text-align: center; }
+              .security-list { list-style: none; padding: 0; margin: 0; }
+              .security-list li { font-size: 16px; color: #b91c1c; margin-bottom: 8px; padding-left: 24px; position: relative; }
+              .security-list li::before { content: '🔒'; position: absolute; left: 0; top: 0; }
+              .footer { 
+                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
+                  color: #fef2f2; 
+                  text-align: center; 
+                  padding: 40px 32px; 
+                  position: relative;
+              }
+              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
+              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
+              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
+              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
+              .footer-links a { 
+                  color: #fecaca; 
+                  text-decoration: none; 
+                  font-size: 16px; 
+                  font-weight: 500; 
+                  transition: all 0.3s ease;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+              }
+              .footer-links a:hover { 
+                  color: #ffffff; 
+                  background: rgba(255, 255, 255, 0.1);
+                  transform: translateY(-2px);
+              }
+              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
+              @media (max-width: 600px) {
+                  .container { margin: 20px; border-radius: 16px; }
+                  .header, .content { padding: 40px 24px; }
+                  .footer-links { flex-direction: column; gap: 16px; }
+                  .greeting { font-size: 28px; }
+                  .success-icon { font-size: 64px; }
+                  .security-tips { padding: 20px; }
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="header">
+                  <div class="logo">InkDesk</div>
+                  <div class="tagline">Premium Stationery & Office Supplies</div>
+              </div>
+
+              <div class="content">
+                  <div class="success-icon">🔐</div>
+                  <div class="greeting">Password Changed!</div>
+                  <div class="message">
+                      Hello ${user.first_name}! Your InkDesk account password has been successfully changed and your account is secure.
+                  </div>
+
+                  <div class="success-card">
+                      <div class="success-text">
+                          ✅ Your password has been updated successfully
+                      </div>
+                      <div class="change-time">
+                          Changed on ${new Date().toLocaleDateString('en-IN', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                          })}
+                      </div>
+                  </div>
+
+                  <div class="security-tips">
+                      <div class="security-title">🛡️ Security Tips</div>
+                      <ul class="security-list">
+                          <li>Use a strong, unique password for your InkDesk account</li>
+                          <li>Don't share your password with anyone</li>
+                          <li>Log out from shared or public devices</li>
+                          <li>Review your account activity regularly</li>
+                      </ul>
+                  </div>
+              </div>
+
+              <div class="footer">
+                  <div class="footer-logo">InkDesk</div>
+                  <div class="footer-text">Your trusted partner for quality stationery</div>
+                  <div class="footer-links">
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
+                  </div>
+                  <div class="footer-bottom">
+                      © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
+                      This email was sent to ${user.email}
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
+
+        const text = `
+      Password Changed Successfully!
+
+      Hello ${user.first_name},
+
+      Your InkDesk account password has been successfully changed and your account is secure.
+
+      Changed on ${new Date().toLocaleDateString('en-IN', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+      })}
+
+      Security Tips:
+      - Use a strong, unique password for your InkDesk account
+      - Don't share your password with anyone
+      - Log out from shared or public devices
+      - Review your account activity regularly
+
+      Best regards,
+      The InkDesk Team
+    `;
+
+        return {
+            subject: '🔐 Password Changed Successfully - InkDesk',
+            html,
+            text
+        };
+    }
 };

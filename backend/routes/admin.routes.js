@@ -4,9 +4,10 @@ const { userAuth, adminOnly, adminPanelAuth } = require('../middleware/userAuth'
 
 const adminController = require('../controllers/admin.controller');
 
-// Apply authentication and admin panel access to all routes
 router.use(userAuth);
 router.use(adminPanelAuth);
+
+
 
 // ========== PRODUCT MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
@@ -20,6 +21,8 @@ router.put('/products/:id', adminOnly, adminController.updateProduct);
 router.delete('/products/:id', adminOnly, adminController.deleteProduct);
 router.post('/products/bulk-delete', adminOnly, adminController.bulkDeleteProducts);
 
+
+
 // ========== CATEGORY MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
 router.get('/categories', adminController.getAdminCategories);
@@ -31,6 +34,8 @@ router.post('/categories', adminOnly, adminController.createAdminCategory);
 router.put('/categories/:id', adminOnly, adminController.updateAdminCategory);
 router.delete('/categories/:id', adminOnly, adminController.deleteAdminCategory);
 
+
+
 // ========== SUBCATEGORY MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
 router.get('/subcategories', adminController.getAdminSubcategoriesList);
@@ -40,6 +45,8 @@ router.get('/subcategories/:id', adminController.getAdminSubcategoryById);
 router.post('/subcategories', adminOnly, adminController.createAdminSubcategory);
 router.put('/subcategories/:id', adminOnly, adminController.updateAdminSubcategory);
 router.delete('/subcategories/:id', adminOnly, adminController.deleteAdminSubcategory);
+
+
 
 // ========== ORDER MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
@@ -51,6 +58,8 @@ router.get('/orders/:id', adminController.getAdminOrderById);
 router.put('/orders/:id/status', adminOnly, adminController.updateAdminOrderStatus);
 router.delete('/orders/:id', adminOnly, adminController.deleteAdminOrder);
 
+
+
 // ========== USER MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
 router.get('/users', adminController.getUsers);
@@ -61,6 +70,8 @@ router.get('/users/:id', adminController.getUserById);
 router.put('/users/:id', adminOnly, adminController.updateUser);
 router.put('/users/:id/status', adminOnly, adminController.updateUserStatus);
 router.delete('/users/:id', adminOnly, adminController.deleteUser);
+
+
 
 // ========== REVIEW MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user

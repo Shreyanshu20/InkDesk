@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { useAdmin } from "../../../context/AdminContext.jsx";
+import { useAdmin } from "../../../Context/AdminContext.jsx";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -63,7 +63,10 @@ function ProductImageUpload({
         formData.append("images", file);
       });
 
-      console.log("📤 Uploading files:", files.map((f) => f.name));
+      console.log(
+        "📤 Uploading files:",
+        files.map((f) => f.name)
+      );
 
       const response = await axios.post(
         `${API_BASE_URL}/upload/product-images`,
@@ -116,9 +119,7 @@ function ProductImageUpload({
   };
 
   const removeImage = async (index) => {
-    const currentUploaded = Array.isArray(uploadedImages)
-      ? uploadedImages
-      : [];
+    const currentUploaded = Array.isArray(uploadedImages) ? uploadedImages : [];
     const currentPreviews = Array.isArray(previewImages) ? previewImages : [];
 
     if (index < 0 || index >= currentUploaded.length) {
@@ -347,8 +348,7 @@ function ProductImageUpload({
                       className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-1 py-0.5 rounded max-w-20 truncate"
                       title={safeUploadedImages[index].public_id}
                     >
-                      ID:{" "}
-                      {safeUploadedImages[index].public_id.split("/").pop()}
+                      ID: {safeUploadedImages[index].public_id.split("/").pop()}
                     </div>
                   )}
               </div>

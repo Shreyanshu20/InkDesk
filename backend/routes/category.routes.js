@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/category.controller');
 
-// Public routes for user frontend only
+// get all categories
 router.get('/', categoryController.getCategories);
+
+//get all subcategories with categories
 router.get('/with-subcategories', categoryController.getCategoriesWithSubcategories);
-router.get('/:id', categoryController.getCategoryById);
+
+// get subcategories by category ID
+router.get('/subcategories/:categoryId', categoryController.getSubcategoriesByCategory);
 
 module.exports = router;

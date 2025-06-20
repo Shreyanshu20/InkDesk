@@ -14,7 +14,7 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  mobileImage: {  // ADD THIS FIELD
+  mobileImage: { 
     type: String,
     trim: true
   },
@@ -56,7 +56,6 @@ const bannerSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
 bannerSchema.index({ location: 1, isActive: 1, position: 1 });
 
 module.exports = mongoose.model('Banner', bannerSchema);

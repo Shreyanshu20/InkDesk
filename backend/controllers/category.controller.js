@@ -61,68 +61,6 @@ module.exports.getCategoriesWithSubcategories = async (req, res) => {
   }
 };
 
-// Get single category by ID
-module.exports.getCategoryById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const category = await Category.findById(id);
-
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
-    const subcategories = await SubCategory.find({
-      category_id: category._id
-    }).sort({ subcategory_name: 1 });
-
-    res.json({
-      success: true,
-      category: {
-        _id: category._id,
-        category_name: category.category_name,
-        category_image: category.category_image,
-        subcategories: subcategories,
-        createdAt: category.createdAt,
-        updatedAt: category.updatedAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch category',
-      error: error.message
-    });
-  }
-};
-
-// Get all subcategories
-module.exports.getSubcategories = async (req, res) => {
-  try {
-    const subcategories = await SubCategory.find({})
-      .populate('category_id', 'category_name')
-      .sort({ subcategory_name: 1 });
-
-    res.json({
-      success: true,
-      subcategories
-    });
-
-  } catch (error) {
-    console.error('Error fetching subcategories:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch subcategories',
-      error: error.message
-    });
-  }
-};
-
 // Get subcategories by category ID
 module.exports.getSubcategoriesByCategory = async (req, res) => {
   try {

@@ -29,7 +29,7 @@ const productSchema = new Schema({
         },
         public_id: {
             type: String,
-            required: false, // Changed from true to false
+            required: false,
             default: ''
         },
         alt_text: {
@@ -37,7 +37,6 @@ const productSchema = new Schema({
             default: ''
         }
     }],
-    // Keep the old field for backward compatibility
     product_image: {
         type: String,
         default: ''
@@ -55,7 +54,6 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
-    // Simplified rating fields to match your frontend expectations
     product_rating: {
         type: Number,
         default: 0,
@@ -80,7 +78,6 @@ const productSchema = new Schema({
     timestamps: true
 });
 
-// Add a virtual to get the main image (first image)
 productSchema.virtual('mainImage').get(function() {
     if (this.product_images && this.product_images.length > 0) {
         return this.product_images[0].url;

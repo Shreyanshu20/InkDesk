@@ -1,14 +1,11 @@
 const Review = require('../models/review.model');
 const Product = require('../models/product.model');
-const User = require('../models/user.model');
 
-// Create a new review
-const createReview = async (req, res) => {
+module.exports.createReview = async (req, res) => {
     try {
         const userId = req.userId;
         const { product_id, rating, comment } = req.body;
 
-        // Validate required fields (removed title)
         if (!product_id || !rating || !comment) {
             return res.status(400).json({
                 success: false,
@@ -16,7 +13,6 @@ const createReview = async (req, res) => {
             });
         }
 
-        // Validate rating
         if (rating < 1 || rating > 5) {
             return res.status(400).json({
                 success: false,
@@ -24,7 +20,6 @@ const createReview = async (req, res) => {
             });
         }
 
-        // Check if product exists
         const product = await Product.findById(product_id);
         if (!product) {
             return res.status(404).json({
@@ -33,7 +28,6 @@ const createReview = async (req, res) => {
             });
         }
 
-        // Check if user already reviewed this product
         const existingReview = await Review.findOne({
             product_id: product_id,
             user_id: userId
@@ -46,7 +40,6 @@ const createReview = async (req, res) => {
             });
         }
 
-        // Create review (simplified - no title, no verified_purchase)
         const review = new Review({
             product_id,
             user_id: userId,
@@ -56,10 +49,8 @@ const createReview = async (req, res) => {
 
         const savedReview = await review.save();
 
-        // Update product rating
         await updateProductRating(product_id);
 
-        // Populate user data for response
         const populatedReview = await Review.findById(savedReview._id)
             .populate('user_id', 'name first_name last_name email')
             .populate('product_id', 'product_name');
@@ -71,8 +62,6 @@ const createReview = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Create review error:', error);
-
         if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
@@ -88,82 +77,73 @@ const createReview = async (req, res) => {
     }
 };
 
-// Get reviews for a specific product
-const getProductReviews = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const skip = (page - 1) * limit;
-    const sortBy = req.query.sortBy || 'createdAt';
-    const order = req.query.order === 'asc' ? 1 : -1;
+module.exports.getProductReviews = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+        const sortBy = req.query.sortBy || 'createdAt';
+        const order = req.query.order === 'asc' ? 1 : -1;
 
-    // Get paginated reviews
-    const reviews = await Review.find({ product_id: productId })
-      .populate('user_id', 'first_name last_name name')
-      .sort({ [sortBy]: order })
-      .skip(skip)
-      .limit(limit);
+        const reviews = await Review.find({ product_id: productId })
+            .populate('user_id', 'first_name last_name name')
+            .sort({ [sortBy]: order })
+            .skip(skip)
+            .limit(limit);
 
-    // Get total count and complete summary (not just current page)
-    const totalReviews = await Review.countDocuments({ product_id: productId });
-    
-    // Calculate complete summary statistics - SIMPLE VERSION
-    const allReviews = await Review.find({ product_id: productId });
-    
-    let summary = {
-      totalReviews: 0,
-      averageRating: 0,
-      recommendationPercentage: 0
-    };
+        const totalReviews = await Review.countDocuments({ product_id: productId });
 
-    if (allReviews.length > 0) {
-      // Calculate average rating
-      const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
-      summary.averageRating = Number((totalRating / allReviews.length).toFixed(1));
-      
-      // Calculate recommendation percentage (4+ stars)
-      const positiveReviews = allReviews.filter(review => review.rating >= 4).length;
-      summary.recommendationPercentage = Math.round((positiveReviews / allReviews.length) * 100);
-      
-      summary.totalReviews = allReviews.length;
-    }
+        const allReviews = await Review.find({ product_id: productId });
 
-    // Get most recent review date
-    const mostRecentReview = allReviews.length > 0 
-      ? allReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
-      : null;
+        let summary = {
+            totalReviews: 0,
+            averageRating: 0,
+            recommendationPercentage: 0
+        };
 
-    res.json({
-      success: true,
-      data: {
-        reviews,
-        summary: {
-          ...summary,
-          mostRecentDate: mostRecentReview ? mostRecentReview.createdAt : null
-        },
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(totalReviews / limit),
-          totalReviews,
-          hasNextPage: page < Math.ceil(totalReviews / limit),
-          hasPrevPage: page > 1
+        if (allReviews.length > 0) {
+            const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
+            summary.averageRating = Number((totalRating / allReviews.length).toFixed(1));
+
+            const positiveReviews = allReviews.filter(review => review.rating >= 4).length;
+            summary.recommendationPercentage = Math.round((positiveReviews / allReviews.length) * 100);
+
+            summary.totalReviews = allReviews.length;
         }
-      }
-    });
 
-  } catch (error) {
-    console.error('Error fetching product reviews:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching reviews',
-      error: error.message
-    });
-  }
+        const mostRecentReview = allReviews.length > 0
+            ? allReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+            : null;
+
+        res.json({
+            success: true,
+            data: {
+                reviews,
+                summary: {
+                    ...summary,
+                    mostRecentDate: mostRecentReview ? mostRecentReview.createdAt : null
+                },
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(totalReviews / limit),
+                    totalReviews,
+                    hasNextPage: page < Math.ceil(totalReviews / limit),
+                    hasPrevPage: page > 1
+                }
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching reviews',
+            error: error.message
+        });
+    }
 };
 
-// Get user's reviews
-const getUserReviews = async (req, res) => {
+module.exports.getUserReviews = async (req, res) => {
     try {
         const userId = req.userId;
         const page = parseInt(req.query.page) || 1;
@@ -192,7 +172,6 @@ const getUserReviews = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get user reviews error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch user reviews'
@@ -200,14 +179,12 @@ const getUserReviews = async (req, res) => {
     }
 };
 
-// Update a review
-const updateReview = async (req, res) => {
+module.exports.updateReview = async (req, res) => {
     try {
         const userId = req.userId;
         const { reviewId } = req.params;
-        const { rating, comment } = req.body; // Removed title
+        const { rating, comment } = req.body;
 
-        // Find review and check ownership
         const review = await Review.findOne({
             _id: reviewId,
             user_id: userId
@@ -220,7 +197,6 @@ const updateReview = async (req, res) => {
             });
         }
 
-        // Update fields
         if (rating !== undefined) {
             if (rating < 1 || rating > 5) {
                 return res.status(400).json({
@@ -237,12 +213,10 @@ const updateReview = async (req, res) => {
 
         const updatedReview = await review.save();
 
-        // Update product rating if rating changed
         if (rating !== undefined) {
             await updateProductRating(review.product_id);
         }
 
-        // Populate for response
         const populatedReview = await Review.findById(updatedReview._id)
             .populate('user_id', 'name first_name last_name')
             .populate('product_id', 'product_name');
@@ -254,7 +228,6 @@ const updateReview = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Update review error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update review'
@@ -262,13 +235,11 @@ const updateReview = async (req, res) => {
     }
 };
 
-// Delete a review
-const deleteReview = async (req, res) => {
+module.exports.deleteReview = async (req, res) => {
     try {
         const userId = req.userId;
         const { reviewId } = req.params;
 
-        // Find review and check ownership
         const review = await Review.findOne({
             _id: reviewId,
             user_id: userId
@@ -285,7 +256,6 @@ const deleteReview = async (req, res) => {
 
         await Review.findByIdAndDelete(reviewId);
 
-        // Update product rating
         await updateProductRating(productId);
 
         res.json({
@@ -294,7 +264,6 @@ const deleteReview = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete review error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to delete review'
@@ -302,8 +271,8 @@ const deleteReview = async (req, res) => {
     }
 };
 
-// Helper function to update product rating (updated to match new schema)
-const updateProductRating = async (productId) => {
+//utility function to update product rating and review count (used internally)
+module.exports.updateProductRating = async (productId) => {
     try {
         const result = await Review.aggregate([
             {
@@ -323,25 +292,21 @@ const updateProductRating = async (productId) => {
         const averageRating = result.length > 0 ? result[0].averageRating : 0;
         const totalReviews = result.length > 0 ? result[0].totalReviews : 0;
 
-        // Update to match the new flat structure
         await Product.findByIdAndUpdate(productId, {
             product_rating: Math.round(averageRating * 10) / 10,
             review_count: totalReviews
         });
 
-        console.log(`Updated product ${productId} rating to ${averageRating}`);
     } catch (error) {
-        console.error('Error updating product rating:', error);
+        // Silent error handling
     }
 };
 
-// Check if user can review a product
-const canUserReview = async (req, res) => {
+module.exports.canUserReview = async (req, res) => {
     try {
         const userId = req.userId;
         const { productId } = req.params;
 
-        // Check if user already reviewed this product
         const existingReview = await Review.findOne({
             product_id: productId,
             user_id: userId
@@ -356,26 +321,15 @@ const canUserReview = async (req, res) => {
             });
         }
 
-        // Allow all logged-in users to review
         res.json({
             success: true,
             canReview: true
         });
 
     } catch (error) {
-        console.error('Can user review error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to check review eligibility'
         });
     }
-};
-
-module.exports = {
-    createReview,
-    getProductReviews,
-    getUserReviews,
-    updateReview,
-    deleteReview,
-    canUserReview
 };

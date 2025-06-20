@@ -4,7 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import ProductFormFields from "./ProductFormFields";
 import ProductImageUpload from "./ProductImageUpload";
-import { useAdmin } from "../../../context/AdminContext.jsx";
+import { useAdmin } from "../../../Context/AdminContext.jsx";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -94,8 +94,12 @@ function ProductForm({ mode: propMode }) {
     try {
       console.log("🔍 Fetching subcategories for category ID:", categoryId);
 
+      // FIX: Use public endpoint instead of admin endpoint
       const response = await axios.get(
-        `${API_BASE_URL}/subcategories/by-category/${categoryId}`
+        `${API_BASE_URL}/categories/subcategories/${categoryId}`,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
       );
 
       if (response.data.success) {
@@ -118,6 +122,12 @@ function ProductForm({ mode: propMode }) {
     } catch (error) {
       console.error("Error fetching subcategories:", error);
       setFilteredSubcategories([]);
+      
+      // Filter from all subcategories if endpoint doesn't exist
+      if (error.response?.status === 404 && subcategories.length > 0) {
+        const filtered = subcategories.filter(sub => sub.category_id === categoryId);
+        setFilteredSubcategories(filtered);
+      }
     }
   };
 
@@ -143,7 +153,12 @@ function ProductForm({ mode: propMode }) {
   // Fetch subcategories from backend
   const fetchSubcategories = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/subcategories`);
+      // FIX: Use admin endpoint with authentication
+      const response = await axios.get(`${API_BASE_URL}/admin/subcategories`, {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      });
+
       if (response.data.success) {
         setSubcategories(response.data.subcategories);
       }
