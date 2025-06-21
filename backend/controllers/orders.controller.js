@@ -1,6 +1,6 @@
 const Order = require('../models/order.model');
 const Product = require('../models/product.model');
-const User = require('../models/user.model');
+const User = require('../models/User.model');
 const { transporter } = require('../config/nodemailer');
 const { orderConfirmationTemplate } = require('../config/orderEmailTemplate');
 

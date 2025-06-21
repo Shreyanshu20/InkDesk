@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 console.log('🔍 Attempting to load user model...');
 try {
-    var User = require('../models/user.model');
+    var User = require('../models/User.model');
     console.log('✅ User model loaded successfully');
 } catch (error) {
     console.error('❌ Failed to load user model:', error.message);

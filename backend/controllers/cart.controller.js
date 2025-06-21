@@ -1,5 +1,5 @@
 const Product = require('../models/product.model');
-const User = require('../models/user.model');
+const User = require('../models/User.model');
 
 module.exports.addToCart = async (req, res) => {
   try {

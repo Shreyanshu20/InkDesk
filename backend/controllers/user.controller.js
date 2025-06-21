@@ -1,4 +1,4 @@
-const User = require('../models/user.model');
+const User = require('../models/User.model');
 const Address = require('../models/address.model');
 const bcrypt = require('bcryptjs');
 const { transporter } = require('../config/nodemailer');
