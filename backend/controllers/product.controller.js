@@ -26,11 +26,18 @@ module.exports.getProducts = async (req, res) => {
     }
 
     if (search) {
+      console.log("🔍 Main products API called with search:", search);
+      
+      const searchRegex = new RegExp(search, 'i');
       filter.$or = [
-        { product_name: { $regex: search, $options: 'i' } },
-        { product_description: { $regex: search, $options: 'i' } },
-        { product_brand: { $regex: search, $options: 'i' } }
+        { product_name: searchRegex },
+        { product_description: searchRegex },
+        { product_brand: searchRegex },
+        { product_category: searchRegex },
+        { product_subcategory: searchRegex }
       ];
+      
+      console.log("🎯 Search filter applied:", filter.$or);
     }
 
     if (category && category !== 'all') {
@@ -254,8 +261,11 @@ module.exports.getProductsBySubcategory = async (req, res) => {
 module.exports.searchProducts = async (req, res) => {
   try {
     const { q } = req.query;
+    
+    console.log("🔍 Search API called with query:", q);
 
     if (!q || q.trim() === '') {
+      console.log("❌ Empty search query provided");
       return res.json({
         success: true,
         products: [],
@@ -263,15 +273,77 @@ module.exports.searchProducts = async (req, res) => {
       });
     }
 
-    const products = await Product.find({
-      $or: [
-        { product_name: { $regex: q, $options: 'i' } },
-        { product_description: { $regex: q, $options: 'i' } },
-        { product_category: { $regex: q, $options: 'i' } },
-        { product_subcategory: { $regex: q, $options: 'i' } }
-      ]
-    }).populate('category', 'category_name')
-      .limit(20);
+    const searchTerm = q.trim();
+    console.log("🎯 Processing search for:", searchTerm);
+    
+    const searchRegex = new RegExp(searchTerm, 'i');
+    
+    // Create a weighted search query for better relevance
+    const products = await Product.aggregate([
+      {
+        $match: {
+          $or: [
+            { product_name: searchRegex },
+            { product_description: searchRegex },
+            { product_brand: searchRegex },
+            { product_category: searchRegex },
+            { product_subcategory: searchRegex }
+          ]
+        }
+      },
+      {
+        $addFields: {
+          relevanceScore: {
+            $sum: [
+              // Exact name match gets highest score
+              { $cond: [{ $regexMatch: { input: "$product_name", regex: new RegExp(`^${searchTerm}$`, 'i') } }, 100, 0] },
+              // Name starts with search term
+              { $cond: [{ $regexMatch: { input: "$product_name", regex: new RegExp(`^${searchTerm}`, 'i') } }, 50, 0] },
+              // Name contains search term
+              { $cond: [{ $regexMatch: { input: "$product_name", regex: searchRegex } }, 25, 0] },
+              // Brand exact match
+              { $cond: [{ $regexMatch: { input: "$product_brand", regex: new RegExp(`^${searchTerm}$`, 'i') } }, 30, 0] },
+              // Brand contains
+              { $cond: [{ $regexMatch: { input: "$product_brand", regex: searchRegex } }, 15, 0] },
+              // Category/subcategory match
+              { $cond: [{ $regexMatch: { input: "$product_category", regex: searchRegex } }, 20, 0] },
+              { $cond: [{ $regexMatch: { input: "$product_subcategory", regex: searchRegex } }, 20, 0] },
+              // Description contains (lowest priority)
+              { $cond: [{ $regexMatch: { input: "$product_description", regex: searchRegex } }, 5, 0] }
+            ]
+          }
+        }
+      },
+      {
+        $match: {
+          relevanceScore: { $gt: 0 }
+        }
+      },
+      {
+        $sort: { 
+          relevanceScore: -1,
+          product_rating: -1,
+          product_name: 1
+        }
+      },
+      {
+        $limit: 50 // Increased limit for search results
+      }
+    ]);
+
+    // Populate category information
+    await Product.populate(products, { path: 'category', select: 'category_name' });
+
+    console.log(`✅ Search completed. Found ${products.length} products for "${searchTerm}"`);
+    
+    // Log first few results for debugging
+    if (products.length > 0) {
+      console.log("🎯 Top search results:", products.slice(0, 3).map(p => ({
+        name: p.product_name,
+        brand: p.product_brand,
+        score: p.relevanceScore
+      })));
+    }
 
     res.json({
       success: true,
@@ -280,6 +352,7 @@ module.exports.searchProducts = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Search error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to search products',

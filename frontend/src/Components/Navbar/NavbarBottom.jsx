@@ -12,9 +12,9 @@ function NavbarBottom() {
   const { theme, themeToggle } = useTheme();
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
-  const { isLoggedIn, userData, logout } = useContext(AppContent);
+  const { isLoggedIn, userData, logout, backendUrl } = useContext(AppContent);
   const navigate = useNavigate();
-  const location = useLocation(); // Add this to get current route
+  const location = useLocation();
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,9 +22,72 @@ function NavbarBottom() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const mobileMenuRef = useRef(null);
 
+  // Search states
   const [searchText, setSearchText] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [subcategoryResults, setSubcategoryResults] = useState([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  
   const searchRef = useRef(null);
+  const searchDropdownRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+
+  // Search function - Same as NavbarTop
+  const searchProducts = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      setSubcategoryResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchDropdown(true);
+    
+    try {
+      const response = await fetch(`${backendUrl}/products/search?q=${encodeURIComponent(query.trim())}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Get first 5 products for mobile (fewer than desktop)
+        const products = data.products.slice(0, 4);
+        setSearchResults(products);
+        
+        // Extract unique subcategories from search results
+        const subcategories = [...new Set(data.products.map(product => product.product_subcategory).filter(Boolean))].slice(0, 3);
+        setSubcategoryResults(subcategories);
+        
+        setShowSearchDropdown(true);
+      } else {
+        setSearchResults([]);
+        setSubcategoryResults([]);
+        setShowSearchDropdown(true);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+      setSubcategoryResults([]);
+      setShowSearchDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle search input change with debounce
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      searchProducts(value);
+    }, 300);
+  };
 
   // Handle search functionality
   const handleSearchExpand = () => {
@@ -33,6 +96,12 @@ function NavbarBottom() {
       setTimeout(() => {
         document.getElementById("mobile-search-input")?.focus();
       }, 100);
+    } else {
+      // Clear search when closing
+      setSearchText("");
+      setShowSearchDropdown(false);
+      setSearchResults([]);
+      setSubcategoryResults([]);
     }
   };
 
@@ -40,6 +109,7 @@ function NavbarBottom() {
     if (searchText.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchText.trim())}`);
       setIsSearchExpanded(false);
+      setShowSearchDropdown(false);
       setSearchText("");
     }
   };
@@ -48,6 +118,31 @@ function NavbarBottom() {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  // Handle product click from dropdown
+  const handleProductClick = (productId) => {
+    navigate(`/shop/product/${productId}`);
+    setShowSearchDropdown(false);
+    setIsSearchExpanded(false);
+    setSearchText("");
+  };
+
+  // Handle subcategory click from dropdown
+  const handleSubcategoryClick = (subcategory) => {
+    navigate(`/shop?subcategory=${encodeURIComponent(subcategory)}`);
+    setShowSearchDropdown(false);
+    setIsSearchExpanded(false);
+    setSearchText("");
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
   // Handle logout
@@ -78,17 +173,22 @@ function NavbarBottom() {
       // Close search when clicking outside
       if (searchRef.current && !searchRef.current.contains(event.target) && isSearchExpanded) {
         setIsSearchExpanded(false);
+        setShowSearchDropdown(false);
+      }
+      // Close search dropdown when clicking outside
+      if (showSearchDropdown && searchDropdownRef.current && !searchDropdownRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
       }
     }
 
-    if (mobileMenuOpen || showProfileDropdown || isSearchExpanded) {
+    if (mobileMenuOpen || showProfileDropdown || isSearchExpanded || showSearchDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [mobileMenuOpen, showProfileDropdown, isSearchExpanded]);
+  }, [mobileMenuOpen, showProfileDropdown, isSearchExpanded, showSearchDropdown]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -290,10 +390,12 @@ function NavbarBottom() {
 
           {/* Right Side - Actions */}
           <div className="flex items-center space-x-1">
-            {/* Search Button */}
+            {/* Search Button - Always shows search icon */}
             <button
               onClick={handleSearchExpand}
-              className="text-text hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2 transition-all duration-300"
+              className={`text-text hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2 transition-all duration-300 ${
+                isSearchExpanded ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400' : ''
+              }`}
               aria-label="Search"
             >
               <i className="fas fa-search text-lg" aria-hidden="true"></i>
@@ -309,7 +411,7 @@ function NavbarBottom() {
                 <i className="fas fa-user text-lg" aria-hidden="true"></i>
               </button>
 
-              {/* Mobile Profile Dropdown - Removed theme toggle */}
+              {/* Mobile Profile Dropdown */}
               {showProfileDropdown && (
                 <div className="absolute -right-5 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg z-100 py-2 border border-gray-200 dark:border-gray-700">
                   {!isLoggedIn ? (
@@ -319,10 +421,7 @@ function NavbarBottom() {
                         onClick={() => setShowProfileDropdown(false)}
                         className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
-                        <i
-                          className="fas fa-sign-in-alt mr-3"
-                          aria-hidden="true"
-                        ></i>
+                        <i className="fas fa-sign-in-alt mr-3" aria-hidden="true"></i>
                         Login
                       </Link>
                       <Link
@@ -330,10 +429,7 @@ function NavbarBottom() {
                         onClick={() => setShowProfileDropdown(false)}
                         className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
-                        <i
-                          className="fas fa-user-plus mr-3"
-                          aria-hidden="true"
-                        ></i>
+                        <i className="fas fa-user-plus mr-3" aria-hidden="true"></i>
                         Sign Up
                       </Link>
                     </>
@@ -358,9 +454,7 @@ function NavbarBottom() {
                         className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <i className="fas fa-user-circle mr-3"></i>
-                        {userData?.role === "admin"
-                          ? "Admin Dashboard"
-                          : "My Account"}
+                        {userData?.role === "admin" ? "Admin Dashboard" : "My Account"}
                       </Link>
 
                       <Link
@@ -407,10 +501,7 @@ function NavbarBottom() {
               className="text-text relative hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2 transition duration-300"
               aria-label="Shopping cart"
             >
-              <i
-                className="fas fa-shopping-cart text-lg"
-                aria-hidden="true"
-              ></i>
+              <i className="fas fa-shopping-cart text-lg" aria-hidden="true"></i>
               {cartItemCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-primary text-white rounded-full text-xs w-4 h-4 flex items-center justify-center font-bold">
                   {cartItemCount > 99 ? "99+" : cartItemCount}
@@ -420,28 +511,174 @@ function NavbarBottom() {
           </div>
         </div>
 
-        {/* Mobile Search Expandable Bar - Made consistent with desktop design */}
+        {/* Mobile Search Expandable Bar with Dropdown */}
         {isSearchExpanded && (
           <div 
             ref={searchRef}
-            className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-50 px-4 py-3 border-t border-gray-200 dark:border-gray-700"
+            className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-50 border-t border-gray-200 dark:border-gray-700"
           >
-            <div className="relative flex w-full">
-              <input
-                id="mobile-search-input"
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onClick={handleKeyPress}
-                placeholder="Search for products, brands, categories..."
-                className="pl-4 py-3 pr-4 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 w-full rounded-l-full border-none text-sm h-10 focus:outline-none"
-              />
-              <button
-                onClick={handleSearch}
-                className="bg-[#E66354] hover:bg-[#E66354]/80 px-4 py-3 rounded-r-full text-white transition-all duration-300 flex items-center justify-center h-10 flex-shrink-0"
-              >
-                <i className="fas fa-search" aria-hidden="true"></i>
-              </button>
+            <div className="px-4 py-3">
+              <div className="relative flex w-full" ref={searchDropdownRef}>
+                <input
+                  id="mobile-search-input"
+                  type="text"
+                  value={searchText}
+                  onChange={handleSearchChange}
+                  onKeyPress={handleKeyPress}
+                  onFocus={() => searchText.trim().length >= 2 && searchProducts(searchText)}
+                  placeholder="Search for products, brands, categories..."
+                  className="pl-4 py-3 pr-4 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 w-full rounded-l-full border-none text-sm h-10 focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="bg-[#E66354] hover:bg-[#E66354]/80 px-4 py-3 rounded-r-full text-white transition-all duration-300 flex items-center justify-center h-10 flex-shrink-0"
+                  aria-label="Search"
+                >
+                  {isSearching ? (
+                    <i className="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  ) : (
+                    <i className="fas fa-search" aria-hidden="true"></i>
+                  )}
+                </button>
+
+                {/* Mobile Search Dropdown */}
+                {showSearchDropdown && (
+                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 mt-2 max-h-80 overflow-y-auto">
+                    
+                    {/* Loading State */}
+                    {isSearching && (
+                      <div className="p-6 text-center">
+                        <div className="w-6 h-6 border-2 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-3"></div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Searching...</div>
+                      </div>
+                    )}
+
+                    {/* Results when not searching */}
+                    {!isSearching && (
+                      <>
+                        {/* Products Section */}
+                        {searchResults.length > 0 && (
+                          <div className="p-2">
+                            <div className="text-xs font-bold text-red-600 uppercase tracking-wide px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded mb-2">
+                              <i className="fas fa-box mr-1"></i>
+                              Products
+                            </div>
+                            {searchResults.map((product) => (
+                              <div
+                                key={product._id}
+                                onClick={() => handleProductClick(product._id)}
+                                className="flex items-center p-2 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer rounded transition-all duration-200"
+                              >
+                                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                  {product.product_images && product.product_images.length > 0 ? (
+                                    <img
+                                      src={product.product_images[0]?.url || product.product_images[0]}
+                                      alt={product.product_name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : product.product_image ? (
+                                    <img
+                                      src={product.product_image}
+                                      alt={product.product_name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className="w-full h-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center hidden">
+                                    <i className="fas fa-image text-red-400"></i>
+                                  </div>
+                                </div>
+                                <div className="ml-3 flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                                    {product.product_name}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                    by {product.product_brand || 'Unknown Brand'}
+                                  </div>
+                                  <div className="text-sm font-bold text-red-600 dark:text-red-400">
+                                    {formatPrice(product.product_price)}
+                                  </div>
+                                </div>
+                                <div className="flex items-center text-red-400 dark:text-red-300">
+                                  <i className="fas fa-arrow-right text-xs"></i>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Subcategories Section */}
+                        {subcategoryResults.length > 0 && (
+                          <div className="p-2 border-t border-gray-100 dark:border-gray-700">
+                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded mb-2">
+                              <i className="fas fa-tags mr-1"></i>
+                              Categories
+                            </div>
+                            {subcategoryResults.map((subcategory, index) => (
+                              <div
+                                key={index}
+                                onClick={() => handleSubcategoryClick(subcategory)}
+                                className="flex items-center p-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer rounded transition-all duration-200"
+                              >
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex-shrink-0 flex items-center justify-center">
+                                  <i className="fas fa-tag text-blue-600 dark:text-blue-400 text-xs"></i>
+                                </div>
+                                <div className="ml-3 flex-1">
+                                  <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                    {subcategory}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    View all products
+                                  </div>
+                                </div>
+                                <div className="flex items-center text-blue-400 dark:text-blue-300">
+                                  <i className="fas fa-arrow-right text-xs"></i>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* View All Results */}
+                        {searchText.trim() && (searchResults.length > 0 || subcategoryResults.length > 0) && (
+                          <div className="p-2 border-t border-gray-100 dark:border-gray-700">
+                            <button
+                              onClick={handleSearch}
+                              className="w-full p-3 text-left hover:bg-gradient-to-r hover:from-red-50 hover:to-blue-50 dark:hover:from-red-900/10 dark:hover:to-blue-900/10 cursor-pointer rounded transition-all duration-200 flex items-center justify-center text-red-600 dark:text-red-400 font-medium text-sm border border-dashed border-gray-200 dark:border-gray-600"
+                            >
+                              <i className="fas fa-search mr-2"></i>
+                              <span>View all results for "<span className="font-bold">{searchText}</span>"</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* No Results */}
+                        {searchText.trim().length >= 2 && searchResults.length === 0 && subcategoryResults.length === 0 && (
+                          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="fas fa-search text-lg text-gray-400 dark:text-gray-500"></i>
+                            </div>
+                            <div className="text-sm font-medium mb-1">No products found</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              No results for "<span className="font-semibold">{searchText}</span>"
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-500">
+                              Try different keywords
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

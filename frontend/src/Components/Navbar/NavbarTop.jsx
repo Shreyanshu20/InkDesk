@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppContent } from "../../Context/AppContent.jsx";
 import { useCategories } from "../../Context/CategoryContext.jsx";
@@ -9,13 +9,22 @@ import { toast } from "react-toastify";
 
 function NavbarTop() {
   const { theme, themeToggle } = useTheme();
-  const { isLoggedIn, userData, logout } = useContext(AppContent);
+  const { isLoggedIn, userData, logout, backendUrl } = useContext(AppContent);
   const { getWishlistItemCount } = useWishlist();
   const { getCartItemCount } = useCart();
   const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState("");
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  
+  // Search dropdown states
+  const [searchResults, setSearchResults] = useState([]);
+  const [subcategoryResults, setSubcategoryResults] = useState([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const searchTimeoutRef = useRef(null);
+  const searchDropdownRef = useRef(null);
 
   const handleThemeToggle = () => {
     themeToggle();
@@ -30,7 +39,67 @@ function NavbarTop() {
     setShowProfileDropdown(false);
   };
 
-  // Close dropdown when clicking outside
+  // Search function
+  const searchProducts = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      setSubcategoryResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchDropdown(true); // Always show dropdown when searching
+    
+    try {
+      const response = await fetch(`${backendUrl}/products/search?q=${encodeURIComponent(query.trim())}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Get first 5 products
+        const products = data.products.slice(0, 5);
+        setSearchResults(products);
+        
+        // Extract unique subcategories from search results
+        const subcategories = [...new Set(data.products.map(product => product.product_subcategory).filter(Boolean))].slice(0, 4);
+        setSubcategoryResults(subcategories);
+        
+        // Always keep dropdown open to show results or no results message
+        setShowSearchDropdown(true);
+      } else {
+        // Even if API fails, show dropdown with no results
+        setSearchResults([]);
+        setSubcategoryResults([]);
+        setShowSearchDropdown(true);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      // Show dropdown even on error to display no results message
+      setSearchResults([]);
+      setSubcategoryResults([]);
+      setShowSearchDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle search input change with debounce
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for search
+    searchTimeoutRef.current = setTimeout(() => {
+      searchProducts(value);
+    }, 300);
+  };
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -39,13 +108,21 @@ function NavbarTop() {
       ) {
         setShowProfileDropdown(false);
       }
+      
+      if (
+        showSearchDropdown &&
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(event.target)
+      ) {
+        setShowSearchDropdown(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showProfileDropdown]);
+  }, [showProfileDropdown, showSearchDropdown]);
 
   const handleCartClick = (e) => {
     if (!isLoggedIn) {
@@ -69,6 +146,8 @@ function NavbarTop() {
   const handleSearch = () => {
     if (searchText.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchText.trim())}`);
+      setShowSearchDropdown(false);
+      setSearchText("");
     }
   };
 
@@ -76,6 +155,29 @@ function NavbarTop() {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  // Handle product click from dropdown
+  const handleProductClick = (productId) => {
+    navigate(`/shop/product/${productId}`);
+    setShowSearchDropdown(false);
+    setSearchText("");
+  };
+
+  // Handle subcategory click from dropdown
+  const handleSubcategoryClick = (subcategory) => {
+    navigate(`/shop?subcategory=${encodeURIComponent(subcategory)}`);
+    setShowSearchDropdown(false);
+    setSearchText("");
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
   return (
@@ -96,23 +198,175 @@ function NavbarTop() {
 
         {/* Desktop Search Bar - Hidden on mobile/tablet */}
         <div className="hidden lg:flex justify-center items-center max-w-2xl xl:max-w-4xl flex-1 mx-8">
-          <div className="relative flex w-full max-w-3xl">
+          <div className="relative flex w-full max-w-3xl" ref={searchDropdownRef}>
             <input
               type="text"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               onClick={handleKeyPress}
+              onFocus={() => searchText.trim().length >= 2 && searchProducts(searchText)}
               placeholder="Search for products, brands, categories..."
               aria-label="Search for products"
-              className="pl-4 py-3 pr-4 text-gray-700 bg-white w-full rounded-l-full focus:outline-none border-none text-sm h-12"
+              className="pl-4 py-3 pr-4 text-gray-700 bg-white w-full rounded-l-full focus:outline-none border-2 border-gray-50 border-r-0 text-sm h-12"
             />
             <button
               onClick={handleSearch}
-              className="bg-accent px-6 rounded-r-full text-white border-none hover:bg-accent/70 transition-all duration-300 flex items-center justify-center h-12 flex-shrink-0"
+              className="group bg-accent/30 px-6 rounded-r-full text-white border-2 border-gray-50 border-l-0 hover:bg-gray-50 transition-all duration-300 flex items-center justify-center h-12 flex-shrink-0"
               aria-label="Search"
             >
-              <i className="fas fa-search" aria-hidden="true"></i>
+              {isSearching ? (
+                <i className="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              ) : (
+                <i className="fas fa-search group-hover:text-primary transition-all duration-300" aria-hidden="true"></i>
+              )}
             </button>
+
+            {/* Search Dropdown */}
+            {showSearchDropdown && (
+              <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 mt-2 max-h-96 overflow-y-auto">
+                
+                {/* Loading State */}
+                {isSearching && (
+                  <div className="p-8 text-center">
+                    <div className="w-8 h-8 border-2 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Searching...</div>
+                  </div>
+                )}
+
+                {/* Results when not searching */}
+                {!isSearching && (
+                  <>
+                    {/* Products Section */}
+                    {searchResults.length > 0 && (
+                      <div className="p-3">
+                        <div className="text-xs font-bold text-red-600 uppercase tracking-wide px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg mb-2">
+                          <i className="fas fa-box mr-2"></i>
+                          Products
+                        </div>
+                        {searchResults.map((product) => (
+                          <div
+                            key={product._id}
+                            onClick={() => handleProductClick(product._id)}
+                            className="flex items-center p-3 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer rounded-lg transition-all duration-200 border border-transparent hover:border-red-100 dark:hover:border-red-800"
+                          >
+                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-600">
+                              {product.product_images && product.product_images.length > 0 ? (
+                                <img
+                                  src={product.product_images[0]?.url || product.product_images[0]}
+                                  alt={product.product_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : product.product_image ? (
+                                <img
+                                  src={product.product_image}
+                                  alt={product.product_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div className="w-full h-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center hidden">
+                                <i className="fas fa-image text-red-400 text-lg"></i>
+                              </div>
+                            </div>
+                            <div className="ml-4 flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900 dark:text-white text-sm truncate mb-1">
+                                {product.product_name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 truncate mb-1">
+                                by {product.product_brand || 'Unknown Brand'}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-bold text-red-600 dark:text-red-400">
+                                  {formatPrice(product.product_price)}
+                                </div>
+                                {product.product_rating && (
+                                  <div className="flex items-center text-xs text-yellow-500">
+                                    <i className="fas fa-star mr-1"></i>
+                                    {product.product_rating}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center text-red-400 dark:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <i className="fas fa-arrow-right text-sm"></i>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Subcategories Section */}
+                    {subcategoryResults.length > 0 && (
+                      <div className="p-3 border-t border-gray-100 dark:border-gray-700">
+                        <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-2">
+                          <i className="fas fa-tags mr-2"></i>
+                          Categories
+                        </div>
+                        {subcategoryResults.map((subcategory, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleSubcategoryClick(subcategory)}
+                            className="flex items-center p-3 hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer rounded-lg transition-all duration-200 border border-transparent hover:border-blue-100 dark:hover:border-blue-800"
+                          >
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex-shrink-0 flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                              <i className="fas fa-tag text-blue-600 dark:text-blue-400 text-sm"></i>
+                            </div>
+                            <div className="ml-4 flex-1">
+                              <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                                {subcategory}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                View all products in this category
+                              </div>
+                            </div>
+                            <div className="flex items-center text-blue-400 dark:text-blue-300">
+                              <i className="fas fa-arrow-right text-sm"></i>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* View All Results - Only show if we have results */}
+                    {searchText.trim() && (searchResults.length > 0 || subcategoryResults.length > 0) && (
+                      <div className="p-3 border-t border-gray-100 dark:border-gray-700">
+                        <button
+                          onClick={handleSearch}
+                          className="w-full p-4 text-left hover:bg-gradient-to-r hover:from-red-50 hover:to-blue-50 dark:hover:from-red-900/10 dark:hover:to-blue-900/10 cursor-pointer rounded-lg transition-all duration-200 flex items-center justify-center text-red-600 dark:text-red-400 font-semibold text-sm border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-600"
+                        >
+                          <i className="fas fa-search mr-3 text-lg"></i>
+                          <span>View all results for "<span className="font-bold">{searchText}</span>"</span>
+                          <i className="fas fa-arrow-right ml-3"></i>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* No Results - Show when search is complete and no results found */}
+                    {searchText.trim().length >= 2 && searchResults.length === 0 && subcategoryResults.length === 0 && (
+                      <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <i className="fas fa-search text-2xl text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                        <div className="text-sm font-medium mb-2">No products found</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-4">
+                          We couldn't find any products matching "<span className="font-semibold">{searchText}</span>"
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-500">
+                          Try searching with different keywords or check spelling
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -106,6 +106,8 @@ const ProductsPage = () => {
     try {
       console.log("🔍 Fetching products...");
       console.log("Backend URL:", backendUrl);
+      console.log("Current searchTerm state:", searchTerm);
+      console.log("URL search param:", searchParams.get("search"));
 
       const url = `${backendUrl}/products`;
       const params = new URLSearchParams();
@@ -113,8 +115,13 @@ const ProductsPage = () => {
       params.append("page", currentPage);
       params.append("limit", productsPerPage);
 
-      if (searchTerm) {
-        params.append("search", searchTerm);
+      // Use search term from URL if available, otherwise use state
+      const urlSearchTerm = searchParams.get("search");
+      const activeSearchTerm = urlSearchTerm || searchTerm;
+      
+      if (activeSearchTerm && activeSearchTerm.trim()) {
+        params.append("search", activeSearchTerm.trim());
+        console.log("🎯 Adding search term to query:", activeSearchTerm);
       }
 
       if (category && category !== "all") {
@@ -125,6 +132,13 @@ const ProductsPage = () => {
         const subcategoryName = subcategory.replace(/-/g, " ");
         params.append("subcategory", subcategoryName);
         console.log("🎯 Adding subcategory to query:", subcategoryName);
+      }
+
+      // Handle subcategory from search dropdown
+      const subcategoryQuery = searchParams.get("subcategory");
+      if (subcategoryQuery && !category && !subcategory) {
+        params.append("subcategory", subcategoryQuery);
+        console.log("🎯 Adding subcategory from search dropdown:", subcategoryQuery);
       }
 
       if (selectedCategories.length > 0) {
@@ -145,6 +159,18 @@ const ProductsPage = () => {
 
       if (inStockOnly) {
         params.append("inStock", "true");
+      }
+
+      // Handle special URL parameters
+      const featuredParam = searchParams.get("featured");
+      const discountParam = searchParams.get("discount");
+      
+      if (featuredParam === "true") {
+        params.append("featured", "true");
+      }
+      
+      if (discountParam === "true") {
+        params.append("discount", "true");
       }
 
       if (sortOption !== "relevance") {
@@ -168,6 +194,7 @@ const ProductsPage = () => {
       }
 
       console.log("🔍 Final API Parameters:", params.toString());
+      console.log("🌐 Full API URL:", `${url}?${params.toString()}`);
 
       const response = await axios.get(`${url}?${params.toString()}`);
 
@@ -181,6 +208,7 @@ const ProductsPage = () => {
         setTotalPages(response.data.pagination?.totalPages || 1);
 
         console.log("✅ Products loaded successfully:", productsData.length);
+        console.log("📊 Total products found:", response.data.pagination?.totalProducts || productsData.length);
       } else {
         console.error("❌ API returned success: false", response.data);
         toast.error(response.data.message || "Failed to load products");
@@ -230,15 +258,35 @@ const ProductsPage = () => {
 
   useEffect(() => {
     const searchQuery = searchParams.get("search") || "";
-    setSearchTerm(searchQuery);
-
+    const subcategoryQuery = searchParams.get("subcategory") || "";
     const sortParam = searchParams.get("sort");
-    if (sortParam) {
-      setSortOption(sortParam);
+    
+    console.log("🔍 URL Search Parameters:", {
+      search: searchQuery,
+      subcategory: subcategoryQuery,
+      sort: sortParam
+    });
+    
+    // Update search term immediately when URL changes
+    if (searchQuery !== searchTerm) {
+      setSearchTerm(searchQuery);
+      console.log("🎯 Setting search term from URL:", searchQuery);
+    }
+    
+    // Handle subcategory from search dropdown
+    if (subcategoryQuery && !category && !subcategory) {
+      console.log("🎯 Subcategory from search dropdown:", subcategoryQuery);
     }
 
+    // Handle sort parameter
+    if (sortParam && sortParam !== sortOption) {
+      setSortOption(sortParam);
+      console.log("🎯 Setting sort option from URL:", sortParam);
+    }
+
+    // Always fetch brands when URL parameters change
     fetchBrands();
-  }, []);
+  }, [searchParams]); // Keep searchParams dependency
 
   useEffect(() => {
     if (!categories || categories.length === 0) return;
@@ -263,6 +311,7 @@ const ProductsPage = () => {
 
   useEffect(() => {
     if (categories.length > 0) {
+      console.log("🚀 Triggering fetchProducts due to dependency change");
       fetchProducts();
     }
   }, [
@@ -276,7 +325,7 @@ const ProductsPage = () => {
     inStockOnly,
     sortOption,
     currentPage,
-    searchParams,
+    searchParams, // This ensures fetchProducts runs when URL changes
   ]);
 
   useEffect(() => {
@@ -392,6 +441,7 @@ const ProductsPage = () => {
     const featuredParam = searchParams.get("featured");
     const discountParam = searchParams.get("discount");
     const sortParam = searchParams.get("sort");
+    const subcategoryQuery = searchParams.get("subcategory");
 
     if (featuredParam === "true") {
       return "Best Sellers";
@@ -407,6 +457,11 @@ const ProductsPage = () => {
 
     if (searchTerm) {
       return `Search Results for "${searchTerm}"`;
+    }
+
+    // Handle subcategory from search dropdown
+    if (subcategoryQuery && !category && !subcategory) {
+      return `${subcategoryQuery}`;
     }
 
     if (subcategory) {
