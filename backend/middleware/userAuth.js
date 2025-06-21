@@ -1,5 +1,13 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/user.model');
+
+console.log('🔍 Attempting to load user model...');
+try {
+    var User = require('../models/user.model');
+    console.log('✅ User model loaded successfully');
+} catch (error) {
+    console.error('❌ Failed to load user model:', error.message);
+    console.error('❌ Full error:', error);
+}
 
 module.exports.userAuth = async (req, res, next) => {
     try {
