@@ -9,7 +9,7 @@ function SidebarFooter({ collapsed }) {
       <div className="flex flex-col">
         <a
           href={`${import.meta.env.VITE_FRONTEND_URL}/`}
-          className={`flex items-center text-sm text-text transition-all duration-300 rounded-lg p-2 ${
+          className={`flex items-center text-sm text-text transition-all duration-300 rounded-lg px-3 py-2.5 ${
             collapsed ? "justify-center" : ""
           }  hover:bg-accent/30 dark:hover:bg-accent/50`}
           title={collapsed ? "Back to Store" : ""}

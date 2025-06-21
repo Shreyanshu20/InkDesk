@@ -10,7 +10,6 @@ function Navbar({ collapsed, toggleSidebar }) {
   const { adminData, logout, refreshAdminData } = useAdmin();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -42,7 +41,6 @@ function Navbar({ collapsed, toggleSidebar }) {
       categories: { label: "Categories", icon: "fas fa-tags" },
       reviews: { label: "Reviews", icon: "fas fa-star" },
       reports: { label: "Reports", icon: "fas fa-file-chart" },
-      search: { label: "Search", icon: "fas fa-search" },
     };
 
     // Check if we're on the dashboard page
@@ -187,14 +185,6 @@ function Navbar({ collapsed, toggleSidebar }) {
     }
   };
 
-  // Handle search
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!adminData) return "A";
@@ -295,7 +285,7 @@ function Navbar({ collapsed, toggleSidebar }) {
       <div className="flex items-center min-w-0 flex-1">
         <button
           onClick={toggleSidebar}
-          className="mr-4 text-text hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-md p-1.5 transition-all duration-300 flex-shrink-0"
+          className="mr-4 text-text hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-md p-2 transition-all duration-300 flex-shrink-0"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <i
@@ -362,33 +352,13 @@ function Navbar({ collapsed, toggleSidebar }) {
 
       {/* Right-side actions */}
       <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="hidden md:block relative">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 w-40 lg:w-60 rounded-full bg-gray-100 dark:bg-gray-800 border-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-300"
-              aria-label="Search"
-            />
-            <button
-              type="submit"
-              className="absolute left-3 top-2.5 text-gray-400 hover:text-primary transition-colors"
-            >
-              <i className="fas fa-search"></i>
-            </button>
-          </div>
-        </form>
-
         {/* Theme toggle */}
         <button
           onClick={handleThemeToggle}
-          className="p-2 text-text hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-9 h-9 flex justify-center items-center text-text hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/30"
           aria-label="Toggle theme"
         >
-          <i className={`fas ${isDark ? "fa-sun" : "fa-moon"} w-5 h-5`}></i>
+          <i className={`fas ${isDark ? "fa-sun" : "fa-moon"} text-lg`}></i>
         </button>
 
         {/* Notifications */}
@@ -469,7 +439,7 @@ function Navbar({ collapsed, toggleSidebar }) {
 
               <div className="px-4 py-2 text-center bg-gray-50 dark:bg-gray-800 rounded-b-lg">
                 <Link
-                  to="/admin/notifications"
+                  to="#"
                   className="text-sm text-primary hover:underline transition-all duration-300"
                   onClick={() => setNotificationsOpen(false)}
                 >
@@ -543,17 +513,6 @@ function Navbar({ collapsed, toggleSidebar }) {
               <ul className="py-2">
                 <li role="none">
                   <Link
-                    to="/admin/profile"
-                    className="block px-4 py-2 text-sm text-text hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
-                    role="menuitem"
-                    onClick={() => setProfileOpen(false)}
-                  >
-                    <i className="fas fa-user mr-3 w-4 text-center text-primary/80"></i>
-                    My Profile
-                  </Link>
-                </li>
-                <li role="none">
-                  <Link
                     to="/admin/settings"
                     className="block px-4 py-2 text-sm text-text hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
                     role="menuitem"
@@ -565,7 +524,7 @@ function Navbar({ collapsed, toggleSidebar }) {
                 </li>
                 <li role="none">
                   <Link
-                    to="/admin/help"
+                    to="#"
                     className="block px-4 py-2 text-sm text-text hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
                     role="menuitem"
                     onClick={() => setProfileOpen(false)}

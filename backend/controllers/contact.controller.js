@@ -1,6 +1,5 @@
-const express = require('express');
 const { transporter } = require('../config/nodemailer');
-const { contactEmailTemplate } = require('../config/contactEmailTemplate');
+const { contactEmailTemplates } = require('../config/contactEmailTemplate');
 
 module.exports.sendMessage = async (req, res) => {
     try {
@@ -13,7 +12,7 @@ module.exports.sendMessage = async (req, res) => {
             });
         }
 
-        const emailTemplate = contactEmailTemplate({
+        const emailTemplate = contactEmailTemplates.contactConfirmation({
             name: name.trim(),
             email: email.trim(),
             subject: subject?.trim() || 'No subject',

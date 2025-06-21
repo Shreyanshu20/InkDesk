@@ -127,7 +127,7 @@ function Categories() {
               alt={categories[0].category_name}
               className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
               onError={(e) => {
-                e.target.src = "sat.jpg"; // Fallback to static image
+                e.target.src = "sat.jpg"; 
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>

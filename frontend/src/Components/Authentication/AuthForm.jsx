@@ -12,8 +12,14 @@ import { AppContent } from "../../Context/AppContent.jsx";
 function AuthForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { backendUrl, setIsLoggedIn, setUserData, isLoggedIn, loading, userData } =
-    useContext(AppContent);
+  const {
+    backendUrl,
+    setIsLoggedIn,
+    setUserData,
+    isLoggedIn,
+    loading,
+    userData,
+  } = useContext(AppContent);
   const [searchParams] = useSearchParams();
 
   // Determine if this is signup or login based on path
@@ -144,7 +150,11 @@ function AuthForm() {
             setUserData(response.data.user);
 
             // Direct redirect to verification page
-            navigate(`/verify-email?email=${encodeURIComponent(formData.email)}&fromRegistration=true`);
+            navigate(
+              `/verify-email?email=${encodeURIComponent(
+                formData.email
+              )}&fromRegistration=true`
+            );
           } else {
             toast.error(response.data.message || "Registration failed");
           }
@@ -224,17 +234,17 @@ function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center px-4 py-6 md:py-12">
+    <div className="bg-background flex flex-col justify-center px-4 py-6">
       <div className="mx-auto w-full max-w-md md:max-w-lg">
         <div className="bg-white dark:bg-gray-800 p-6 md:p-8 lg:p-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
           {/* Header */}
           <div className="mb-6 md:mb-8">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+              <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-red-600/80 to-red-700/80 flex items-center justify-center">
                 <i
                   className={`fas ${
                     isSignup ? "fa-user-plus" : "fa-sign-in-alt"
-                  } text-white text-lg md:text-xl`}
+                  } text-white text-lg md:text-xl lg:text-2xl`}
                 ></i>
               </div>
             </div>
@@ -433,11 +443,11 @@ function AuthForm() {
                     type="checkbox"
                     checked={formData.rememberMe || false}
                     onChange={handleChange}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                    className="h-3 md:h-4 w-3 md:w-4 md:text-sm text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                   <label
                     htmlFor="rememberMe"
-                    className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                    className="ml-2 block text-xs md:text-sm text-gray-700 dark:text-gray-300"
                   >
                     Remember me
                   </label>
@@ -446,7 +456,7 @@ function AuthForm() {
                 <div className="text-sm">
                   <Link
                     to="/forgot-password"
-                    className="font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="font-medium text-xs md:text-sm text-primary hover:text-primary/80 transition-colors"
                   >
                     Forgot password?
                   </Link>
@@ -502,7 +512,7 @@ function AuthForm() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform"
+                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-700/80 hover:to-red-800/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300"
               >
                 {isSubmitting ? (
                   <>
@@ -539,20 +549,18 @@ function AuthForm() {
               </p>
             </div>
 
-            {/* Admin Link */}
-            <div className="text-center text-sm border-t border-gray-200 dark:border-gray-600 pt-4">
-              <p className="text-gray-600 dark:text-gray-400">
-                Are you a admin?{" "}
-                <a
-                  href={import.meta.env.VITE_ADMIN_URL || "http://localhost:5174"}
-                  className="font-medium text-accent hover:text-accent/80 inline-flex items-center gap-1 transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i className="fas fa-external-link-alt text-xs"></i>
-                  Access Admin Panel
-                </a>
-              </p>
+            {/* Admin Access Button */}
+            <div className="text-center border-t border-gray-200 dark:border-gray-600 pt-6">
+              <a
+                href={import.meta.env.VITE_ADMIN_URL || "http://localhost:5174"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-700/80 hover:to-red-800/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                <i className="fas fa-shield-alt mr-2"></i>
+                Access Admin Panel
+                <i className="fas fa-external-link-alt ml-2 text-sm"></i>
+              </a>
             </div>
           </div>
         </div>

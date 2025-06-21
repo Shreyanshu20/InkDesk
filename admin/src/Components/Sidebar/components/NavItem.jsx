@@ -156,8 +156,8 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
         className={({ isActive }) =>
           `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
             isActive
-              ? "bg-accent text-white"
-              : "text-text hover:bg-accent/30 dark:hover:bg-accent/50"
+              ? "bg-gradient-to-r from-red-600/80 to-red-700/80 text-white"
+              : "text-text hover:bg-accent/50"
           } ${collapsed ? "justify-center" : ""}`
         }
         title={collapsed ? item.name : ""}

@@ -3,6 +3,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Import the screen size hook
+import { useScreenSize } from "./hooks/useScreenSize";
+
+// Import the mobile restriction component
+import MobileRestriction from "./Components/Common/MobileRestriction";
+
 // Import the admin context
 import { AdminContextProvider, useAdmin } from "./Context/AdminContext.jsx";
 
@@ -14,9 +20,9 @@ import ProductForm from "./Components/Products/components/ProductForm";
 import Categories from "./Components/Categories/Categories";
 import CategoryForm from "./Components/Categories/components/CategoryForm";
 import Orders from "./Components/Orders/Orders";
-import OrderDetails from "./Components/Orders/components/OrderDetails"; // Import OrderDetails component
+import OrderDetails from "./Components/Orders/components/OrderDetails";
 import Users from "./Components/Users/Users";
-import UserDetails from "./Components/Users/components/UserDetails"; // Import UserDetails component
+import UserDetails from "./Components/Users/components/UserDetails";
 import Banners from "./Components/Banners/Banners";
 import BannerForm from "./Components/Banners/components/BannerForm";
 import Reviews from "./Components/Reviews/Reviews";
@@ -48,6 +54,30 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Mobile-aware Protected Route Component
+const MobileAwareProtectedRoute = ({ children }) => {
+  const { isMobile } = useScreenSize();
+
+  // Show mobile restriction on small screens
+  if (isMobile) {
+    return <MobileRestriction />;
+  }
+
+  return <ProtectedRoute>{children}</ProtectedRoute>;
+};
+
+// Mobile-aware Login Component
+const MobileAwareLogin = ({ children }) => {
+  const { isMobile } = useScreenSize();
+
+  // Show mobile restriction on small screens
+  if (isMobile) {
+    return <MobileRestriction />;
+  }
+
+  return children;
+};
+
 // Redirect Component for root path
 const RedirectToAdmin = () => {
   return <Navigate to="/admin" replace />;
@@ -74,25 +104,35 @@ function App() {
       />
 
       <Routes>
-        {/* Login Route - NOT PROTECTED */}
+        {/* Login Route - With Mobile Restriction */}
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/signup" element={<AdminLogin />} />
+        <Route
+          path="/admin/login"
+          element={
+            <MobileAwareLogin>
+              <AdminLogin />
+            </MobileAwareLogin>
+          }
+        />
         <Route
           path="/admin/forgot-password"
-          element={<AdminForgotPassword />}
+          element={
+            <MobileAwareLogin>
+              <AdminForgotPassword />
+            </MobileAwareLogin>
+          }
         />
 
         {/* Root redirect */}
         <Route path="/" element={<RedirectToAdmin />} />
 
-        {/* Protected admin routes */}
+        {/* Protected admin routes with mobile restriction */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <MobileAwareProtectedRoute>
               <Layout />
-            </ProtectedRoute>
+            </MobileAwareProtectedRoute>
           }
         >
           <Route index element={<Dashboard />} />

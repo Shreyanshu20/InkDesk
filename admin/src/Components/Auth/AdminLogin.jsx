@@ -85,8 +85,7 @@ function AdminLogin() {
       setIsSubmitting(true);
 
       try {
-        // FIXED: Don't send any role parameter - let backend determine access
-        const result = await login(formData.email, formData.password); // Remove role parameter
+        const result = await login(formData.email, formData.password);
         
         if (result.success) {
           toast.success("Login successful! Redirecting to dashboard...");
@@ -131,8 +130,50 @@ function AdminLogin() {
 
   return (
     <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 relative">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Info Bar - Top Right */}
+      <div className="absolute top-4 right-4 z-10 flex space-x-3">
+        {/* Access Information */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 shadow-lg max-w-xs">
+          {/* Header */}
+          <div className="flex items-center space-x-2 mb-3">
+            <i className="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              Access Information
+            </span>
+          </div>
+          
+          {/* Access Details */}
+          <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-user-shield text-red-600 w-3"></i>
+              <span><strong className="text-gray-800 dark:text-gray-200">Admin:</strong> Full access to all features</span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-eye text-blue-600 w-3"></i>
+              <span><strong className="text-gray-800 dark:text-gray-200">User:</strong> Read-only access only</span>
+            </div>
+            
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+              <div className="flex items-start space-x-2">
+                <i className="fas fa-plus-circle text-green-600 w-3 mt-0.5"></i>
+                <span>
+                  New user? 
+                  <a 
+                    href={import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+                  >
+                    Create account on main site
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Theme Toggle */}
         <button
           onClick={handleThemeToggle}
           className="text-text w-12 h-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 shadow-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
@@ -148,7 +189,7 @@ function AdminLogin() {
           {/* Header */}
           <div className="mb-6 md:mb-8">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+              <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-red-600/80 to-red-700/80 flex items-center justify-center">
                 <i className="fas fa-user-shield text-white text-lg md:text-xl"></i>
               </div>
             </div>
@@ -286,7 +327,7 @@ function AdminLogin() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex justify-center items-center py-3 md:py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm md:text-base font-medium text-white bg-gradient-to-r from-red-600/80 to-red-700/80 hover:from-red-700/80 hover:to-red-800/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300"
               >
                 {isSubmitting ? (
                   <>

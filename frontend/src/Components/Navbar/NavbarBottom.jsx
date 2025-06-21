@@ -692,7 +692,7 @@ function NavbarBottom() {
         }`}
       >
         {/* Mobile Menu Header */}
-        <div className="bg-primary flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <Link to="/" onClick={() => setMobileMenuOpen(false)}>
             <img
               src="/brandlogo.png"

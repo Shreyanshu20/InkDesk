@@ -36,12 +36,9 @@ function RecentOrders({ orders }) {
             className="p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
           >
             <div className="flex justify-between mb-2">
-              <Link
-                to={`/admin/orders/${order.id}`}
-                className="text-sm font-medium text-primary hover:underline"
-              >
+              <p className="text-sm font-medium text-primary">
                 {order.id}
-              </Link>
+              </p>
               <span className="text-xs text-text/60">{order.date}</span>
             </div>
             <div className="flex justify-between items-center">

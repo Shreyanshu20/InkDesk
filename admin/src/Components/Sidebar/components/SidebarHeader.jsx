@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 function SidebarHeader({ collapsed }) {
   return (
-    <div className="bg-primary flex items-center justify-between h-16 px-4 border-b border-primary/20 shadow-sm">
+    <div className="bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-between h-16 px-4 border-b border-primary/20 shadow-sm">
       <Link
         to="/admin"
         className="w-full flex justify-center"

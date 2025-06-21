@@ -475,7 +475,7 @@ function NavbarTop() {
           {/* Theme Toggle */}
           <button
             onClick={handleThemeToggle}
-            className="text-white text-xl flex items-center hover:bg-white hover:text-primary rounded-full p-2 transition-all duration-300"
+            className="w-9 h-9 flex justify-center items-center text-white text-xl hover:bg-white hover:text-primary rounded-full p-2 transition-all duration-300"
             aria-label="Toggle theme"
           >
             {theme === "dark" ? (
@@ -489,7 +489,7 @@ function NavbarTop() {
           <Link
             to="/wishlist"
             onClick={handleWishlistClick}
-            className="text-white text-xl relative flex items-center hover:bg-white hover:text-primary rounded-full p-2 transition duration-300"
+            className="w-9 h-9 flex justify-center items-center text-white text-xl relative hover:bg-white hover:text-primary rounded-full p-2 transition duration-300"
             aria-label="My wishlist"
           >
             <i className="fas fa-heart" aria-hidden="true"></i>
@@ -504,7 +504,7 @@ function NavbarTop() {
           <Link
             to="/cart"
             onClick={handleCartClick}
-            className="text-white text-xl relative flex items-center hover:bg-white hover:text-primary rounded-full p-2 transition duration-300"
+            className="w-9 h-9 flex justify-center items-center text-white text-xl relative hover:bg-white hover:text-primary rounded-full p-2 transition duration-300"
             aria-label="Shopping cart"
           >
             <i className="fas fa-shopping-cart" aria-hidden="true"></i>

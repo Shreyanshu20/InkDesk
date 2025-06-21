@@ -7,7 +7,7 @@ function HeroSkeleton() {
       
       <div className="absolute inset-0 flex items-center px-8 lg:px-16">
         <div className="max-w-lg md:max-w-xl lg:max-w-2xl space-y-4 md:space-y-6">
-          <div className="h-8 md:h-12 lg:h-16 bg-gray-400 dark:bg-gray-500 rounded animate-pulse"></div>
+          <div className="w-96 h-8 md:h-12 lg:h-16 bg-gray-400 dark:bg-gray-500 rounded animate-pulse"></div>
           <div className="h-4 md:h-6 bg-gray-400 dark:bg-gray-500 rounded w-3/4 animate-pulse"></div>
           <div className="h-10 md:h-12 bg-gray-400 dark:bg-gray-500 rounded w-32 animate-pulse"></div>
         </div>

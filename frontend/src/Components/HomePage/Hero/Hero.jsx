@@ -139,7 +139,7 @@ function Hero() {
                   <div>
                     <Link
                       to={slide.buttonLink}
-                      className="inline-flex items-center bg-primary hover:bg-primary/90 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm md:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center bg-primary hover:bg-primary/90 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-bold text-sm md:text-lg transition-all duration-300 transform hover:scale-102 shadow-lg hover:shadow-xl"
                     >
                       <span>{slide.buttonText}</span>
                       <i className="fas fa-arrow-right ml-2 md:ml-3 transition-transform duration-300"></i>

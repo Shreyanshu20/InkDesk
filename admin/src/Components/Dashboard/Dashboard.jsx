@@ -233,7 +233,7 @@ function Dashboard() {
 
     return Object.values(productSales)
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5)
+      .slice(0, 8)
       .map((product, index) => ({
         id: index + 1,
         name: product.name,
@@ -612,8 +612,6 @@ function Dashboard() {
             dashboardData.stats.orders.recentOrders || 0
           } recent orders`}
           icon="fas fa-chart-line"
-          iconBg="bg-green-100 dark:bg-green-900/30"
-          iconColor="text-green-600 dark:text-green-400"
         />
 
         <StatCard
@@ -623,8 +621,6 @@ function Dashboard() {
             Math.round(dashboardData.stats.orders.averageOrderValue || 0)
           )}`}
           icon="fas fa-shopping-bag"
-          iconBg="bg-primary/10 dark:bg-primary/20"
-          iconColor="text-primary"
         />
 
         <StatCard
@@ -632,8 +628,6 @@ function Dashboard() {
           value={(dashboardData.stats.products.totalProducts || 0).toLocaleString()}
           change={`${dashboardData.stats.products.outOfStockProducts || 0} out of stock`}
           icon="fas fa-box"
-          iconBg="bg-secondary/10 dark:bg-secondary/20"
-          iconColor="text-secondary"
         />
 
         <StatCard
@@ -641,8 +635,6 @@ function Dashboard() {
           value={(dashboardData.stats.users.total || 0).toLocaleString()}
           change={`${dashboardData.stats.users.recentUsers || 0} new this week`}
           icon="fas fa-users"
-          iconBg="bg-accent/10 dark:bg-accent/20"
-          iconColor="text-accent"
         />
       </div>
 
