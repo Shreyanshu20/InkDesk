@@ -11,37 +11,46 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Initialize theme from localStorage or default to 'light'
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      return savedTheme || 'light';
-    }
-    return 'light';
-  });
+  // Get current theme based on the toggle logic
+  const getCurrentTheme = () => {
+    if (typeof window === 'undefined') return 'light';
+    
+    return localStorage.theme === "dark" ||
+      (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ? 'dark' : 'light';
+  };
 
-  // Apply theme to document and save to localStorage
+  const [theme, setTheme] = useState(getCurrentTheme);
+
+  // Apply theme on mount and when theme changes
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    // Remove previous theme classes
-    root.classList.remove('light', 'dark');
-    
-    // Add current theme class
-    root.classList.add(theme);
-    
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
-    
-    console.log('Theme applied:', theme, 'HTML classes:', root.className);
+    // On page load or when changing themes
+    document.documentElement.classList.toggle(
+      "dark",
+      localStorage.theme === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
   }, [theme]);
 
   const themeToggle = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      console.log('Theme toggled from', prevTheme, 'to', newTheme);
-      return newTheme;
-    });
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    
+    if (newTheme === 'light') {
+      // Whenever the user explicitly chooses light mode
+      localStorage.theme = "light";
+    } else {
+      // Whenever the user explicitly chooses dark mode
+      localStorage.theme = "dark";
+    }
+
+    // Apply the toggle logic immediately
+    document.documentElement.classList.toggle(
+      "dark",
+      localStorage.theme === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
+
+    setTheme(newTheme);
   };
 
   return (
