@@ -279,3 +279,98 @@ module.exports.deleteSubcategoryImage = async (req, res) => {
     });
   }
 };
+
+module.exports.uploadBannerImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No images provided'
+      });
+    }
+
+    const uploadPromises = req.files.map(file => {
+      return cloudinary.uploader.upload(file.path, {
+        folder: 'inkdesk/banners',
+        transformation: [
+          { width: 1920, height: 1080, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      });
+    });
+
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Cleanup temp files
+    req.files.forEach(file => {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (error) {
+        // Silent cleanup
+      }
+    });
+
+    const images = uploadResults.map((result, index) => ({
+      url: result.secure_url,
+      public_id: result.public_id,
+      alt_text: `Banner Image ${index + 1}`
+    }));
+
+    res.json({
+      success: true,
+      images,
+      message: `Successfully uploaded ${images.length} banner image(s)`
+    });
+
+  } catch (error) {
+    // Cleanup temp files on error
+    if (req.files) {
+      req.files.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (cleanupError) {
+          // Silent cleanup
+        }
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading banner images',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+module.exports.deleteBannerImage = async (req, res) => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId || publicId === 'undefined' || publicId === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid public_id provided'
+      });
+    }
+
+    const deleteResult = await cloudinary.uploader.destroy(publicId);
+
+    if (deleteResult.result === 'ok' || deleteResult.result === 'not found') {
+      res.json({
+        success: true,
+        message: 'Banner image deleted successfully',
+        result: deleteResult
+      });
+    } else {
+      throw new Error('Failed to delete from Cloudinary');
+    }
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete banner image',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};

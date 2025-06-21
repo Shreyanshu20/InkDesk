@@ -302,7 +302,7 @@ function BannerForm() {
 
   const uploadImage = async (file) => {
     const uploadFormData = new FormData();
-    uploadFormData.append("images", file); // Changed from "image" to "images" to match other components
+    uploadFormData.append("images", file); // Keep "images" to match the route
 
     try {
       const token =
@@ -312,8 +312,8 @@ function BannerForm() {
           "$1"
         );
 
-      // FIX: Use the same path as other upload components
-      const response = await fetch(`${API_BASE_URL}/api/upload/category-images`, {
+      // Fixed: Use the correct path that matches your upload routes
+      const response = await fetch(`${API_BASE_URL}/upload/banner-image`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -325,7 +325,7 @@ function BannerForm() {
       const data = await response.json();
 
       if (data.success) {
-        // Handle response format from category-images endpoint
+        // Handle response format from banner-image endpoint
         return data.images && data.images.length > 0 ? data.images[0].url : data.image?.url;
       } else {
         throw new Error(data.message || "Upload failed");

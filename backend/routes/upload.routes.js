@@ -37,4 +37,10 @@ router.post('/subcategory-images', userAuth, upload.array('images', 1), uploadCo
 // Delete subcategory image
 router.delete('/subcategory-images/:publicId', userAuth, uploadController.deleteSubcategoryImage);
 
+// Upload Banner images
+router.post('/banner-image', userAuth, upload.array('images', 2), uploadController.uploadBannerImages);
+
+// Delete banner image
+router.delete('/banner-images/:publicId', userAuth, uploadController.deleteBannerImage);
+
 module.exports = router;
