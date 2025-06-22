@@ -15,12 +15,12 @@ const API_BASE_URL =
 
 function Products() {
   const { isLoggedIn } = useContext(AppContent);
-  const { addToCart } = useCart();
+  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart(); // Add loading state
   const {
     isInWishlist,
     addToWishlist,
     removeFromWishlist,
-    loading: wishlistLoading,
+    isButtonLoading: isWishlistButtonLoading, // Add loading state
   } = useWishlist();
 
   const [activeTab, setActiveTab] = useState("featured");
@@ -206,6 +206,13 @@ function Products() {
         : product.product_price;
 
     const productInWishlist = isInWishlist(product._id);
+    
+    // Get loading states for this specific product
+    const isWishlistAddLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`);
+    const isWishlistRemoveLoading = isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+    const wishlistLoading = isWishlistAddLoading || isWishlistRemoveLoading;
+    
+    const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
     return (
       <div className="group relative h-full">
@@ -240,6 +247,7 @@ function Products() {
                 </div>
               )}
 
+              {/* Updated Wishlist Button with Loading States */}
               <button
                 onClick={(e) => toggleWishlist(e, product._id)}
                 disabled={wishlistLoading}
@@ -252,11 +260,15 @@ function Products() {
                   productInWishlist ? "Remove from wishlist" : "Add to wishlist"
                 }
               >
-                <i
-                  className={`fas fa-heart text-sm ${
-                    productInWishlist ? "text-white" : ""
-                  }`}
-                ></i>
+                {wishlistLoading ? (
+                  <i className="fas fa-spinner fa-spin text-sm"></i>
+                ) : (
+                  <i
+                    className={`fas fa-heart text-sm ${
+                      productInWishlist ? "text-white" : ""
+                    }`}
+                  ></i>
+                )}
               </button>
             </div>
 
@@ -296,15 +308,23 @@ function Products() {
           </div>
         </Link>
 
+        {/* Updated Add to Cart Button with Loading States */}
         {inStock ? (
           <Button
-            className="absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
+            className={`absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+              isCartLoading ? "cursor-wait" : ""
+            }`}
             variant="primary"
             size="icon"
             onClick={(e) => handleAddToCart(e, product._id)}
+            disabled={isCartLoading}
             aria-label="Add to cart"
           >
-            <i className="fas fa-shopping-cart text-sm"></i>
+            {isCartLoading ? (
+              <i className="fas fa-spinner fa-spin text-sm"></i>
+            ) : (
+              <i className="fas fa-shopping-cart text-sm"></i>
+            )}
           </Button>
         ) : (
           <Button

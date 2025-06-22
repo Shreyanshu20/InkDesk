@@ -3,9 +3,6 @@ import { useWishlist } from "../../../Context/WishlistContext.jsx";
 import StarRating from "../../Common/StarRating";
 import PriceDisplay from "../../Common/PriceDisplay";
 import QuantitySelector from "../../Common/QuantitySelector";
-import Button from "../../Common/Button";
-import InfoIcon from "../../Common/InfoIcon";
-import SocialShare from "../../Common/SocialShare";
 import { toast } from "react-toastify";
 
 function Details({
@@ -24,16 +21,23 @@ function Details({
     addToWishlist,
     removeFromWishlist,
     isInWishlist,
-    loading: wishlistLoading,
+    isButtonLoading,
   } = useWishlist();
 
-  const productInWishlist = isInWishlist(product._id || product.id);
+  // Use the original _id from the server (this is what the backend expects)
+  const productId = product._id;
+  const productInWishlist = isInWishlist(productId);
+  
+  // Get loading states for this specific product
+  const isWishlistAddLoading = isButtonLoading(`add-wishlist-${productId}`);
+  const isWishlistRemoveLoading = isButtonLoading(`remove-wishlist-${productId}`);
+  const wishlistLoading = isWishlistAddLoading || isWishlistRemoveLoading;
 
   const handleWishlistToggle = async () => {
     if (productInWishlist) {
-      await removeFromWishlist(product._id || product.id);
+      await removeFromWishlist(productId);
     } else {
-      await addToWishlist(product._id || product.id);
+      await addToWishlist(productId);
     }
   };
 
@@ -41,7 +45,7 @@ function Details({
     <div className="bg-background">
       <div className="max-w-7xl mx-auto px-6 py-2 md:py-5">
         <div className="grid lg:grid-cols-2 gap-2 lg:gap-16">
-          {/* Image Gallery */}
+          {/* Image Gallery - Keep existing code */}
           <div className="space-y-4">
             <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative border border-gray-200 dark:border-gray-700">
               <img
@@ -178,8 +182,17 @@ function Details({
                       : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-2 border-gray-300 dark:border-gray-600"
                   }`}
                 >
-                  <i className={`fas ${product.stock > 0 ? "fa-shopping-cart" : "fa-bell"}`}></i>
-                  {cartLoading ? "Adding..." : product.stock > 0 ? "Add to Cart" : "Notify Me"}
+                  {cartLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <i className={`fas ${product.stock > 0 ? "fa-shopping-cart" : "fa-bell"}`}></i>
+                      {product.stock > 0 ? "Add to Cart" : "Notify Me"}
+                    </>
+                  )}
                 </button>
 
                 <button
@@ -196,6 +209,7 @@ function Details({
                 </button>
               </div>
 
+              {/* Fixed Wishlist Button */}
               <button
                 onClick={handleWishlistToggle}
                 disabled={wishlistLoading}
@@ -203,14 +217,19 @@ function Details({
                   productInWishlist
                     ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
                     : "bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-text hover:bg-gray-200 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
-                }`}
+                } ${wishlistLoading ? "cursor-wait opacity-70" : ""}`}
               >
-                <i className={`${productInWishlist ? "fas fa-heart" : "far fa-heart"}`}></i>
-                {wishlistLoading
-                  ? "Loading..."
-                  : productInWishlist
-                  ? "Remove from Wishlist"
-                  : "Add to Wishlist"}
+                {wishlistLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    {productInWishlist ? "Removing..." : "Adding..."}
+                  </>
+                ) : (
+                  <>
+                    <i className={`${productInWishlist ? "fas fa-heart" : "far fa-heart"}`}></i>
+                    {productInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                  </>
+                )}
               </button>
             </div>
 

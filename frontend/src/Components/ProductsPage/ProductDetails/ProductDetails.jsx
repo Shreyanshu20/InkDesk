@@ -43,6 +43,7 @@ function ProductDetails() {
 
           const transformedProduct = {
             id: productData._id,
+            _id: productData._id, // This is the MongoDB ObjectId that backend expects
             name: productData.product_name,
             author: productData.product_brand || "Unknown Brand",
             price: parseFloat(productData.product_price) || 0,

@@ -39,13 +39,17 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
       return;
     }
 
-    const productInWishlist = isInWishlist(productId);
+    // Use product._id (the MongoDB ObjectId) not product.id
+    const actualProductId = productId;
+    console.log('Toggling wishlist for product:', actualProductId); // Debug log
+    
+    const productInWishlist = isInWishlist(actualProductId);
 
     try {
       if (productInWishlist) {
-        await removeFromWishlist(productId);
+        await removeFromWishlist(actualProductId);
       } else {
-        await addToWishlist(productId);
+        await addToWishlist(actualProductId);
       }
     } catch (error) {
       console.error("Wishlist toggle error:", error);
