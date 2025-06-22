@@ -9,6 +9,7 @@ import BulkActions from "../Common/BulkActions";
 import { getOrderTableConfig } from "../Common/tableConfig";
 import StatusUpdateModal from "./components/StatusUpdateModal";
 import { getStatusColor } from "./components/utils";
+import OrdersSkeleton from "./OrdersSkeleton"; // Add this import
 
 // Update the API calls to use the correct base URL
 const API_BASE_URL =
@@ -385,9 +386,13 @@ function Orders() {
     [handleViewOrder, handleDeleteOrder, openStatusModal]
   );
 
-  // UPDATE: Enhanced header with more meaningful stats
+  // Show full page skeleton when loading initially
+  if (isLoading && orders.length === 0) {
+    return <OrdersSkeleton />;
+  }
+
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background">
       {/* Header with Stats */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
@@ -417,10 +422,10 @@ function Orders() {
           </button>
         </div>
 
-        {/* Enhanced Stats Cards with more details */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           {/* Total Orders */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <i className="fas fa-shopping-cart text-blue-600 dark:text-blue-400"></i>
@@ -442,7 +447,7 @@ function Orders() {
           </div>
 
           {/* Rest of the stats cards remain the same but will now show correct totals */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
                 <i className="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
@@ -458,7 +463,7 @@ function Orders() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <i className="fas fa-cog text-blue-600 dark:text-blue-400"></i>
@@ -474,7 +479,7 @@ function Orders() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                 <i className="fas fa-truck text-purple-600 dark:text-purple-400"></i>
@@ -490,7 +495,7 @@ function Orders() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                 <i className="fas fa-check-circle text-green-600 dark:text-green-400"></i>
@@ -506,7 +511,7 @@ function Orders() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                 <i className="fas fa-times-circle text-red-600 dark:text-red-400"></i>
@@ -576,6 +581,7 @@ function Orders() {
       {/* Orders Table */}
       <div className="bg-white dark:bg-gray-800 rounded-md shadow-sm">
         {isLoading ? (
+          // Show loading spinner for subsequent loads
           <div className="flex justify-center items-center h-64">
             <Loader />
           </div>
@@ -596,13 +602,12 @@ function Orders() {
               itemKey="id"
             />
 
-            {/* Pagination */}
             <Pagination
               page={page}
               rowsPerPage={rowsPerPage}
               totalItems={totalOrders}
               handlePageChange={handlePageChange}
-              handleRowsPerPageChange={handleRowsPerPageChange} // ✅ Now passes value directly
+              handleRowsPerPageChange={handleRowsPerPageChange}
               entityName="orders"
             />
           </>
@@ -612,7 +617,7 @@ function Orders() {
       {/* Bulk Actions */}
       {selectedOrders.length > 0 && (
         <BulkActions
-          selectedItems={selectedOrders} // ✅ Change from selectedCount
+          selectedItems={selectedOrders}
           actions={[
             {
               label: "Delete Selected",

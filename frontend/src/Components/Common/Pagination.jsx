@@ -27,11 +27,25 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
 
   const pageNumbers = getPageNumbers();
 
+  // Helper function to scroll to top when page changes
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+
+    // Scroll to top with smooth behavior
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    }, 50); // Small delay to ensure state update happens first
+  };
+
   return (
     <div className="mt-8 flex justify-center">
       <div className="flex items-center space-x-2">
         <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
           className="h-10 w-10 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 bg-background text-text hover:bg-gray-50 hover:dark:bg-gray-700 disabled:opacity-50"
           aria-label="Previous page"
@@ -48,11 +62,11 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
                   ...
                 </span>
                 <button
-                  onClick={() => setCurrentPage(pageNumber)}
+                  onClick={() => handlePageChange(pageNumber)}
                   className={`h-10 w-10 flex items-center justify-center rounded ${
                     currentPage === pageNumber
                       ? "bg-primary text-white"
-                      : "border border-gray-300 dark:border-gray-600 bg-background text-text text-primary hover:bg-gray-50 hover:dark:bg-gray-700"
+                      : "border border-gray-300 dark:border-gray-600 bg-background text-text hover:bg-gray-50 hover:dark:bg-gray-700"
                   }`}
                 >
                   {pageNumber}
@@ -64,7 +78,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
           return (
             <button
               key={pageNumber}
-              onClick={() => setCurrentPage(pageNumber)}
+              onClick={() => handlePageChange(pageNumber)}
               className={`h-10 w-10 flex items-center justify-center rounded ${
                 currentPage === pageNumber
                   ? "bg-primary text-white"
@@ -77,9 +91,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
         })}
 
         <button
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
+          onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
           disabled={currentPage === totalPages}
           className="h-10 w-10 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 bg-background text-gray-500 hover:bg-gray-50 hover:dark:bg-gray-700 disabled:opacity-50"
           aria-label="Next page"

@@ -520,6 +520,17 @@ const ProductsPage = () => {
     }
   }, [category, categories]);
 
+  useEffect(() => {
+    // Scroll to top when page changes (pagination)
+    if (currentPage > 1) {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentPage]);
+
   return (
     <div className="bg-background text-text min-h-screen">
       <PageHeader title={getPageTitle()} breadcrumbs={breadcrumbs} />
@@ -542,7 +553,7 @@ const ProductsPage = () => {
         </div>
 
         {showMobileControls && !isNavbarSidebarOpen && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-5 py-1 shadow-lg">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-5 py-2 shadow-lg">
             <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
               <FilterMenu
                 categories={categories}

@@ -4,13 +4,19 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import CategoryImageUpload from "./CategoryImageUpload";
 import SubcategoryTable from "./SubcategoryTable";
+import { useAdmin } from "../../../Context/AdminContext";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function CategoryForm({ mode: propMode }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const mode = propMode || (id ? "edit" : "add");
+
+  // Add admin context
+  const { user, adminData } = useAdmin();
+  const isAdmin = adminData?.role === "admin";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -37,22 +43,23 @@ function CategoryForm({ mode: propMode }) {
     try {
       setIsLoading(true);
       console.log("🔍 Fetching category for edit:", categoryId);
-      
+
       const response = await axios.get(
         `${API_BASE_URL}/admin/categories/${categoryId}`, // Add /admin prefix
         { withCredentials: true }
       );
-      
+
       if (response.data.success) {
         const category = response.data.category;
         setFormData({
-          name: category.category_name || '',
-          subcategories: category.subcategories?.map(sub => 
-            typeof sub === 'string' ? sub : sub.subcategory_name
-          ) || [],
+          name: category.category_name || "",
+          subcategories:
+            category.subcategories?.map((sub) =>
+              typeof sub === "string" ? sub : sub.subcategory_name
+            ) || [],
           newSubcategory: "",
         });
-        setPreviewImage(category.category_image || '');
+        setPreviewImage(category.category_image || "");
         setCategory(category);
       }
     } catch (error) {
@@ -78,7 +85,10 @@ function CategoryForm({ mode: propMode }) {
     if (formData.newSubcategory.trim()) {
       setFormData({
         ...formData,
-        subcategories: [...formData.subcategories, formData.newSubcategory.trim()],
+        subcategories: [
+          ...formData.subcategories,
+          formData.newSubcategory.trim(),
+        ],
         newSubcategory: "",
       });
     }
@@ -100,18 +110,26 @@ function CategoryForm({ mode: propMode }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Check admin access before submission
+    if (!isAdmin) {
+      toast.error(
+        "Access denied. Admin privileges required to save categories."
+      );
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
+
       const submitData = {
         category_name: formData.name.trim(),
-        category_image: uploadedImage?.url || previewImage || '',
-        subcategories: formData.subcategories.filter(sub => sub.trim())
+        category_image: uploadedImage?.url || previewImage || "",
+        subcategories: formData.subcategories.filter((sub) => sub.trim()),
       };
 
       let response;
@@ -133,15 +151,16 @@ function CategoryForm({ mode: propMode }) {
 
       if (response.data.success) {
         toast.success(
-          mode === "edit" 
-            ? "Category updated successfully!" 
+          mode === "edit"
+            ? "Category updated successfully!"
             : "Category created successfully!"
         );
         navigate("/admin/categories");
       }
     } catch (error) {
       console.error("Error submitting category:", error);
-      const message = error.response?.data?.message || 
+      const message =
+        error.response?.data?.message ||
         `Failed to ${mode === "edit" ? "update" : "create"} category`;
       toast.error(message);
     } finally {
@@ -158,30 +177,53 @@ function CategoryForm({ mode: propMode }) {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       {/* Header */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-8">
         <button
           onClick={() => navigate("/admin/categories")}
-          className="text-text hover:text-primary mr-4 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 mr-4"
         >
           <i className="fas fa-arrow-left"></i>
         </button>
-        <h1 className="text-2xl font-semibold text-text">
-          {mode === "add" ? "Add New Category" : "Edit Category"}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            {mode === "add" ? "Add New Category" : "Edit Category"}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {mode === "add"
+              ? "Create a new product category"
+              : "Update category information"}
+          </p>
+        </div>
       </div>
 
+      {/* Show warning for non-admin users */}
+      {!isAdmin && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <div className="flex">
+            <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 mr-2 text-lg"></i>
+            <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+              You are viewing this form in read-only mode. Admin privileges are
+              required to save changes.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Form */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Left Column - Form Fields */}
             <div className="space-y-6">
               {/* Category Name */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-text mb-2">
-                  Category Name<span className="text-red-500">*</span>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Category Name<span className="text-red-500 ml-1">*</span>
                 </label>
                 <input
                   type="text"
@@ -189,78 +231,100 @@ function CategoryForm({ mode: propMode }) {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className={`w-full border ${
+                  className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                     formErrors.name
-                      ? "border-red-500"
-                      : "border-gray-300 dark:border-gray-600"
-                  } rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-text focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-gray-300 dark:border-gray-600 focus:border-primary"
+                  }`}
                   placeholder="Enter category name"
                 />
                 {formErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <i className="fas fa-exclamation-circle mr-1"></i>
+                    {formErrors.name}
+                  </p>
                 )}
               </div>
 
               {/* Subcategories Section */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-text">
-                    Subcategories {mode === "edit" && category?.subcategories && 
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Subcategories{" "}
+                    {mode === "edit" &&
+                      category?.subcategories &&
                       `(${category.subcategories.length})`}
                   </label>
                   {mode === "edit" && category && (
                     <button
                       type="button"
                       onClick={() => setShowSubcategoryTable(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs flex items-center gap-1"
+                      className="bg-primary text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-sm"
                     >
                       <i className="fas fa-cog"></i>
                       Manage
                     </button>
                   )}
                 </div>
-                
+
                 {mode === "edit" && category?.subcategories ? (
                   // Show existing subcategories for edit mode
-                  <div className="mb-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     {category.subcategories.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                        {category.subcategories.slice(0, 6).map((subcategory, index) => (
-                          <div
-                            key={subcategory._id || index}
-                            className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            {subcategory.subcategory_name}
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        {category.subcategories
+                          .slice(0, 6)
+                          .map((subcategory, index) => (
+                            <div
+                              key={subcategory._id || index}
+                              className="bg-white dark:bg-gray-600 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors border border-gray-200 dark:border-gray-500 flex items-center"
+                            >
+                              <i className="fas fa-tag text-gray-400 mr-2 text-xs"></i>
+                              {subcategory.subcategory_name}
+                            </div>
+                          ))}
                         {category.subcategories.length > 6 && (
-                          <div className="bg-gray-100 dark:bg-gray-600 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
-                            +{category.subcategories.length - 6} more
+                          <div className="bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center border border-gray-300 dark:border-gray-500">
+                            <i className="fas fa-plus mr-1"></i>
+                            {category.subcategories.length - 6} more
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">
-                        No subcategories found
-                      </p>
+                      <div className="text-center py-6">
+                        <i className="fas fa-layer-group text-gray-300 dark:text-gray-600 text-2xl mb-2"></i>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">
+                          No subcategories found
+                        </p>
+                      </div>
                     )}
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Click "Manage" button above for full subcategory management
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                      Click "Manage" button above for full subcategory
+                      management
                     </p>
                   </div>
                 ) : (
                   // Show add subcategories interface for add mode
-                  <div>
+                  <div className="space-y-4">
                     {/* Existing subcategories */}
                     {formData.subcategories.length > 0 && (
-                      <div className="mb-3 space-y-2">
+                      <div className="space-y-2">
                         {formData.subcategories.map((sub, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
-                            <span className="text-sm text-text">{sub}</span>
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="flex items-center">
+                              <i className="fas fa-tag text-gray-400 mr-2 text-sm"></i>
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {sub}
+                              </span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => removeSubcategory(index)}
-                              className="text-red-500 hover:text-red-700 text-sm"
+                              className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                              title="Remove subcategory"
                             >
                               <i className="fas fa-times"></i>
                             </button>
@@ -270,13 +334,13 @@ function CategoryForm({ mode: propMode }) {
                     )}
 
                     {/* Add new subcategory */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <input
                         type="text"
                         name="newSubcategory"
                         value={formData.newSubcategory}
                         onChange={handleInputChange}
-                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                         placeholder="Add subcategory"
                         onKeyPress={(e) => {
                           if (e.key === "Enter") {
@@ -288,8 +352,9 @@ function CategoryForm({ mode: propMode }) {
                       <button
                         type="button"
                         onClick={addSubcategory}
-                        className="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90"
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm transition-colors shadow-sm flex items-center"
                       >
+                        <i className="fas fa-plus mr-1"></i>
                         Add
                       </button>
                     </div>
@@ -299,7 +364,8 @@ function CategoryForm({ mode: propMode }) {
             </div>
 
             {/* Right Column - Image Upload */}
-            <div>
+            <div className="space-y-4">
+              {/* Image Upload Component - it will handle the full display itself */}
               <CategoryImageUpload
                 previewImage={previewImage}
                 setPreviewImage={setPreviewImage}
@@ -312,18 +378,23 @@ function CategoryForm({ mode: propMode }) {
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={() => navigate("/admin/categories")}
-              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-text hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              disabled={isSubmitting || !isAdmin}
+              className={`px-6 py-2 rounded-lg text-base font-medium flex items-center gap-2 transition-all duration-200 shadow-sm ${
+                isAdmin
+                  ? "bg-primary hover:bg-primary/90 text-white"
+                  : "bg-gray-400 text-gray-600 cursor-not-allowed"
+              }`}
             >
               {isSubmitting ? (
                 <>
@@ -331,7 +402,12 @@ function CategoryForm({ mode: propMode }) {
                   {mode === "add" ? "Creating..." : "Updating..."}
                 </>
               ) : (
-                mode === "add" ? "Create Category" : "Update Category"
+                <>
+                  <i
+                    className={`fas ${mode === "add" ? "fa-plus" : "fa-save"}`}
+                  ></i>
+                  {mode === "add" ? "Create Category" : "Update Category"}
+                </>
               )}
             </button>
           </div>

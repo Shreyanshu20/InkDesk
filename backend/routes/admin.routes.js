@@ -65,6 +65,7 @@ router.delete('/orders/:id', adminOnly, adminController.deleteAdminOrder);
 router.get('/users', adminController.getUsers);
 router.get('/users/stats', adminController.getUserStats);
 router.get('/users/:id', adminController.getUserById);
+router.get('/users/:id/addresses', adminController.getUserAddresses);
 
 // WRITE operations - admin only
 router.put('/users/:id', adminOnly, adminController.updateUser);

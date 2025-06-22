@@ -177,7 +177,7 @@ const Table = ({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`px-6 py-4 ${column.nowrap !== false ? "whitespace-nowrap" : ""} ${
+                      className={`px-2 py-4 ${column.nowrap !== false ? "whitespace-nowrap" : ""} ${
                         column.className || ""
                       } ${column.maxWidth ? `max-w-${column.maxWidth}` : ""}`}
                     >

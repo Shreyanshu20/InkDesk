@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 function Footer() {
   return (
@@ -9,22 +9,22 @@ function Footer() {
             &copy; {new Date().getFullYear()} InkDesk. All rights reserved.
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
-          <a 
-            href="/admin/terms" 
+          <a
+            href="#"
             className="text-xs text-text hover:text-primary transition-all duration-300"
           >
             Terms of Service
           </a>
-          <a 
-            href="/admin/privacy" 
+          <a
+            href="#"
             className="text-xs text-text hover:text-primary transition-all duration-300"
           >
             Privacy Policy
           </a>
-          <a 
-            href="/admin/help" 
+          <a
+            href="#"
             className="text-xs text-text hover:text-primary transition-all duration-300"
           >
             Help Center

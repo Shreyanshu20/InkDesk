@@ -6,6 +6,7 @@ import TopProducts from "./components/TopProducts";
 import LowStockAlerts from "./components/LowStockAlerts";
 import RecentOrders from "./components/RecentOrders";
 import RecentActivity from "./components/RecentActivity";
+import DashboardSkeleton from "./DashboardSkeleton"; // Import the skeleton
 import axios from "axios";
 
 function Dashboard() {
@@ -188,7 +189,11 @@ function Dashboard() {
       if (data.success) {
         const lowStockThreshold = 10;
         return data.products
-          .filter((product) => product.product_stock <= lowStockThreshold && product.product_stock > 0)
+          .filter(
+            (product) =>
+              product.product_stock <= lowStockThreshold &&
+              product.product_stock > 0
+          )
           .slice(0, 5)
           .map((product) => ({
             id: product._id,
@@ -233,7 +238,7 @@ function Dashboard() {
 
     return Object.values(productSales)
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8)
+      .slice(0, 6)
       .map((product, index) => ({
         id: index + 1,
         name: product.name,
@@ -341,7 +346,7 @@ function Dashboard() {
       weekStart.setHours(0, 0, 0, 0);
 
       const weekEnd = new Date(now);
-      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      weekEnd.setDate(weekEnd.getDate() - i * 7);
       weekEnd.setHours(23, 59, 59, 999);
 
       const weekRevenue = orders
@@ -565,15 +570,9 @@ function Dashboard() {
     return `₹${amount}`;
   };
 
+  // Show skeleton while loading
   if (loading) {
-    return (
-      <div className="container mx-auto p-10 py-4 bg-gray-100 dark:bg-gray-900">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-4 text-lg text-text">Loading dashboard...</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {
@@ -625,8 +624,12 @@ function Dashboard() {
 
         <StatCard
           title="Total Products"
-          value={(dashboardData.stats.products.totalProducts || 0).toLocaleString()}
-          change={`${dashboardData.stats.products.outOfStockProducts || 0} out of stock`}
+          value={(
+            dashboardData.stats.products.totalProducts || 0
+          ).toLocaleString()}
+          change={`${
+            dashboardData.stats.products.outOfStockProducts || 0
+          } out of stock`}
           icon="fas fa-box"
         />
 
@@ -662,11 +665,12 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Average Rating</p>
               <p className="text-2xl font-bold text-text">
-                {/* FIX: Convert to number first, then call toFixed */}
-                {Number(dashboardData.stats.reviews.averageRating || 0).toFixed(1)}
+                {Number(dashboardData.stats.reviews.averageRating || 0).toFixed(
+                  1
+                )}
               </p>
             </div>
-            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full">
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 w-9 h-9 flex items-center justify-center rounded-full">
               <i className="fas fa-star text-yellow-600 dark:text-yellow-400"></i>
             </div>
           </div>
@@ -677,10 +681,12 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Total Reviews</p>
               <p className="text-2xl font-bold text-text">
-                {(dashboardData.stats.reviews.totalReviews || 0).toLocaleString()}
+                {(
+                  dashboardData.stats.reviews.totalReviews || 0
+                ).toLocaleString()}
               </p>
             </div>
-            <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+            <div className="bg-purple-100 dark:bg-purple-900/30 w-9 h-9 flex items-center justify-center rounded-full">
               <i className="fas fa-comments text-purple-600 dark:text-purple-400"></i>
             </div>
           </div>
@@ -691,10 +697,12 @@ function Dashboard() {
             <div>
               <p className="text-sm text-text/70">Active Products</p>
               <p className="text-2xl font-bold text-text">
-                {(dashboardData.stats.products.activeProducts || 0).toLocaleString()}
+                {(
+                  dashboardData.stats.products.activeProducts || 0
+                ).toLocaleString()}
               </p>
             </div>
-            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+            <div className="bg-blue-100 dark:bg-blue-900/30 w-9 h-9 flex items-center justify-center rounded-full">
               <i className="fas fa-check-circle text-blue-600 dark:text-blue-400"></i>
             </div>
           </div>
@@ -708,7 +716,7 @@ function Dashboard() {
                 {(dashboardData.lowStockProducts || []).length}
               </p>
             </div>
-            <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+            <div className="bg-red-100 dark:bg-red-900/30 w-9 h-9 flex items-center justify-center rounded-full">
               <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
             </div>
           </div>

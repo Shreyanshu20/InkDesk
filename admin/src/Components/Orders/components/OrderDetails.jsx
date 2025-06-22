@@ -8,6 +8,7 @@ import Pagination from "../../Common/Pagination";
 import { getOrderTableConfig } from "../../Common/tableConfig";
 import StatusUpdateModal from "./StatusUpdateModal";
 import { getStatusColor } from "./utils";
+import OrderDetailsSkeleton from "./OrderDetailsSkeleton"; // Add this import
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -176,7 +177,7 @@ function Orders() {
   const tableConfig = useMemo(() => getOrderTableConfig(), []);
 
   if (loading) {
-    return <Loader />;
+    return <OrderDetailsSkeleton />;
   }
 
   if (!orderData) {
@@ -201,7 +202,7 @@ function Orders() {
     "Unknown Customer";
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
@@ -473,16 +474,6 @@ function Orders() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Order Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <Table
-          data={orders}
-          config={tableConfig}
-          rowKey="id"
-          onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
-        />
       </div>
 
       {/* Status Update Modal */}

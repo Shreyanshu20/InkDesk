@@ -9,6 +9,7 @@ import UserDetails from "./components/UserDetails";
 import UserEditModal from "./components/UserEditModal";
 import { getUserTableConfig } from "../Common/tableConfig";
 import { useAdmin } from '../../Context/AdminContext';
+import UsersSkeleton from "./UsersSkeleton"; // Add this import
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -392,6 +393,11 @@ function Users() {
     });
   }, [users, sortConfig]);
 
+  // Show full page skeleton when loading initially
+  if (isLoading && users.length === 0) {
+    return <UsersSkeleton />;
+  }
+
   if (view === "view" && currentUser) {
     return (
       <UserDetails
@@ -406,7 +412,7 @@ function Users() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           User Management
@@ -422,43 +428,34 @@ function Users() {
         </p>
       </div>
 
-      {/* User Stats Cards - Now using real stats */}
+      {/* User Stats Cards - Static display only */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {/* Replace userCounts with userStats */}
         {Object.entries({
-          all: userStats.total,
-          active: userStats.active,
-          inactive: userStats.inactive,
-          suspended: userStats.suspended
-        }).map(([status, count]) => (
+          all: { count: userStats.total, label: "Total Users", icon: "fa-users", color: "blue" },
+          active: { count: userStats.active, label: "Active Users", icon: "fa-user-check", color: "green" },
+          inactive: { count: userStats.inactive, label: "Inactive Users", icon: "fa-user-slash", color: "gray" },
+          suspended: { count: userStats.suspended, label: "Suspended Users", icon: "fa-user-times", color: "red" }
+        }).map(([key, { count, label, icon, color }]) => (
           <div
-            key={status}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
-              statusFilter === status ? 'ring-2 ring-primary' : ''
-            }`}
-            onClick={() => setStatusFilter(status)}
+            key={key}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 capitalize">
-                  {status === "all" ? "Total Users" : `${status} Users`}
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {label}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {count}
                 </p>
               </div>
-              <div className={`p-3 rounded-full ${
-                status === "all" ? "bg-blue-100 text-blue-600" :
-                status === "active" ? "bg-green-100 text-green-600" :
-                status === "inactive" ? "bg-gray-100 text-gray-600" :
-                "bg-red-100 text-red-600"
+              <div className={`w-10 h-10 flex items-center justify-center rounded-full ${
+                color === "blue" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" :
+                color === "green" ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" :
+                color === "gray" ? "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400" :
+                "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
               }`}>
-                <i className={`fas ${
-                  status === "all" ? "fa-users" :
-                  status === "active" ? "fa-user-check" :
-                  status === "inactive" ? "fa-user-slash" :
-                  "fa-user-times"
-                }`}></i>
+                <i className={`fas ${icon}`}></i>
               </div>
             </div>
           </div>
@@ -477,7 +474,7 @@ function Users() {
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-600 dark:text-white"
               />
               <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
             </div>
@@ -486,7 +483,7 @@ function Users() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-600 dark:text-white"
             >
               <option value="all">All Status ({userStats.total})</option>
               <option value="active">Active ({userStats.active})</option>
@@ -525,34 +522,53 @@ function Users() {
           position="bottom-right"
         />
       )}
-
-      {/* Users Table - Show all buttons */}
+      {/* Users Table with Pagination */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <Table
-          data={sortedUsers}
-          columns={
-            getUserTableConfig({
-              onView: handleViewUser,        // Always allowed
-              onEdit: handleEditUser,        // Always show button, check on modal submit
-              onDelete: handleDeleteUser,    // Always show button, check on confirm
-              onUpdateStatus: handleUpdateStatus, // Check on click
-            }).columns
-          }
-          selectedItems={selectedUsers}
-          onSelectItem={handleSelectUser} // ✅ Changed from onSelect to onSelectItem
-          onSelectAll={handleSelectAllUsers}
-          sortConfig={sortConfig}
-          onSortChange={({ key, direction }) => {
-            setSortConfig({ key, direction });
-          }}
-          isLoading={isLoading}
-          emptyMessage="No users found"
-          enableSelection={true}
-          enableSorting={true}
-          itemKey="id"
-        />
-        
-        {/* ... pagination ... */}
+        {isLoading ? (
+          // Show loading spinner for subsequent loads
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            <Table
+              data={sortedUsers}
+              columns={
+                getUserTableConfig({
+                  onView: handleViewUser,
+                  onEdit: handleEditUser,
+                  onDelete: handleDeleteUser,
+                  onUpdateStatus: handleUpdateStatus,
+                }).columns
+              }
+              selectedItems={selectedUsers}
+              onSelectItem={handleSelectUser}
+              onSelectAll={handleSelectAllUsers}
+              sortConfig={sortConfig}
+              onSortChange={({ key, direction }) => {
+                setSortConfig({ key, direction });
+              }}
+              isLoading={isLoading}
+              emptyMessage="No users found"
+              enableSelection={true}
+              enableSorting={true}
+              itemKey="id"
+            />
+
+            {/* Add Pagination Component */}
+            <Pagination
+              page={page}
+              rowsPerPage={rowsPerPage}
+              totalItems={totalUsers}
+              handlePageChange={(newPage) => setPage(newPage)}
+              handleRowsPerPageChange={(newRowsPerPage) => {
+                setRowsPerPage(newRowsPerPage);
+                setPage(0); // Reset to first page when changing page size
+              }}
+              entityName="users"
+            />
+          </>
+        )}
       </div>
 
       {/* Edit User Modal */}
@@ -560,7 +576,7 @@ function Users() {
         editModalOpen={editModalOpen}
         selectedUserForEdit={selectedUserForEdit}
         closeEditModal={closeEditModal}
-        handleUserUpdate={handleUserUpdate} // Role check happens in this function
+        handleUserUpdate={handleUserUpdate} 
       />
     </div>
   );

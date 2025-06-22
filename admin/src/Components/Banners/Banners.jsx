@@ -4,7 +4,8 @@ import { toast } from "react-toastify";
 import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
-import { useAdmin } from '../../Context/AdminContext';
+import { useAdmin } from "../../Context/AdminContext";
+import BannersSkeleton from "./BannersSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -12,7 +13,7 @@ const API_BASE_URL =
 function Banners() {
   const navigate = useNavigate();
   const { adminData } = useAdmin(); // Get current user from context
-  const isAdmin = adminData?.role === 'admin';
+  const isAdmin = adminData?.role === "admin";
 
   // Add role check function
   const checkAdminAccess = (action) => {
@@ -25,7 +26,8 @@ function Banners() {
   };
 
   const [banners, setBanners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // For initial page load (skeleton)
+  const [isRefreshing, setIsRefreshing] = useState(false); // For table data refresh
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedBanners, setSelectedBanners] = useState([]);
@@ -36,8 +38,13 @@ function Banners() {
   });
 
   // Fetch banners from API
-  const fetchBanners = async (showSuccessToast = false) => {
-    setIsLoading(true);
+  const fetchBanners = async (showSuccessToast = false, isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true); // Use refresh loading for manual refreshes
+    } else {
+      setIsLoading(true); // Use main loading for initial load
+    }
+
     try {
       const token =
         localStorage.getItem("token") ||
@@ -70,6 +77,7 @@ function Banners() {
       toast.error("Error loading banners");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -139,8 +147,8 @@ function Banners() {
 
   // Toggle banner active status
   const handleToggleStatus = async (id) => {
-    if (!checkAdminAccess('change banner status')) return;
-    
+    if (!checkAdminAccess("change banner status")) return;
+
     try {
       const token =
         localStorage.getItem("token") ||
@@ -174,7 +182,9 @@ function Banners() {
       } else {
         const errorData = await response.json();
         if (response.status === 403) {
-          toast.error("Access denied. Admin privileges required to change banner status.");
+          toast.error(
+            "Access denied. Admin privileges required to change banner status."
+          );
         } else {
           toast.error(errorData.message || "Failed to update banner status");
         }
@@ -192,8 +202,8 @@ function Banners() {
 
     // Don't check role here - let user see confirm dialog first
     if (window.confirm(`Are you sure you want to delete "${bannerTitle}"?`)) {
-      if (!checkAdminAccess('delete banners')) return; // Check here after confirmation
-      
+      if (!checkAdminAccess("delete banners")) return; // Check here after confirmation
+
       try {
         const token =
           localStorage.getItem("token") ||
@@ -222,7 +232,9 @@ function Banners() {
         } else {
           const errorData = await response.json();
           if (response.status === 403) {
-            toast.error("Access denied. Admin privileges required to delete banners.");
+            toast.error(
+              "Access denied. Admin privileges required to delete banners."
+            );
           } else {
             toast.error(errorData.message || "Failed to delete banner");
           }
@@ -240,8 +252,8 @@ function Banners() {
     if (
       window.confirm(`Are you sure you want to delete ${ids.length} banners?`)
     ) {
-      if (!checkAdminAccess('delete banners')) return; // Check here after confirmation
-      
+      if (!checkAdminAccess("delete banners")) return; // Check here after confirmation
+
       // Show loading toast
       const toastId = toast.loading(`Deleting ${ids.length} banners...`);
 
@@ -301,8 +313,8 @@ function Banners() {
 
   // Bulk activate
   const handleBulkActivate = async (ids) => {
-    if (!checkAdminAccess('activate banners')) return; // Check role immediately
-    
+    if (!checkAdminAccess("activate banners")) return; // Check role immediately
+
     const inactiveBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
       return banner && !banner.isActive;
@@ -360,8 +372,8 @@ function Banners() {
 
   // Bulk deactivate
   const handleBulkDeactivate = async (ids) => {
-    if (!checkAdminAccess('deactivate banners')) return; // Check role immediately
-    
+    if (!checkAdminAccess("deactivate banners")) return; // Check role immediately
+
     const activeBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
       return banner && banner.isActive;
@@ -485,9 +497,11 @@ function Banners() {
         key: "banner",
         label: "Banner",
         sortable: false,
-        width: "280px", // Fixed width to force wrapping
+        width: "280px", // Increased from 200px to match Products table
         customRenderer: (banner) => (
-          <div className="flex items-start gap-2 py-2 w-full max-w-xs"> {/* Added max-w-xs */}
+          <div className="flex items-start gap-3 py-3 w-full">
+            {" "}
+            {/* Removed max-width constraint */}
             {/* Thumbnail */}
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 border border-gray-200 dark:border-gray-600">
               {banner.image ? (
@@ -500,27 +514,23 @@ function Banners() {
                     e.target.nextSibling.style.display = "flex";
                   }}
                 />
-              ) : null}
-              <div
-                className={`w-full h-full ${
-                  banner.image ? "hidden" : "flex"
-                } items-center justify-center`}
-              >
-                <i className="fas fa-image text-gray-400 text-xs"></i>
-              </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <i className="fas fa-image text-gray-400 text-sm"></i>
+                </div>
+              )}
             </div>
-
-            {/* Content - Force text wrapping */}
-            <div className="flex-1 min-w-0 space-y-1 overflow-hidden"> {/* Added overflow-hidden */}
-              {/* Title - Force wrap to multiple lines */}
+            {/* Content - Better text layout */}
+            <div className="flex-1 min-w-0 space-y-1.5 overflow-hidden">
+              {/* Title */}
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                <div 
-                  className="text-wrap" // Custom class for wrapping
-                  style={{ 
-                    whiteSpace: 'normal',
-                    wordWrap: 'break-word',
-                    wordBreak: 'break-word',
-                    maxWidth: '180px' // Force width constraint
+                <div
+                  className="text-wrap leading-relaxed"
+                  style={{
+                    whiteSpace: "normal",
+                    wordWrap: "break-word",
+                    wordBreak: "break-word",
+                    maxWidth: "200px", // Increased from 140px
                   }}
                   title={banner.title}
                 >
@@ -528,16 +538,16 @@ function Banners() {
                 </div>
               </div>
 
-              {/* Subtitle - Force wrap */}
+              {/* Subtitle */}
               {banner.subtitle && (
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  <div 
-                    className="text-wrap"
-                    style={{ 
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word',
-                      wordBreak: 'break-word',
-                      maxWidth: '180px'
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div
+                    className="text-wrap leading-relaxed"
+                    style={{
+                      whiteSpace: "normal",
+                      wordWrap: "break-word",
+                      wordBreak: "break-word",
+                      maxWidth: "200px", // Increased from 140px
                     }}
                     title={banner.subtitle}
                   >
@@ -546,18 +556,18 @@ function Banners() {
                 </div>
               )}
 
-              {/* URL - Force wrap with break-all for URLs */}
+              {/* URL */}
               {banner.url && (
-                <div className="text-xs text-blue-600 dark:text-blue-400">
-                  <div className="flex items-start gap-1"> {/* Changed to items-start */}
-                    <i className="fas fa-external-link-alt flex-shrink-0 mt-0.5"></i>
-                    <span 
+                <div className="text-sm text-blue-600 dark:text-blue-400">
+                  <div className="flex items-start gap-1">
+                    <i className="fas fa-external-link-alt flex-shrink-0 mt-1"></i>
+                    <span
                       className="text-wrap-url min-w-0 flex-1"
-                      style={{ 
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-all',
-                        overflowWrap: 'anywhere',
-                        maxWidth: '160px'
+                      style={{
+                        whiteSpace: "normal",
+                        wordBreak: "break-all",
+                        overflowWrap: "anywhere",
+                        maxWidth: "180px", // Increased from 120px
                       }}
                       title={banner.url}
                     >
@@ -567,16 +577,16 @@ function Banners() {
                 </div>
               )}
 
-              {/* Button Text - Force wrap */}
+              {/* Button Text */}
               {banner.buttonText && (
-                <div className="text-xs text-gray-400 dark:text-gray-500">
-                  <span 
+                <div className="text-sm text-gray-400 dark:text-gray-500">
+                  <span
                     className="text-wrap"
-                    style={{ 
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word',
-                      wordBreak: 'break-word',
-                      maxWidth: '180px'
+                    style={{
+                      whiteSpace: "normal",
+                      wordWrap: "break-word",
+                      wordBreak: "break-word",
+                      maxWidth: "200px", // Increased from 140px
                     }}
                   >
                     CTA: "{banner.buttonText}"
@@ -591,7 +601,7 @@ function Banners() {
         key: "location",
         label: "Location",
         sortable: true,
-        width: "140px",
+        width: "50px",
         customRenderer: (banner) => {
           const locationColors = {
             "homepage-carousel":
@@ -604,13 +614,13 @@ function Banners() {
 
           const shortLocationMap = {
             "homepage-carousel": "Carousel",
-            homepage: "Homepage",
+            homepage: "Home",
             advertisement: "Ads",
           };
 
           return (
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
+              className={`px-2 py-1 rounded-full text-sm font-medium ${
                 locationColors[banner.location] || "bg-gray-100 text-gray-800"
               }`}
               title={formatLocation(banner.location)}
@@ -624,64 +634,56 @@ function Banners() {
         key: "position",
         label: "Pos",
         sortable: true,
-        width: "60px",
+        width: "50px",
         customRenderer: (banner) => (
           <div className="text-center">
-            <span className="inline-flex items-center justify-center w-7 h-7 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full text-xs font-medium">
+            <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full text-sm font-medium">
               {banner.position || 1}
             </span>
           </div>
         ),
       },
       {
-        key: "schedule",
-        label: "Schedule",
+        key: "days left",
+        label: "Days Left",
         sortable: true,
-        width: "140px",
+        width: "80px",
         customRenderer: (banner) => {
           if (!banner.startDate || !banner.endDate) {
-            return <span className="text-gray-400 text-xs">No schedule</span>;
+            return <span className="text-gray-400 text-sm">-</span>;
           }
 
           const startDate = new Date(banner.startDate);
           const endDate = new Date(banner.endDate);
           const now = new Date();
 
+          // Calculate days left
+          let daysLeft = 0;
+          let status = "";
+          let color = "";
+
+          if (now < startDate) {
+            // Scheduled - days until start
+            daysLeft = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+            status = "starts";
+            color = "text-blue-600 dark:text-blue-400";
+          } else if (now > endDate) {
+            // Expired - days since end
+            daysLeft = Math.ceil((now - endDate) / (1000 * 60 * 60 * 24));
+            status = "expired";
+            color = "text-red-600 dark:text-red-400";
+          } else {
+            // Active - days until end
+            daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+            status = "left";
+            color = "text-green-600 dark:text-green-400";
+          }
+
           return (
-            <div className="text-xs">
-              <div className="flex items-center text-gray-600 dark:text-gray-400">
-                <i className="fas fa-calendar-alt mr-1 text-xs"></i>
-                {startDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+            <div className={`text-sm font-medium ${color} text-center`}>
+              <div>
+                {daysLeft}d {status}
               </div>
-              <div className="flex items-center text-gray-600 dark:text-gray-400 mt-1">
-                <i className="fas fa-calendar-times mr-1 text-xs"></i>
-                {endDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </div>
-              {banner.isActive && (
-                <div className="mt-1 text-xs">
-                  {now < startDate && (
-                    <span className="text-blue-600 dark:text-blue-400">
-                      +{Math.ceil((startDate - now) / (1000 * 60 * 60 * 24))}d
-                    </span>
-                  )}
-                  {now > endDate && (
-                    <span className="text-red-600 dark:text-red-400">
-                      -{Math.ceil((now - endDate) / (1000 * 60 * 60 * 24))}d
-                    </span>
-                  )}
-                  {now >= startDate && now <= endDate && (
-                    <span className="text-green-600 dark:text-green-400">
-                      {Math.ceil((endDate - now) / (1000 * 60 * 60 * 24))}d left
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
           );
         },
@@ -690,52 +692,42 @@ function Banners() {
         key: "status",
         label: "Status",
         sortable: false,
-        width: "100px",
+        width: "90px", // Slightly increased width
         customRenderer: (banner) => {
-          const { status, label, color } = getBannerStatus(banner);
-          const colorClasses = {
-            green:
-              "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-            blue: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-            red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-            gray: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-          };
-
-          // Short status labels
-          const shortLabels = {
-            Active: "Active",
-            Inactive: "Off",
-            Scheduled: "Sched",
-            Expired: "Exp",
-          };
-
           return (
-            <div className="flex flex-col items-center">
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${colorClasses[color]}`}
-              >
-                {shortLabels[label] || label}
-              </span>
-              <button
-                onClick={(e) => {
+            <div className="flex flex-col items-center space-y-1">
+              {" "}
+              {/* Increased spacing back to 1 */}
+              {/* Status Dropdown with better dark theme support */}
+              <select
+                value={banner.isActive ? "active" : "inactive"}
+                onChange={(e) => {
                   e.stopPropagation();
-                  handleToggleStatus(banner._id); // Role check happens inside the function
+                  const newStatus = e.target.value === "active";
+                  if (newStatus !== banner.isActive) {
+                    handleToggleStatus(banner._id);
+                  }
                 }}
-                className={`mt-1 relative inline-flex items-center h-4 rounded-full w-8 transition-colors duration-200 ${
+                className={`text-sm border rounded px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${
                   banner.isActive
-                    ? "bg-green-600 dark:bg-green-500"
-                    : "bg-gray-300 dark:bg-gray-600"
+                    ? "text-green-700 bg-green-50 border-green-300 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-600 dark:hover:bg-green-900/30"
+                    : "text-red-700 bg-red-50 border-red-300 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-600 dark:hover:bg-red-900/30"
                 }`}
-                title={
-                  banner.isActive ? "Click to deactivate" : "Click to activate"
-                }
+                onClick={(e) => e.stopPropagation()}
               >
-                <span
-                  className={`${
-                    banner.isActive ? "translate-x-4" : "translate-x-0.5"
-                  } inline-block w-3 h-3 transform bg-white rounded-full transition-transform duration-200`}
-                ></span>
-              </button>
+                <option
+                  value="active"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  Active
+                </option>
+                <option
+                  value="inactive"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  Inactive
+                </option>
+              </select>
             </div>
           );
         },
@@ -744,14 +736,14 @@ function Banners() {
         key: "created",
         label: "Created",
         sortable: true,
-        width: "90px",
+        width: "70px",
         customRenderer: (banner) => {
           if (!banner.createdAt) {
             return <span className="text-gray-400">-</span>;
           }
 
           return (
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center">
               {new Date(banner.createdAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -764,7 +756,7 @@ function Banners() {
         key: "actions",
         label: "Actions",
         sortable: false,
-        width: "120px",
+        width: "80px",
         customRenderer: (banner) => (
           <div className="flex items-center justify-center space-x-1">
             <button
@@ -794,210 +786,219 @@ function Banners() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Banners
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage promotional banners across your site
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {/* Refresh button */}
-          <button
-            onClick={() => fetchBanners(true)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            title="Refresh banners"
-          >
-            <i className="fas fa-sync-alt"></i>
-          </button>
-
-          {/* Simple filter dropdown */}
-          <select
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-          >
-            <option value="all">All Locations</option>
-            <option value="homepage-carousel">Homepage Carousel</option>
-            <option value="homepage">Homepage Banner</option>
-            <option value="advertisement">Advertisement Banner</option>
-          </select>
-
-          {/* Add button */}
-          <button
-            onClick={handleAddBanner} // No role check - users can access the form
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md flex items-center transition-colors"
-          >
-            <i className="fas fa-plus mr-2"></i>
-            Add New Banner
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <i className="fas fa-images text-blue-600 dark:text-blue-400"></i>
+    <div className="p-6 bg-background min-h-screen">
+      {/* Show skeleton for initial loading only */}
+      {isLoading ? (
+        <BannersSkeleton />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Banners
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Manage promotional banners across your site
+              </p>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total Banners
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {banners.length}
-              </p>
+            <div className="flex items-center space-x-3">
+              {/* Refresh button with loading state */}
+              <button
+                onClick={() => fetchBanners(true, true)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title="Refresh banners"
+                disabled={isRefreshing}
+              >
+                <i className={`fas fa-sync-alt ${isRefreshing ? "fa-spin" : ""}`}></i>
+              </button>
+
+              {/* Filter dropdown */}
+              <select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white text-text dark:bg-gray-700 dark:text-white"
+              >
+                <option value="all">All Locations</option>
+                <option value="homepage-carousel">Homepage Carousel</option>
+                <option value="homepage">Homepage Banner</option>
+                <option value="advertisement">Advertisement Banner</option>
+              </select>
+
+              {/* Add button */}
+              <button
+                onClick={handleAddBanner}
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md flex items-center transition-colors"
+              >
+                <i className="fas fa-plus mr-2"></i>
+                Add New Banner
+              </button>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <i className="fas fa-toggle-on text-green-600 dark:text-green-400"></i>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 flex justify-center items-center bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <i className="fas fa-images text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Total Banners
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {banners.length}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Active
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {
-                  banners.filter((b) => {
-                    const now = new Date();
-                    const start = new Date(b.startDate);
-                    const end = new Date(b.endDate);
-                    return b.isActive && now >= start && now <= end;
-                  }).length
-                }
-              </p>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 flex justify-center items-center bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <i className="fas fa-check text-green-600 dark:text-green-400"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Active
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {
+                      banners.filter((b) => {
+                        const now = new Date();
+                        const start = new Date(b.startDate);
+                        const end = new Date(b.endDate);
+                        return b.isActive && now >= start && now <= end;
+                      }).length
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 flex justify-center items-center bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <i className="fas fa-clock text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Scheduled
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {
+                      banners.filter((b) => {
+                        const now = new Date();
+                        const start = new Date(b.startDate);
+                        return b.isActive && now < start;
+                      }).length
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 flex justify-center items-center bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <i className="fas fa-times-circle text-red-600 dark:text-red-400"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Expired
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {
+                      banners.filter((b) => {
+                        const now = new Date();
+                        const end = new Date(b.endDate);
+                        return now > end;
+                      }).length
+                    }
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <i className="fas fa-clock text-blue-600 dark:text-blue-400"></i>
+          {/* Banners table with separate loading state */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              {isRefreshing ? (
+                // Table loading spinner
+                <div className="flex justify-center items-center py-12">
+                  <div className="flex flex-col items-center">
+                    <i className="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      Refreshing banners...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Table
+                  data={paginatedBanners}
+                  columns={tableConfig.columns}
+                  selectedItems={selectedBanners}
+                  onSelect={handleSelectBanner}
+                  onSelectAll={handleSelectAll}
+                  sortConfig={sortConfig}
+                  onSortChange={handleSortChange}
+                  itemKey="_id"
+                  emptyMessage="No banners found. Create your first banner to get started!"
+                  enableSelection={true}
+                  enableSorting={true}
+                />
+              )}
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Scheduled
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {
-                  banners.filter((b) => {
-                    const now = new Date();
-                    const start = new Date(b.startDate);
-                    return b.isActive && now < start;
-                  }).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <i className="fas fa-times-circle text-red-600 dark:text-red-400"></i>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Expired
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {
-                  banners.filter((b) => {
-                    const now = new Date();
-                    const end = new Date(b.endDate);
-                    return now > end;
-                  }).length
-                }
-              </p>
-            </div>
+            {/* Pagination - only show when not refreshing */}
+            {!isRefreshing && filteredBanners.length > 0 && (
+              <Pagination
+                page={page}
+                rowsPerPage={rowsPerPage}
+                totalItems={filteredBanners.length}
+                handlePageChange={handlePageChange}
+                handleRowsPerPageChange={handleRowsPerPageChange}
+                entityName="banners"
+              />
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* Banners table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-12 flex justify-center">
-            <div className="flex flex-col items-center">
-              <i className="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
-              <p className="text-gray-500 dark:text-gray-400">
-                Loading banners...
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table
-              data={paginatedBanners}
-              columns={tableConfig.columns}
+          {/* Bulk Actions */}
+          {selectedBanners.length > 0 && (
+            <BulkActions
               selectedItems={selectedBanners}
-              onSelect={handleSelectBanner}
-              onSelectAll={handleSelectAll}
-              sortConfig={sortConfig}
-              onSortChange={handleSortChange}
-              itemKey="_id"
-              emptyMessage="No banners found. Create your first banner to get started!"
-              enableSelection={true}
-              enableSorting={true}
+              entityName="banners"
+              actions={[
+                {
+                  label: "Delete",
+                  icon: "fas fa-trash",
+                  onClick: handleBulkDelete,
+                  className:
+                    "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors",
+                  title: "Delete selected banners",
+                },
+                {
+                  label: "Activate",
+                  icon: "fas fa-toggle-on",
+                  onClick: handleBulkActivate,
+                  className:
+                    "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors",
+                  title: "Activate selected banners",
+                },
+                {
+                  label: "Deactivate",
+                  icon: "fas fa-toggle-off",
+                  onClick: handleBulkDeactivate,
+                  className:
+                    "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors",
+                  title: "Deactivate selected banners",
+                },
+              ]}
             />
-          </div>
-        )}
-
-        {/* Pagination */}
-        {filteredBanners.length > 0 && (
-          <Pagination
-            page={page}
-            rowsPerPage={rowsPerPage}
-            totalItems={filteredBanners.length}
-            handlePageChange={handlePageChange}
-            handleRowsPerPageChange={handleRowsPerPageChange}
-            entityName="banners"
-          />
-        )}
-      </div>
-
-      {/* Bulk Actions */}
-      {selectedBanners.length > 0 && (
-        <BulkActions
-          selectedItems={selectedBanners}
-          entityName="banners"
-          actions={[
-            {
-              label: "Delete",
-              icon: "fas fa-trash",
-              onClick: handleBulkDelete,
-              className:
-                "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors",
-              title: "Delete selected banners",
-            },
-            {
-              label: "Activate",
-              icon: "fas fa-toggle-on",
-              onClick: handleBulkActivate,
-              className:
-                "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors",
-              title: "Activate selected banners",
-            },
-            {
-              label: "Deactivate",
-              icon: "fas fa-toggle-off",
-              onClick: handleBulkDeactivate,
-              className:
-                "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors",
-              title: "Deactivate selected banners",
-            },
-          ]}
-        />
+          )}
+        </>
       )}
     </div>
   );

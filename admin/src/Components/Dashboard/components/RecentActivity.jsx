@@ -42,7 +42,7 @@ function RecentActivity({ activities }) {
             className="flex items-start space-x-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
           >
             <div
-              className={`mt-0.5 p-2 rounded-full ${
+              className={`w-9 h-9 flex items-center justify-center rounded-full flex-shrink-0 ${
                 getActivityStyle(activity.type).bg
               }`}
             >

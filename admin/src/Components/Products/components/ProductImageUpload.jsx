@@ -221,9 +221,9 @@ function ProductImageUpload({
   return (
     <div className="space-y-4">
       {!isAdmin && (
-        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p className="text-yellow-700 text-sm">
-            <i className="fas fa-lock mr-1"></i>
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+            <i className="fas fa-lock text-red-500 dark:text-red-400 mr-2"></i>
             Image upload is restricted to admin users only.
           </p>
         </div>
@@ -331,7 +331,7 @@ function ProductImageUpload({
                   {deleting[index] ? (
                     <i className="fas fa-spinner fa-spin"></i>
                   ) : (
-                    "×"
+                  <i className="fas fa-times"></i>
                   )}
                 </button>
 

@@ -1945,15 +1945,13 @@ module.exports.getReviewStats = async (req, res) => {
         const allReviews = await Review.find({});
 
         const stats = {
-            totalReviews: allReviews.length,
-            averageRating: 0,
-            ratingBreakdown: {
-                5: allReviews.filter(r => r.rating === 5).length,
-                4: allReviews.filter(r => r.rating === 4).length,
-                3: allReviews.filter(r => r.rating === 3).length,
-                2: allReviews.filter(r => r.rating === 2).length,
-                1: allReviews.filter(r => r.rating === 1).length,
-            }
+            total: allReviews.length,
+            rating5: allReviews.filter(r => r.rating === 5).length,
+            rating4: allReviews.filter(r => r.rating === 4).length,
+            rating3: allReviews.filter(r => r.rating === 3).length,
+            rating2: allReviews.filter(r => r.rating === 2).length,
+            rating1: allReviews.filter(r => r.rating === 1).length,
+            averageRating: 0
         };
 
         // Calculate average rating
@@ -1974,6 +1972,40 @@ module.exports.getReviewStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch review statistics'
+        });
+    }
+};
+
+// Add this function after the existing user management functions:
+
+module.exports.getUserAddresses = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log('🔍 Admin fetching addresses for user:', id);
+
+        // Find user first
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Get addresses like user.controller.js does
+        const userWithAddresses = await User.findById(id).populate('address_details');
+        
+        res.json({
+            success: true,
+            addresses: userWithAddresses.address_details || []
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching user addresses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user addresses'
         });
     }
 };

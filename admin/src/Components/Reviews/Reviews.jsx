@@ -6,21 +6,22 @@ import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getReviewsTableConfig } from "../Common/tableConfig";
 import { useAdmin } from '../../Context/AdminContext';
+import ReviewModal from './components/ReviewModal';
+import ReviewsSkeleton from './components/ReviewsSkeleton';
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Reviews() {
-  const { adminData } = useAdmin(); // Get current user from context
+  const { adminData } = useAdmin();
   const isAdmin = adminData?.role === 'admin';
 
-  // Add role check function
   const checkAdminAccess = (action) => {
     if (isAdmin) {
-      return true; // Admin can do everything
+      return true;
     } else {
       toast.error(`Access denied. Admin privileges required to ${action}.`);
-      return false; // User is restricted
+      return false;
     }
   };
 
@@ -33,7 +34,6 @@ function Reviews() {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [totalReviews, setTotalReviews] = useState(0);
 
-  // FIX: Initialize reviewStats with proper default structure
   const [reviewStats, setReviewStats] = useState({
     total: 0,
     rating5: 0,
@@ -52,7 +52,6 @@ function Reviews() {
   const [activeReview, setActiveReview] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // ADD: Fetch review statistics (separate from paginated reviews)
   const fetchReviewStats = async () => {
     try {
       console.log("📊 Fetching review statistics...");
@@ -67,11 +66,9 @@ function Reviews() {
       }
     } catch (error) {
       console.error("❌ Error fetching review stats:", error);
-      // Keep default empty stats on error
     }
   };
 
-  // Fetch reviews from backend (existing function - no changes needed)
   const fetchReviews = async () => {
     try {
       setIsLoading(true);
@@ -88,7 +85,6 @@ function Reviews() {
         params.append("rating", ratingFilter);
       }
 
-      // Add sorting parameters
       if (sortConfig.key) {
         params.append("sortBy", sortConfig.key);
         params.append(
@@ -151,19 +147,16 @@ function Reviews() {
     }
   };
 
-  // MODIFY: Load both stats and reviews on mount
   useEffect(() => {
-    fetchReviewStats(); // Load stats once
-  }, []); // Only run once on mount
+    fetchReviewStats();
+  }, []);
 
-  // Fetch reviews when filters change
   useEffect(() => {
     fetchReviews();
   }, [page, rowsPerPage, searchQuery, ratingFilter, sortConfig]);
 
-  // DELETE review function (existing code...)
   const deleteReview = async (reviewId) => {
-    if (!checkAdminAccess('delete reviews')) return false; // Add role check
+    if (!checkAdminAccess('delete reviews')) return false;
     
     try {
       const response = await axios.delete(
@@ -175,17 +168,13 @@ function Reviews() {
 
       if (response.data.success) {
         toast.success("Review deleted successfully");
-
-        // Refresh both reviews and stats
         fetchReviews();
         fetchReviewStats();
-
         return true;
       }
     } catch (error) {
       console.error("❌ Error deleting review:", error);
       
-      // Handle specific error cases
       if (error.response?.status === 403) {
         toast.error("Access denied. Admin privileges required to delete reviews.");
       } else {
@@ -195,7 +184,6 @@ function Reviews() {
     }
   };
 
-  // ADD: Missing selection handlers
   const handleViewReview = (review) => {
     console.log("👁️ Viewing review:", review);
     setActiveReview(review);
@@ -203,23 +191,21 @@ function Reviews() {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    // Don't check role here - let user click and see confirm dialog
     if (window.confirm("Are you sure you want to delete this review?")) {
-      const success = await deleteReview(reviewId); // Role check happens inside deleteReview
+      const success = await deleteReview(reviewId);
       if (success) {
-        fetchReviews(); // Refresh the list
+        fetchReviews();
       }
     }
   };
 
   const handleDelete = async (ids) => {
-    // Don't check role here - let user click and see confirm dialog
     if (
       window.confirm(
         `Delete ${ids.length > 1 ? "these reviews" : "this review"}?`
       )
     ) {
-      if (!checkAdminAccess('delete reviews')) return; // Check here after confirmation
+      if (!checkAdminAccess('delete reviews')) return;
       
       let successCount = 0;
       for (const id of ids) {
@@ -229,7 +215,7 @@ function Reviews() {
 
       if (successCount > 0) {
         toast.success(`${successCount} review(s) deleted successfully`);
-        fetchReviews(); // Refresh the list
+        fetchReviews();
         setSelectedReviews([]);
       }
     }
@@ -266,28 +252,6 @@ function Reviews() {
     }
   };
 
-  // ADD: Helper function for rating stars display
-  const renderRatingStars = (rating) => {
-    return (
-      <div className="flex items-center">
-        <span className="text-lg font-medium mr-2">{rating}</span>
-        <div className="flex">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <span
-              key={star}
-              className={`text-sm ${
-                star <= rating ? "text-yellow-400" : "text-gray-300"
-              }`}
-            >
-              ★
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // ADD: Missing sortedReviews useMemo
   const sortedReviews = useMemo(() => {
     if (!sortConfig.key) return reviews;
 
@@ -315,7 +279,6 @@ function Reviews() {
     });
   }, [reviews, sortConfig]);
 
-  // FIX: Use the correct field names from the stats response
   const reviewCounts = useMemo(() => {
     return {
       all: reviewStats.total || 0,
@@ -327,9 +290,13 @@ function Reviews() {
     };
   }, [reviewStats]);
 
-  // MODIFY: Update header to use correct total
+  // Add this condition at the beginning of the return statement
+  if (isLoading && reviews.length === 0) {
+    return <ReviewsSkeleton />;
+  }
+
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -343,15 +310,12 @@ function Reviews() {
         </p>
       </div>
 
-      {/* Stats Cards - Now using real stats */}
+      {/* Stats Cards - Static, no click handlers */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         {Object.entries(reviewCounts).map(([rating, count]) => (
           <div
             key={rating}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
-              ratingFilter === rating ? "ring-2 ring-primary" : ""
-            }`}
-            onClick={() => setRatingFilter(rating)}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -367,12 +331,12 @@ function Reviews() {
               <div
                 className={`p-2 rounded-full ${
                   rating === "all"
-                    ? "bg-blue-100 text-blue-600"
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                     : parseInt(rating) >= 4
-                    ? "bg-green-100 text-green-600"
+                    ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
                     : parseInt(rating) === 3
-                    ? "bg-yellow-100 text-yellow-600"
-                    : "bg-red-100 text-red-600"
+                    ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
                 }`}
               >
                 {rating === "all" ? (
@@ -386,7 +350,7 @@ function Reviews() {
         ))}
       </div>
 
-      {/* ADD: Refresh button to update stats */}
+      {/* Search and Filter Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -397,7 +361,7 @@ function Reviews() {
                 placeholder="Search reviews..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-600 dark:text-white"
               />
               <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
             </div>
@@ -406,7 +370,7 @@ function Reviews() {
             <select
               value={ratingFilter}
               onChange={(e) => setRatingFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-600 dark:text-white"
             >
               <option value="all">All Ratings ({reviewCounts.all})</option>
               <option value="5">5 Stars ({reviewCounts[5]})</option>
@@ -451,27 +415,29 @@ function Reviews() {
 
       {/* Reviews Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <Table
-          data={sortedReviews}
-          columns={
-            getReviewsTableConfig({
-              onView: handleViewReview,
-              onDelete: handleDeleteReview,
-            }).columns
-          }
-          selectedItems={selectedReviews}
-          onSelectItem={handleSelectReview}
-          onSelectAll={handleSelectAllReviews}
-          sortConfig={sortConfig}
-          onSortChange={({ key, direction }) => {
-            setSortConfig({ key, direction });
-          }}
-          isLoading={isLoading}
-          emptyMessage="No reviews found"
-          enableSelection={true}
-          enableSorting={true}
-          itemKey="id"
-        />
+        <div className="overflow-x-auto">
+          <Table
+            data={sortedReviews}
+            columns={
+              getReviewsTableConfig({
+                onView: handleViewReview,
+                onDelete: handleDeleteReview,
+              }).columns
+            }
+            selectedItems={selectedReviews}
+            onSelectItem={handleSelectReview}
+            onSelectAll={handleSelectAllReviews}
+            sortConfig={sortConfig}
+            onSortChange={({ key, direction }) => {
+              setSortConfig({ key, direction });
+            }}
+            isLoading={isLoading}
+            emptyMessage="No reviews found"
+            enableSelection={true}
+            enableSorting={true}
+            itemKey="id"
+          />
+        </div>
 
         {/* Pagination */}
         <Pagination
@@ -481,125 +447,19 @@ function Reviews() {
           handlePageChange={setPage}
           handleRowsPerPageChange={(newRowsPerPage) => {
             console.log('📝 Reviews: Changing rows per page to:', newRowsPerPage);
-            setRowsPerPage(parseInt(newRowsPerPage, 10)); // ✅ Convert to number
+            setRowsPerPage(parseInt(newRowsPerPage, 10));
             setPage(0);
           }}
           entityName="reviews"
         />
       </div>
 
-      {/* Review Detail Modal */}
-      {showModal && activeReview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Review Details
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-500 focus:outline-none"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-
-            {/* Modal Content - Scrollable */}
-            <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {/* Customer Info */}
-              <div className="flex items-center mb-4">
-                <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {activeReview.customer.avatar ? (
-                    <img
-                      src={activeReview.customer.avatar}
-                      alt={activeReview.customer.name}
-                      className="h-12 w-12 object-cover"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 flex items-center justify-center bg-primary/10">
-                      <span className="text-primary font-semibold">
-                        {activeReview.customer.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="ml-4 flex-1">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                    {activeReview.customer.name}
-                  </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {activeReview.customer.email}
-                  </p>
-                </div>
-                <div className="flex items-center">
-                  {renderRatingStars(activeReview.rating)}
-                </div>
-              </div>
-
-              {/* Product Info */}
-              <div className="flex items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md mb-4">
-                <div className="h-10 w-10 flex-shrink-0">
-                  {activeReview.product.image ? (
-                    <img
-                      src={activeReview.product.image}
-                      alt={activeReview.product.name}
-                      className="h-10 w-10 rounded-md object-cover"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <i className="fas fa-box text-gray-400"></i>
-                    </div>
-                  )}
-                </div>
-                <div className="ml-3 flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {activeReview.product.name}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {activeReview.product.category}
-                  </div>
-                </div>
-              </div>
-
-              {/* Review Content */}
-              <div className="mb-4">
-                <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                  Review Comment
-                </h4>
-                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                    {activeReview.content}
-                  </p>
-                </div>
-              </div>
-
-              {/* Date */}
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Submitted on{" "}
-                {new Date(activeReview.date).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "numeric",
-                  hour12: true,
-                })}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-3 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Review Modal Component */}
+      <ReviewModal
+        showModal={showModal}
+        activeReview={activeReview}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 }

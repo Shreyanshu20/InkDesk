@@ -3,11 +3,18 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Table from "../../Common/Table";
 import Pagination from "../../Common/Pagination";
+import { useAdmin } from "../../../Context/AdminContext";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function SubcategoryTable({ categoryId, categoryName, onClose }) {
+  // Add admin context
+  const { user, adminData } = useAdmin();
+  const isAdmin = adminData?.role === "admin";
+
   const [subcategories, setSubcategories] = useState([]);
+  const [categoryCreatedAt, setCategoryCreatedAt] = useState(null); // Add this state
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubcategories, setSelectedSubcategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,29 +27,57 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    fetchSubcategories();
+    fetchSubcategoriesAndCategoryDate();
   }, [categoryId]);
 
-  const fetchSubcategories = async () => {
+  const fetchSubcategoriesAndCategoryDate = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(
+
+      // Fetch subcategories
+      const subcategoriesResponse = await axios.get(
         `${API_BASE_URL}/admin/categories/${categoryId}/subcategories`,
         { withCredentials: true }
       );
 
-      if (response.data.success) {
-        setSubcategories(response.data.subcategories);
+      // Fetch category details to get creation date
+      const categoryResponse = await axios.get(
+        `${API_BASE_URL}/admin/categories/${categoryId}`,
+        { withCredentials: true }
+      );
+
+      if (subcategoriesResponse.data.success) {
+        setSubcategories(subcategoriesResponse.data.subcategories);
+      }
+
+      if (categoryResponse.data.success && categoryResponse.data.category) {
+        setCategoryCreatedAt(categoryResponse.data.category.createdAt);
+        console.log(
+          "📅 Category created at:",
+          categoryResponse.data.category.createdAt
+        );
       }
     } catch (error) {
-      console.error("Error fetching subcategories:", error);
+      console.error("Error fetching data:", error);
       toast.error("Failed to load subcategories");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Check admin access
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true;
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false;
+    }
+  };
+
   const handleAddSubcategory = async () => {
+    if (!checkAdminAccess("create subcategories")) return;
+
     if (!newSubcategoryName.trim()) {
       toast.error("Subcategory name is required");
       return;
@@ -62,16 +97,25 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
         toast.success("Subcategory created successfully");
         setNewSubcategoryName("");
         setShowAddForm(false);
-        fetchSubcategories();
+        fetchSubcategoriesAndCategoryDate();
       }
     } catch (error) {
       console.error("Error creating subcategory:", error);
-      const message = error.response?.data?.message || "Failed to create subcategory";
+      const message =
+        error.response?.data?.message || "Failed to create subcategory";
       toast.error(message);
     }
   };
 
-  const handleUpdateSubcategory = async (subcategoryId, newName, newImage = undefined) => {
+  const handleEditSubcategory = (subcategoryId) => {
+    setEditingSubcategory(subcategoryId);
+  };
+
+  const updateSubcategory = async (
+    subcategoryId,
+    newName,
+    newImage = undefined
+  ) => {
     if (!newName.trim()) {
       toast.error("Subcategory name is required");
       return;
@@ -92,16 +136,31 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       if (response.data.success) {
         toast.success("Subcategory updated successfully");
         setEditingSubcategory(null);
-        fetchSubcategories();
+        fetchSubcategoriesAndCategoryDate(); // This is correct
       }
     } catch (error) {
       console.error("Error updating subcategory:", error);
-      const message = error.response?.data?.message || "Failed to update subcategory";
+      const message =
+        error.response?.data?.message || "Failed to update subcategory";
       toast.error(message);
     }
   };
 
-  const handleImageUpload = async (subcategoryId, file) => {
+  const handleImageUpload = (subcategoryId) => {
+    if (!checkAdminAccess("upload images")) return;
+
+    // Simply trigger the file input click and handle the change event
+    fileInputRef.current.click();
+
+    // Set up the file change handler for this specific subcategory
+    fileInputRef.current.onchange = (e) => {
+      if (e.target.files[0]) {
+        uploadImageFile(subcategoryId, e.target.files[0]);
+      }
+    };
+  };
+
+  const uploadImageFile = async (subcategoryId, file) => {
     if (!file) return;
 
     // Validate file type
@@ -122,60 +181,61 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
 
     try {
       const formData = new FormData();
-      formData.append('images', file);
+      formData.append("images", file);
 
       const response = await axios.post(
         `${API_BASE_URL}/upload/subcategory-images`,
         formData,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
         }
       );
 
       if (response.data.success && response.data.images.length > 0) {
         const uploadedImg = response.data.images[0];
-        
+
         // Update subcategory with new image
-        await handleUpdateSubcategory(
-          subcategoryId, 
-          subcategories.find(sub => sub._id === subcategoryId)?.subcategory_name || '',
+        await updateSubcategory(
+          subcategoryId,
+          subcategories.find((sub) => sub._id === subcategoryId)
+            ?.subcategory_name || "",
           uploadedImg.url
         );
-        
+
         toast.success("Image uploaded successfully");
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
     } finally {
       setUploadingImage(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
 
   const handleRemoveImage = async (subcategoryId) => {
-    const subcategory = subcategories.find(sub => sub._id === subcategoryId);
+    if (!checkAdminAccess("remove images")) return;
+
+    const subcategory = subcategories.find((sub) => sub._id === subcategoryId);
     if (!subcategory?.subcategory_image) return;
 
     try {
       // Update subcategory to remove image
-      await handleUpdateSubcategory(
-        subcategoryId,
-        subcategory.subcategory_name,
-        ''
-      );
-      
+      await updateSubcategory(subcategoryId, subcategory.subcategory_name, "");
+
       toast.success("Image removed successfully");
     } catch (error) {
-      console.error('Error removing image:', error);
-      toast.error('Failed to remove image');
+      console.error("Error removing image:", error);
+      toast.error("Failed to remove image");
     }
   };
 
   const handleDeleteSubcategory = async (subcategoryId) => {
+    if (!checkAdminAccess("delete subcategories")) return;
+
     if (!window.confirm("Are you sure you want to delete this subcategory?")) {
       return;
     }
@@ -188,17 +248,22 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
 
       if (response.data.success) {
         toast.success("Subcategory deleted successfully");
-        fetchSubcategories();
+        fetchSubcategoriesAndCategoryDate();
       }
     } catch (error) {
       console.error("Error deleting subcategory:", error);
-      const message = error.response?.data?.message || "Failed to delete subcategory";
+      const message =
+        error.response?.data?.message || "Failed to delete subcategory";
       toast.error(message);
     }
   };
 
   const handleBulkDelete = async (selectedIds) => {
-    if (!window.confirm(`Delete ${selectedIds.length} selected subcategories?`)) {
+    if (!checkAdminAccess("delete subcategories")) return;
+
+    if (
+      !window.confirm(`Delete ${selectedIds.length} selected subcategories?`)
+    ) {
       return;
     }
 
@@ -216,11 +281,13 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
 
     if (successCount > 0) {
       toast.success(`Successfully deleted ${successCount} subcategories`);
-      fetchSubcategories();
+      fetchSubcategoriesAndCategoryDate();
     }
     if (successCount < selectedIds.length) {
       toast.warning(
-        `${selectedIds.length - successCount} subcategories could not be deleted`
+        `${
+          selectedIds.length - successCount
+        } subcategories could not be deleted`
       );
     }
 
@@ -258,7 +325,7 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
               <i className="fas fa-layer-group text-gray-400"></i>
             )}
           </div>
-          
+
           {/* Info */}
           <div className="flex-1">
             {editingSubcategory === subcategory._id ? (
@@ -268,13 +335,14 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
                   defaultValue={subcategory.subcategory_name}
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
-                      handleUpdateSubcategory(subcategory._id, e.target.value);
+                      if (!checkAdminAccess("edit subcategories")) return;
+                      updateSubcategory(subcategory._id, e.target.value);
                     }
                     if (e.key === "Escape") {
                       setEditingSubcategory(null);
                     }
                   }}
-                  className="text-sm border border-gray-300 rounded px-2 py-1 flex-1"
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 flex-1 bg-white text-text dark:bg-gray-800 dark:text-white"
                   autoFocus
                   onFocus={(e) => e.target.select()}
                 />
@@ -282,9 +350,12 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const input = e.target.closest('.flex').querySelector("input");
+                    if (!checkAdminAccess("edit subcategories")) return;
+                    const input = e.target
+                      .closest(".flex")
+                      .querySelector("input");
                     if (input && input.value.trim()) {
-                      handleUpdateSubcategory(subcategory._id, input.value.trim());
+                      updateSubcategory(subcategory._id, input.value.trim());
                     } else {
                       toast.error("Subcategory name cannot be empty");
                     }
@@ -333,27 +404,18 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           ) : (
             <>
               <button
-                onClick={() => {
-                  fileInputRef.current.onclick = () => {
-                    fileInputRef.current.onchange = (e) => {
-                      if (e.target.files[0]) {
-                        handleImageUpload(subcategory._id, e.target.files[0]);
-                      }
-                    };
-                  };
-                  fileInputRef.current.click();
-                }}
-                className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"
+                onClick={() => handleImageUpload(subcategory._id)}
+                className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800"
                 title="Upload image"
               >
                 <i className="fas fa-upload"></i>
                 {subcategory.subcategory_image ? "Change" : "Add"}
               </button>
-              
+
               {subcategory.subcategory_image && (
                 <button
                   onClick={() => handleRemoveImage(subcategory._id)}
-                  className="text-red-600 hover:text-red-800 text-xs"
+                  className="text-xs text-red-600 hover:text-red-800"
                   title="Remove image"
                 >
                   <i className="fas fa-trash"></i>
@@ -369,20 +431,27 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       label: "Created",
       sortable: true,
       className: "px-6 py-4 whitespace-nowrap",
-      customRenderer: (subcategory) => (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex items-center">
-            <i className="fas fa-calendar-plus mr-2 text-gray-400"></i>
-            {subcategory.createdAt
-              ? new Date(subcategory.createdAt).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-              : "Unknown"}
+      customRenderer: (subcategory) => {
+        // Use subcategory's createdAt if available, otherwise fall back to category's createdAt
+        const dateToUse = subcategory.createdAt || categoryCreatedAt;
+
+        return (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center">
+              <i className="fas fa-calendar-plus mr-2 text-gray-400"></i>
+              <div>
+                {dateToUse
+                  ? new Date(dateToUse).toLocaleDateString("en-IN", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "Unknown"}
+              </div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "actions",
@@ -390,26 +459,22 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       sortable: false,
       className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium",
       customRenderer: (subcategory) => (
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex items-center justify-start space-x-2">
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setEditingSubcategory(subcategory._id);
-            }}
-            className="text-primary hover:text-primary/80 p-1 rounded transition-colors"
+            onClick={() => handleEditSubcategory(subcategory._id)}
+            className={`p-1 rounded transition-colors ${
+              editingSubcategory === subcategory._id
+                ? "text-gray-400"
+                : "text-primary hover:text-primary/80"
+            }`}
             title="Edit subcategory"
             disabled={editingSubcategory === subcategory._id}
           >
             <i className="fas fa-edit"></i>
           </button>
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleDeleteSubcategory(subcategory._id);
-            }}
-            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+            onClick={() => handleDeleteSubcategory(subcategory._id)}
+            className="p-1 rounded transition-colors text-red-600 hover:text-red-700"
             title="Delete subcategory"
           >
             <i className="fas fa-trash"></i>
@@ -420,7 +485,7 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-auto bg-black/80 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -440,6 +505,7 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
               <i className="fas fa-plus"></i>
               Add Subcategory
             </button>
+
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2"
@@ -448,6 +514,19 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
             </button>
           </div>
         </div>
+
+        {/* Show warning for non-admin users */}
+        {!isAdmin && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+            <div className="flex">
+              <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 mr-2 text-lg"></i>
+              <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+                You are viewing subcategories in read-only mode. Admin
+                privileges are required to make changes.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Add Form */}
         {showAddForm && (
@@ -540,8 +619,8 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           />
         </div>
 
-        {/* Bulk Actions */}
-        {selectedSubcategories.length > 0 && (
+        {/* Bulk Actions - show for admin only */}
+        {isAdmin && selectedSubcategories.length > 0 && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">

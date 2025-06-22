@@ -548,10 +548,10 @@ function ProductForm({ mode: propMode }) {
 
       {/* Show warning for non-admin users */}
       {!isAdmin && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <div className="flex">
-            <i className="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
-            <p className="text-yellow-700 text-sm">
+            <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 mr-2 text-lg"></i>
+            <p className="text-red-700 dark:text-red-300 text-sm font-medium">
               You are viewing this form in read-only mode. Admin privileges are
               required to save changes.
             </p>

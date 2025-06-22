@@ -598,7 +598,7 @@ function Settings() {
                         onChange={(e) =>
                           handleProfileChange("first_name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter your first name"
                         required
                       />
@@ -613,7 +613,7 @@ function Settings() {
                         onChange={(e) =>
                           handleProfileChange("last_name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter your last name"
                         required
                       />
@@ -647,7 +647,7 @@ function Settings() {
                       onChange={(e) =>
                         handleProfileChange("phone", e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                       placeholder="Enter your phone number"
                       required
                     />
@@ -689,7 +689,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("first_name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter first name"
                         required
                       />
@@ -704,7 +704,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("last_name", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter last name"
                         required
                       />
@@ -721,7 +721,7 @@ function Settings() {
                       onChange={(e) =>
                         handleAddressChange("phone", e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                       placeholder="Enter phone number"
                       required
                     />
@@ -737,7 +737,7 @@ function Settings() {
                       onChange={(e) =>
                         handleAddressChange("address_line_1", e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                       placeholder="Street address, P.O. Box, company name"
                       required
                     />
@@ -753,7 +753,7 @@ function Settings() {
                       onChange={(e) =>
                         handleAddressChange("address_line_2", e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                       placeholder="Apartment, suite, unit, building, floor, etc."
                     />
                   </div>
@@ -769,7 +769,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("city", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter city"
                         required
                       />
@@ -784,7 +784,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("state", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter state or province"
                       />
                     </div>
@@ -801,7 +801,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("postal_code", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter postal code"
                         required
                       />
@@ -825,7 +825,7 @@ function Settings() {
                         onChange={(e) =>
                           handleAddressChange("country", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         required
                       >
                         <option value="">Select Country</option>
@@ -899,7 +899,7 @@ function Settings() {
                         onChange={(e) =>
                           handlePasswordChange("oldPassword", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter your current password"
                         required
                       />
@@ -915,7 +915,7 @@ function Settings() {
                         onChange={(e) =>
                           handlePasswordChange("newPassword", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter your new password"
                         minLength="6"
                         required
@@ -936,7 +936,7 @@ function Settings() {
                             e.target.value
                           )
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Confirm your new password"
                         minLength="6"
                         required
@@ -1007,7 +1007,7 @@ function Settings() {
                         onChange={(e) =>
                           handleDeleteChange("password", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Enter your current password"
                         required
                       />
@@ -1024,7 +1024,7 @@ function Settings() {
                         onChange={(e) =>
                           handleDeleteChange("confirmText", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white text-text dark:bg-gray-700 dark:text-white"
                         placeholder="Type DELETE to confirm"
                         required
                       />

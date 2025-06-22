@@ -1,8 +1,10 @@
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useAdmin } from "../../../Context/AdminContext"; // Add this import
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function CategoryImageUpload({
   previewImage,
@@ -15,9 +17,13 @@ function CategoryImageUpload({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
+  // Add admin context
+  const { user, adminData } = useAdmin();
+  const isAdmin = adminData?.role === "admin";
+
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+
     if (files.length === 0) return;
 
     // Only allow one image for categories
@@ -41,14 +47,13 @@ function CategoryImageUpload({
 
     try {
       const formData = new FormData();
-      formData.append('images', file);
+      formData.append("images", file);
 
-      // FIX: Use your actual backend API path
       const response = await axios.post(
-        `${API_BASE_URL}/upload/category-images`, // Remove /api prefix
+        `${API_BASE_URL}/upload/category-images`,
         formData,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
         }
       );
@@ -60,46 +65,70 @@ function CategoryImageUpload({
         toast.success("Image uploaded successfully");
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       if (error.response?.status === 401) {
-        toast.error('Please login to upload images');
+        toast.error("Please login to upload images");
       } else {
-        toast.error('Failed to upload image. Please try again.');
+        toast.error("Failed to upload image. Please try again.");
       }
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
 
   const removeImage = async () => {
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to remove images.");
+      return;
+    }
+
     try {
       if (uploadedImage?.public_id) {
         await axios.delete(
-          `${API_BASE_URL}/upload/category-images/${uploadedImage.public_id}`, // Remove /api prefix
+          `${API_BASE_URL}/upload/category-images/${uploadedImage.public_id}`,
           { withCredentials: true }
         );
       }
 
       setUploadedImage(null);
       setPreviewImage("");
-      toast.success('Image removed successfully');
+      toast.success("Image removed successfully");
     } catch (error) {
-      console.error('Error removing image:', error);
-      toast.error('Failed to remove image');
+      console.error("Error removing image:", error);
+      toast.error("Failed to remove image");
     }
+  };
+
+  const handleFileSelect = (e) => {
+    if (!isAdmin) {
+      toast.error("Access denied. Admin privileges required to upload images.");
+      e.target.value = ""; // Clear the file input
+      return;
+    }
+    handleImageUpload(e);
   };
 
   return (
     <div className="space-y-4">
+      {!isAdmin && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+            <i className="fas fa-lock text-red-500 dark:text-red-400 mr-2"></i>
+            Image upload is restricted to admin users only.
+          </p>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Category Image
         </label>
 
         {!previewImage ? (
+          // Upload area
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               uploading
@@ -107,49 +136,58 @@ function CategoryImageUpload({
                 : formTouched && error
                 ? "border-red-500 bg-red-50 dark:bg-red-900/20"
                 : "border-gray-300 dark:border-gray-600 hover:border-primary"
-            }`}
-            onClick={() => !uploading && fileInputRef.current?.click()}
+            } ${!isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={() =>
+              !uploading && isAdmin && fileInputRef.current?.click()
+            }
           >
             {uploading ? (
               <>
                 <i className="fas fa-spinner fa-spin text-3xl text-blue-500 mb-2"></i>
-                <p className="text-blue-600 dark:text-blue-400 mb-1">Uploading image...</p>
+                <p className="text-blue-600 dark:text-blue-400 mb-1">
+                  Uploading image...
+                </p>
               </>
             ) : (
               <>
                 <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                <p className="text-gray-700 dark:text-gray-300 mb-1">Click to upload category image</p>
+                <p className="text-gray-700 dark:text-gray-300 mb-1">
+                  {!isAdmin
+                    ? "Upload restricted to admin users"
+                    : "Click to upload category image"}
+                </p>
               </>
             )}
-            
-            <p className="text-sm text-gray-500">
-              JPG, PNG, or WebP (max 5MB)
-            </p>
+
+            <p className="text-sm text-gray-500">JPG, PNG, or WebP (max 5MB)</p>
 
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp"
-              onChange={handleImageUpload}
+              onChange={handleFileSelect}
               className="hidden"
-              disabled={uploading}
+              disabled={uploading || !isAdmin} // Disable for non-admin
             />
           </div>
         ) : (
+          // Show larger preview image
           <div className="relative group">
             <img
               src={previewImage}
               alt="Category preview"
-              className="w-full h-48 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-gray-600"
+              className="w-full h-64 object-cover rounded-xl shadow-md border border-gray-200 dark:border-gray-600"
             />
-            <button
-              type="button"
-              onClick={removeImage}
-              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
-              aria-label="Remove image"
-            >
-              ×
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-3 right-3 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+                aria-label="Remove image"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            )}
           </div>
         )}
 

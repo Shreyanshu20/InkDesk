@@ -1,4 +1,5 @@
 import { getStatusColor } from "../Orders/components/utils";
+import ActionGroup from "./ActionGroup";
 
 // Order Table Configuration
 export const getOrderTableConfig = (
@@ -99,46 +100,46 @@ export const getOrderTableConfig = (
       key: "actions",
       label: "Actions",
       sortable: false,
-      customRenderer: (order) => (
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handleViewOrder(order.id)}
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded transition-colors"
-            title="View order details"
-          >
-            <i className="fas fa-eye"></i>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              openStatusModal(order, e);
-            }}
-            className="text-primary hover:text-primary/80 p-1 rounded transition-colors"
-            title="Update status"
-          >
-            <i className="fas fa-edit"></i>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteOrder(order.id);
-            }}
-            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded transition-colors"
-            title="Delete order"
-          >
-            <i className="fas fa-trash"></i>
-          </button>
-        </div>
-      ),
+      customRenderer: (order) => {
+        const actions = [
+          {
+            onClick: (item) => handleViewOrder(item.id),
+            icon: "fas fa-eye",
+            title: "View order details",
+            variant: "view",
+          },
+          {
+            onClick: (item, e) => {
+              e?.stopPropagation();
+              openStatusModal(item, e);
+            },
+            icon: "fas fa-edit",
+            title: "Update status",
+            variant: "status",
+          },
+          {
+            onClick: (item, e) => {
+              e?.stopPropagation();
+              handleDeleteOrder(item.id);
+            },
+            icon: "fas fa-trash",
+            title: "Delete order",
+            variant: "delete",
+          },
+        ];
+
+        return <ActionGroup actions={actions} item={order} />;
+      },
     },
   ],
 });
 
-// Product Table Configuration
+// Product Table Configuration - Updated
 export const getProductTableConfig = (
   handleViewProduct,
   handleEditProduct,
-  handleDeleteProduct
+  handleDeleteProduct,
+  isAdmin = true // Keep this parameter for consistency
 ) => ({
   columns: [
     {
@@ -201,37 +202,36 @@ export const getProductTableConfig = (
       key: "actions",
       label: "Actions",
       sortable: false,
-      customRenderer: (product) => (
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handleViewProduct(product.id)}
-            className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
-            title="View product"
-          >
-            <i className="fas fa-eye"></i>
-          </button>
-          <button
-            onClick={() => handleEditProduct(product.id)}
-            className="text-primary hover:text-primary/80 p-1 rounded transition-colors"
-            title="Edit product"
-          >
-            <i className="fas fa-edit"></i>
-          </button>
-          <button
-            onClick={() => handleDeleteProduct(product.id)}
-            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
-            title="Delete product"
-          >
-            <i className="fas fa-trash"></i>
-          </button>
-        </div>
-      ),
+      customRenderer: (product) => {
+        const actions = [
+          {
+            onClick: (item) => handleViewProduct(item.id),
+            icon: "fas fa-eye",
+            title: "View Product",
+            variant: "view",
+          },
+          {
+            onClick: (item) => handleEditProduct(item.id),
+            icon: "fas fa-edit", 
+            title: "Edit Product",
+            variant: "edit"
+          },
+          {
+            onClick: (item) => handleDeleteProduct(item.id),
+            icon: "fas fa-trash",
+            title: "Delete Product", 
+            variant: "delete"
+          }
+        ];
+
+        return <ActionGroup actions={actions} item={product} />;
+      },
     },
   ],
 });
 
 // User Table Configuration
-export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus }) => ({
+export const getUserTableConfig = ({ onView, onEdit, onDelete }) => ({
   columns: [
     {
       key: "avatar",
@@ -247,7 +247,7 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
             />
           ) : (
             <span className="text-primary font-semibold text-sm">
-              {user.name?.charAt(0)?.toUpperCase() || 'U'}
+              {user.name?.charAt(0)?.toUpperCase() || "U"}
             </span>
           )}
         </div>
@@ -260,7 +260,7 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
       customRenderer: (user) => (
         <div>
           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {user.name || 'N/A'}
+            {user.name || "N/A"}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {user.email}
@@ -273,14 +273,16 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
       label: "Role",
       sortable: true,
       customRenderer: (user) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          user.role === 'admin' 
-            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-            : user.role === 'manager'
-            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-        }`}>
-          {user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'Customer'}
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            user.role === "admin"
+              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+              : user.role === "manager"
+              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+              : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+          }`}
+        >
+          {user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || "Customer"}
         </span>
       ),
     },
@@ -290,18 +292,18 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
       sortable: true,
       customRenderer: (user) => (
         <button
-          onClick={() => onUpdateStatus(user.id, user.status === 'active' ? 'inactive' : 'active')}
+          onClick={() => onUpdateStatus(user.id, user.status === "active" ? "inactive" : "active")}
           className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-            user.status === 'active'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200'
-              : user.status === 'inactive'
-              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200'
-              : user.status === 'suspended'
-              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-200'
-              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 hover:bg-yellow-200'
+            user.status === "active"
+              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200"
+              : user.status === "inactive"
+              ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200"
+              : user.status === "suspended"
+              ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-200"
+              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 hover:bg-yellow-200"
           }`}
         >
-          {user.status?.charAt(0).toUpperCase() + user.status?.slice(1) || 'Active'}
+          {user.status?.charAt(0).toUpperCase() + user.status?.slice(1) || "Active"}
         </button>
       ),
     },
@@ -311,7 +313,7 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
       sortable: false,
       customRenderer: (user) => (
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {user.phone || 'N/A'}
+          {user.phone || "N/A"}
         </span>
       ),
     },
@@ -334,36 +336,30 @@ export const getUserTableConfig = ({ onView, onEdit, onDelete, onUpdateStatus })
       key: "actions",
       label: "Actions",
       sortable: false,
-      customRenderer: (user) => (  // FIXED: Use customRenderer, not render
-        <div className="flex space-x-2">
-          {/* View button - always visible and clickable */}
-          <button
-            onClick={() => onView(user.id)}
-            className="text-blue-600 hover:text-blue-800 font-medium"
-            title="View User"
-          >
-            <i className="fas fa-eye"></i>
-          </button>
-          
-          {/* Edit button - always visible and clickable */}
-          <button
-            onClick={() => onEdit(user.id)}
-            className="text-green-600 hover:text-green-800 font-medium"
-            title="Edit User"
-          >
-            <i className="fas fa-edit"></i>
-          </button>
-          
-          {/* Delete button - always visible and clickable */}
-          <button
-            onClick={() => onDelete(user.id)}
-            className="text-red-600 hover:text-red-800 font-medium"
-            title="Delete User"
-          >
-            <i className="fas fa-trash"></i>
-          </button>
-        </div>
-      ),
+      customRenderer: (user) => {
+        const actions = [
+          {
+            onClick: (item) => onView(item.id),
+            icon: "fas fa-eye",
+            title: "View User",
+            variant: "view",
+          },
+          {
+            onClick: (item) => onEdit(item.id),
+            icon: "fas fa-edit",
+            title: "Edit User",
+            variant: "edit",
+          },
+          {
+            onClick: (item) => onDelete(item.id),
+            icon: "fas fa-trash",
+            title: "Delete User",
+            variant: "delete",
+          },
+        ];
+
+        return <ActionGroup actions={actions} item={user} />;
+      },
     },
   ],
 });
@@ -464,7 +460,7 @@ export const getBannerTableConfig = (
   };
 };
 
-// Reviews Table Configuration
+// Reviews Table Configuration - Updated with reduced column widths but keeping text-sm
 export const getReviewsTableConfig = ({ onView, onDelete }) => ({
   columns: [
     {
@@ -472,27 +468,27 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Customer",
       sortable: false,
       customRenderer: (review) => (
-        <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
+        <div className="flex items-center w-32">
+          <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mr-2 flex-shrink-0">
             {review.customer.avatar ? (
               <img
                 src={review.customer.avatar}
                 alt={review.customer.name}
-                className="h-8 w-8 object-cover"
+                className="h-6 w-6 object-cover"
               />
             ) : (
-              <div className="h-8 w-8 flex items-center justify-center bg-primary/10">
-                <span className="text-primary font-semibold text-xs">
+              <div className="h-6 w-6 flex items-center justify-center bg-primary/10">
+                <span className="text-primary font-semibold text-sm">
                   {review.customer.name.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
           </div>
-          <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {review.customer.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {review.customer.email}
             </div>
           </div>
@@ -504,25 +500,25 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Product",
       sortable: false,
       customRenderer: (review) => (
-        <div className="flex items-center">
-          <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
+        <div className="flex items-center w-28">
+          <div className="h-6 w-6 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mr-2 flex-shrink-0">
             {review.product.image ? (
               <img
                 src={review.product.image}
                 alt={review.product.name}
-                className="h-8 w-8 object-cover"
+                className="h-6 w-6 object-cover"
               />
             ) : (
-              <div className="h-8 w-8 flex items-center justify-center">
-                <i className="fas fa-box text-gray-400 text-xs"></i>
+              <div className="h-6 w-6 flex items-center justify-center">
+                <i className="fas fa-box text-gray-400 text-sm"></i>
               </div>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            <div className="text-sm font-medium text-gray-900 dark:text-white truncate" title={review.product.name}>
               {review.product.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {review.product.category}
             </div>
           </div>
@@ -534,13 +530,13 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Rating",
       sortable: true,
       customRenderer: (review) => (
-        <div className="flex items-center">
-          <span className="text-sm font-medium mr-2">{review.rating}</span>
+        <div className="flex items-center w-16">
+          <span className="text-sm font-medium mr-1">{review.rating}</span>
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <span
                 key={star}
-                className={`text-xs ${
+                className={`text-sm ${
                   star <= review.rating ? "text-yellow-400" : "text-gray-300"
                 }`}
               >
@@ -556,9 +552,11 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Review",
       sortable: false,
       customRenderer: (review) => (
-        <div className="max-w-xs">
-          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-            {review.content}
+        <div className="w-32">
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2" title={review.content}>
+            {review.content && review.content.length > 50 
+              ? `${review.content.substring(0, 50)}...` 
+              : review.content || 'No content'}
           </p>
         </div>
       ),
@@ -568,12 +566,18 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Date",
       sortable: true,
       customRenderer: (review) => (
-        <div className="text-sm">
+        <div className="text-sm w-20">
           <div className="text-gray-900 dark:text-gray-100">
-            {new Date(review.date).toLocaleDateString()}
+            {new Date(review.date).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short'
+            })}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(review.date).toLocaleTimeString()}
+            {new Date(review.date).toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
           </div>
         </div>
       ),
@@ -583,23 +587,20 @@ export const getReviewsTableConfig = ({ onView, onDelete }) => ({
       label: "Actions",
       sortable: false,
       customRenderer: (review) => (
-        <div className="flex space-x-2">
-          {/* View button - always visible and clickable */}
+        <div className="flex items-center justify-end space-x-1 w-16">
           <button
             onClick={() => onView(review)}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1"
             title="View Review"
           >
-            <i className="fas fa-eye"></i>
+            <i className="fas fa-eye text-sm"></i>
           </button>
-          
-          {/* Delete button - always visible and clickable */}
           <button
             onClick={() => onDelete(review.id)}
-            className="text-red-600 hover:text-red-800 font-medium"
+            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
             title="Delete Review"
           >
-            <i className="fas fa-trash"></i>
+            <i className="fas fa-trash text-sm"></i>
           </button>
         </div>
       ),

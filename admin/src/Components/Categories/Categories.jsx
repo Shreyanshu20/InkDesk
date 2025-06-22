@@ -6,6 +6,8 @@ import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import CategoryDetails from "./components/CategoryDetails";
+import CategoriesSkeleton from "./CategoriesSkeleton"; // Add this import
+import { useAdmin } from "../../Context/AdminContext"; // Add this import
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -14,6 +16,10 @@ function Categories({ view: propView }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const view = propView || (id ? "view" : "list");
+
+  // Add admin context
+  const { user, adminData, isAuthenticated } = useAdmin();
+  const isAdmin = adminData?.role === "admin";
 
   // 🔥 ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
   const [categories, setCategories] = useState([]);
@@ -131,7 +137,17 @@ function Categories({ view: propView }) {
     }
   };
 
-  // Navigation handlers
+  // Check admin access - same as Products
+  const checkAdminAccess = (action) => {
+    if (isAdmin) {
+      return true; // Admin can do everything
+    } else {
+      toast.error(`Access denied. Admin privileges required to ${action}.`);
+      return false; // User is restricted
+    }
+  };
+
+  // Navigation handlers with admin checks
   const handleAddCategory = () => {
     navigate("/admin/categories/add");
   };
@@ -145,8 +161,33 @@ function Categories({ view: propView }) {
   };
 
   const handleDeleteCategory = async (categoryId) => {
+    if (!checkAdminAccess("delete categories")) return;
+
     if (window.confirm("Are you sure you want to delete this category?")) {
       await deleteCategory(categoryId);
+    }
+  };
+
+  const handleDelete = async (selectedIds) => {
+    if (!checkAdminAccess("delete categories")) return;
+
+    if (window.confirm(`Delete ${selectedIds.length} selected categories?`)) {
+      let successCount = 0;
+      for (const id of selectedIds) {
+        const success = await deleteCategory(id);
+        if (success) successCount++;
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully deleted ${successCount} categories`);
+      }
+      if (successCount < selectedIds.length) {
+        toast.warning(
+          `${selectedIds.length - successCount} categories could not be deleted`
+        );
+      }
+
+      setSelectedCategories([]);
     }
   };
 
@@ -217,27 +258,6 @@ function Categories({ view: propView }) {
     setPage(0);
   };
 
-  const handleDelete = async (selectedIds) => {
-    if (window.confirm(`Delete ${selectedIds.length} selected categories?`)) {
-      let successCount = 0;
-      for (const id of selectedIds) {
-        const success = await deleteCategory(id);
-        if (success) successCount++;
-      }
-
-      if (successCount > 0) {
-        toast.success(`Successfully deleted ${successCount} categories`);
-      }
-      if (successCount < selectedIds.length) {
-        toast.warning(
-          `${selectedIds.length - successCount} categories could not be deleted`
-        );
-      }
-
-      setSelectedCategories([]);
-    }
-  };
-
   // Check if any category has product count data
   const hasProductCounts = categories.some((cat) => cat.productCount > 0);
 
@@ -258,15 +278,15 @@ function Categories({ view: propView }) {
                 className="h-full w-full object-cover"
                 loading="lazy"
                 onError={(e) => {
-                  console.log('Image failed to load:', category.image);
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
+                  console.log("Image failed to load:", category.image);
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "flex";
                 }}
               />
             ) : null}
-            <div 
+            <div
               className="h-full w-full bg-primary/10 rounded-md flex items-center justify-center text-primary"
-              style={{ display: category.image ? 'none' : 'flex' }}
+              style={{ display: category.image ? "none" : "flex" }}
             >
               <i className="fas fa-folder"></i>
             </div>
@@ -289,9 +309,10 @@ function Categories({ view: propView }) {
       className: "px-6 py-4 whitespace-nowrap",
       customRenderer: (category) => (
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
+          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
             <i className="fas fa-layer-group mr-1"></i>
-            {category.subcategories ? category.subcategories.length : 0}
+            {category.subcategories ? category.subcategories.length : 0}{" "}
+            Subcategories
           </span>
         </div>
       ),
@@ -308,7 +329,7 @@ function Categories({ view: propView }) {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                   <i className="fas fa-box mr-1"></i>
-                  {category.productCount || 0}
+                  {category.productCount || 0} Products
                 </span>
               </div>
             ),
@@ -341,7 +362,7 @@ function Categories({ view: propView }) {
       sortable: false,
       className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium",
       customRenderer: (category) => (
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex items-center justify-start space-x-2">
           <button
             onClick={() => handleViewCategory(category.id)}
             className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
@@ -377,13 +398,18 @@ function Categories({ view: propView }) {
     ? categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0)
     : null;
 
+  // Show skeleton while loading and no categories
+  if (isLoading && categories.length === 0) {
+    return <CategoriesSkeleton />;
+  }
+
   // 🔥 NOW WE CAN SAFELY DO CONDITIONAL RETURNS AFTER ALL HOOKS
   if (view === "view" && id) {
     return <CategoryDetails categoryId={id} />; // Pass the ID as prop
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -475,8 +501,8 @@ function Categories({ view: propView }) {
         />
       </div>
 
-      {/* Bulk Actions */}
-      {selectedCategories.length > 0 && (
+      {/* Bulk Actions - show for admin only */}
+      {isAdmin && selectedCategories.length > 0 && (
         <BulkActions
           selectedItems={selectedCategories}
           entityName="categories"
