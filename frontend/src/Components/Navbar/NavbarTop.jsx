@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 function NavbarTop() {
   const { theme, themeToggle } = useTheme();
   const { isLoggedIn, userData, logout, backendUrl } = useContext(AppContent);
-  const { getWishlistItemCount } = useWishlist();
+  const { wishlistItems, getWishlistItemCount } = useWishlist(); // Fixed: Added getWishlistItemCount
   const { getCartItemCount } = useCart();
   const navigate = useNavigate();
 
@@ -141,7 +141,7 @@ function NavbarTop() {
   };
 
   const cartItemCount = getCartItemCount ? getCartItemCount() : 0;
-  const wishlistItemCount = getWishlistItemCount ? getWishlistItemCount() : 0;
+  const wishlistItemCount = getWishlistItemCount ? getWishlistItemCount() : 0; // Fixed: Use the function
 
   const handleSearch = () => {
     if (searchText.trim()) {

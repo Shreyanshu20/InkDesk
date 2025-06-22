@@ -61,6 +61,11 @@ export const WishlistProvider = ({ children }) => {
     return wishlistItems.some(item => item.product_id?._id === productId || item.product_id === productId);
   };
 
+  // Get wishlist item count
+  const getWishlistItemCount = () => {
+    return wishlistItems.length;
+  };
+
   // Optimistic add to wishlist
   const addToWishlist = async (productId) => {
     const loadingKey = `add-wishlist-${productId}`;
@@ -75,7 +80,9 @@ export const WishlistProvider = ({ children }) => {
     // Optimistic update - add immediately
     const optimisticItem = {
       _id: `temp-${Date.now()}`,
-      product_id: productId,
+      product_id: {
+        _id: productId
+      },
       addedAt: new Date().toISOString()
     };
     setWishlistItems(prev => [...prev, optimisticItem]);
@@ -91,8 +98,19 @@ export const WishlistProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-        // Refresh to get accurate data
-        await fetchWishlist();
+        // Replace the temporary item with the real item from server
+        const realItem = response.data.wishlistItem || {
+          _id: response.data.id || `real-${Date.now()}`,
+          product_id: { _id: productId },
+          addedAt: new Date().toISOString()
+        };
+        
+        setWishlistItems(prev => 
+          prev.map(item => 
+            item._id === optimisticItem._id ? realItem : item
+          )
+        );
+        
         return { success: true };
       } else {
         // Revert optimistic update
@@ -144,7 +162,7 @@ export const WishlistProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-        // Keep the optimistic update
+        // Keep the optimistic update - don't revert
         return { success: true };
       } else {
         // Revert optimistic update
@@ -176,6 +194,7 @@ export const WishlistProvider = ({ children }) => {
     isInWishlist,
     fetchWishlist,
     isButtonLoading,
+    getWishlistItemCount, // Add this function
   };
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
