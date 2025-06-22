@@ -12,7 +12,7 @@ function SidebarHeader({ collapsed }) {
         {!collapsed ? (
           <div className="flex items-center justify-center py-2">
             <img
-              src="/src/assets/brandlogo.png"
+              src="/brandlogo.png"
               alt="InkDesk Logo"
               className="p-2 object-contain"
               loading="lazy"
@@ -21,7 +21,7 @@ function SidebarHeader({ collapsed }) {
         ) : (
           <div className="flex items-center justify-center w-full py-2">
             <img
-              src="/src/assets/brandlogomini.png"
+              src="/brandlogomini.png"
               alt="InkDesk Icon"
               className="max-h-10 object-contain"
               loading="lazy"

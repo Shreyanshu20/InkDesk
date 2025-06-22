@@ -1,56 +1,64 @@
-import React, { createContext, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 };
 
-// Theme toggle function
-export const themeToggle = () => {
-  const isDark = document.documentElement.classList.toggle("dark");
-
-  if (isDark) {
-    localStorage.theme = "dark";
-  } else {
-    localStorage.theme = "light";
-  }
-};
-
-// Initialize theme
-const initializeTheme = () => {
-  if (
-    localStorage.theme === "dark" ||
-    (!("theme" in localStorage) &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches)
-  ) {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
-};
-
 export const ThemeProvider = ({ children }) => {
-  useEffect(() => {
-    initializeTheme();
-  }, []);
+  // Get current theme based on the toggle logic
+  const getCurrentTheme = () => {
+    if (typeof window === 'undefined') return 'light';
+    
+    return localStorage.theme === "dark" ||
+      (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ? 'dark' : 'light';
+  };
 
-  const value = {
-    themeToggle,
-    isDark: document.documentElement.classList.contains("dark"),
+  const [theme, setTheme] = useState(getCurrentTheme);
+
+  // Apply theme on mount and when theme changes
+  useEffect(() => {
+    // On page load or when changing themes
+    document.documentElement.classList.toggle(
+      "dark",
+      localStorage.theme === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
+  }, [theme]);
+
+  const themeToggle = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    
+    if (newTheme === 'light') {
+      // Whenever the user explicitly chooses light mode
+      localStorage.theme = "light";
+    } else {
+      // Whenever the user explicitly chooses dark mode
+      localStorage.theme = "dark";
+    }
+
+    // Apply the toggle logic immediately
+    document.documentElement.classList.toggle(
+      "dark",
+      localStorage.theme === "dark" ||
+        (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
+
+    setTheme(newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider value={{ theme, themeToggle }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Export ThemeContext as both named and default export
 export { ThemeContext };
 export default ThemeContext;

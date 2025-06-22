@@ -33,7 +33,6 @@
   --secondary: #6f1620;
   --accent: #af0e21;
 }
-
 /* Modern animations */
 .fade-in {
   animation: quickFadeIn 0.15s ease-out forwards;
