@@ -8,7 +8,7 @@ import { AppContent } from "../../Context/AppContent.jsx";
 import { toast } from "react-toastify";
 
 function NavbarBottom() {
-  const { categories } = useCategories();
+  const { categories, loading: categoriesLoading } = useCategories(); // Get loading state from context
   const { theme, themeToggle } = useTheme();
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
@@ -338,38 +338,49 @@ function NavbarBottom() {
                   </NavLink>
                 )}
 
-                {/* Dropdown content remains the same */}
+                {/* Dropdown content with loading state */}
                 {item.hasDropdown && activeDropdown === index && (
                   <div className="absolute top-full left-0 bg-background shadow-lg rounded-b-lg p-6 w-[1000px] -ml-[400px] grid grid-cols-5 gap-6 border-t-2 border-[#E66354]">
-                    {item.categories.map((category, catIndex) => (
-                      <div key={catIndex} className="space-y-3">
-                        <h3
-                          className={`font-bold uppercase text-sm tracking-wider ${
-                            category.title === "Browse All"
-                              ? "text-blue-600 dark:text-blue-400"
-                              : "text-[#E66354]"
-                          }`}
-                        >
-                          {category.title}
-                        </h3>
-                        <ul className="space-y-2">
-                          {category.items.map((subItem, subIndex) => (
-                            <li key={subIndex}>
-                              <Link
-                                to={subItem.link}
-                                className={`transition-colors text-sm ${
-                                  category.title === "Browse All"
-                                    ? "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                                    : "text-text hover:text-[#E66354]"
-                                }`}
-                              >
-                                {subItem.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
+                    {categoriesLoading ? (
+                      // Loading State for Shop Dropdown
+                      <div className="col-span-5 flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <div className="w-8 h-8 border-2 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Loading categories...</div>
+                        </div>
                       </div>
-                    ))}
+                    ) : (
+                      // Normal Categories Display
+                      item.categories.map((category, catIndex) => (
+                        <div key={catIndex} className="space-y-3">
+                          <h3
+                            className={`font-bold uppercase text-sm tracking-wider ${
+                              category.title === "Browse All"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-[#E66354]"
+                            }`}
+                          >
+                            {category.title}
+                          </h3>
+                          <ul className="space-y-2">
+                            {category.items.map((subItem, subIndex) => (
+                              <li key={subIndex}>
+                                <Link
+                                  to={subItem.link}
+                                  className={`transition-colors text-sm ${
+                                    category.title === "Browse All"
+                                      ? "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                                      : "text-text hover:text-[#E66354]"
+                                  }`}
+                                >
+                                  {subItem.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -731,36 +742,47 @@ function NavbarBottom() {
 
                     {expandedMobileCategories.includes(index) && (
                       <div className="mt-2 ml-4 space-y-4">
-                        {item.categories.map((category, catIndex) => (
-                          <div key={catIndex}>
-                            <h4
-                              className={`text-sm font-semibold uppercase tracking-wider mb-2 ${
-                                category.title === "Browse All"
-                                  ? "text-blue-600 dark:text-blue-400"
-                                  : "text-[#E66354]"
-                              }`}
-                            >
-                              {category.title}
-                            </h4>
-                            <ul className="space-y-1 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
-                              {category.items.map((subItem, subIndex) => (
-                                <li key={subIndex}>
-                                  <Link
-                                    to={subItem.link}
-                                    className={`block py-2 px-2 text-sm rounded transition-colors ${
-                                      category.title === "Browse All"
-                                        ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                        : "text-gray-600 dark:text-gray-300 hover:text-[#E66354] hover:bg-gray-50 dark:hover:bg-gray-700"
-                                    }`}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                  >
-                                    {subItem.name}
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
+                        {categoriesLoading ? (
+                          // Loading State for Mobile Shop Categories
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-center">
+                              <div className="w-6 h-6 border-2 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-3"></div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Loading categories...</div>
+                            </div>
                           </div>
-                        ))}
+                        ) : (
+                          // Normal Categories Display
+                          item.categories.map((category, catIndex) => (
+                            <div key={catIndex}>
+                              <h4
+                                className={`text-sm font-semibold uppercase tracking-wider mb-2 ${
+                                  category.title === "Browse All"
+                                    ? "text-blue-600 dark:text-blue-400"
+                                    : "text-[#E66354]"
+                                }`}
+                              >
+                                {category.title}
+                              </h4>
+                              <ul className="space-y-1 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
+                                {category.items.map((subItem, subIndex) => (
+                                  <li key={subIndex}>
+                                    <Link
+                                      to={subItem.link}
+                                      className={`block py-2 px-2 text-sm rounded transition-colors ${
+                                        category.title === "Browse All"
+                                          ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                          : "text-gray-600 dark:text-gray-300 hover:text-[#E66354] hover:bg-gray-50 dark:hover:bg-gray-700"
+                                      }`}
+                                      onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                      {subItem.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
