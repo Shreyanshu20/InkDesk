@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AppContent } from './AppContent.jsx';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { AppContent } from './AppContent';
 
 const WishlistContext = createContext();
 
@@ -15,41 +15,73 @@ export const useWishlist = () => {
 
 export const WishlistProvider = ({ children }) => {
   const { isLoggedIn, backendUrl } = useContext(AppContent);
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [buttonLoadingStates, setButtonLoadingStates] = useState(new Map());
 
-  // Fetch wishlist from backend
+  const setButtonLoading = (key, isLoading) => {
+    setButtonLoadingStates(prev => {
+      const newMap = new Map(prev);
+      if (isLoading) {
+        newMap.set(key, true);
+      } else {
+        newMap.delete(key);
+      }
+      return newMap;
+    });
+  };
+
+  const isButtonLoading = (key) => buttonLoadingStates.has(key);
+
+  // Fetch wishlist
   const fetchWishlist = async () => {
     if (!isLoggedIn) {
-      setWishlist([]);
+      setWishlistItems([]);
       return;
     }
 
     try {
-      setLoading(true);
       const response = await axios.get(`${backendUrl}/wishlist`, {
         withCredentials: true,
       });
 
       if (response.data.success) {
-        setWishlist(response.data.wishlist || []);
+        setWishlistItems(response.data.wishlistItems || []);
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
       if (error.response?.status !== 401) {
-        toast.error('Failed to load wishlist');
+        // toast.error('Failed to load wishlist');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Add item to wishlist
+  // Check if product is in wishlist
+  const isInWishlist = (productId) => {
+    return wishlistItems.some(item => item.product_id?._id === productId || item.product_id === productId);
+  };
+
+  // Optimistic add to wishlist
   const addToWishlist = async (productId) => {
+    const loadingKey = `add-wishlist-${productId}`;
+    
     if (!isLoggedIn) {
       toast.error('Please login to add items to wishlist');
-      return false;
+      return { success: false };
     }
+
+    setButtonLoading(loadingKey, true);
+
+    // Optimistic update - add immediately
+    const optimisticItem = {
+      _id: `temp-${Date.now()}`,
+      product_id: productId,
+      addedAt: new Date().toISOString()
+    };
+    setWishlistItems(prev => [...prev, optimisticItem]);
+    
+    // Show success immediately
+    toast.success('Added to wishlist!');
 
     try {
       const response = await axios.post(
@@ -59,26 +91,51 @@ export const WishlistProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-        setWishlist(response.data.wishlist || []);
-        toast.success('Added to wishlist');
-        return true;
+        // Refresh to get accurate data
+        await fetchWishlist();
+        return { success: true };
       } else {
+        // Revert optimistic update
+        setWishlistItems(prev => prev.filter(item => item._id !== optimisticItem._id));
         toast.error(response.data.message || 'Failed to add to wishlist');
-        return false;
+        return { success: false };
       }
     } catch (error) {
-      console.error('Error adding to wishlist:', error);
-      toast.error(error.response?.data?.message || 'Failed to add to wishlist');
-      return false;
+      console.error('Add to wishlist error:', error);
+      // Revert optimistic update
+      setWishlistItems(prev => prev.filter(item => item._id !== optimisticItem._id));
+      
+      if (error.response?.status === 401) {
+        toast.error('Please login to add items to wishlist');
+      } else {
+        toast.error('Failed to add to wishlist');
+      }
+      return { success: false };
+    } finally {
+      setButtonLoading(loadingKey, false);
     }
   };
 
-  // Remove item from wishlist
+  // Optimistic remove from wishlist
   const removeFromWishlist = async (productId) => {
+    const loadingKey = `remove-wishlist-${productId}`;
+    
     if (!isLoggedIn) {
       toast.error('Please login to modify wishlist');
-      return false;
+      return { success: false };
     }
+
+    setButtonLoading(loadingKey, true);
+
+    // Optimistic update - remove immediately
+    const originalItems = [...wishlistItems];
+    const optimisticItems = wishlistItems.filter(item => 
+      item.product_id?._id !== productId && item.product_id !== productId
+    );
+    setWishlistItems(optimisticItems);
+    
+    // Show success immediately
+    toast.success('Removed from wishlist');
 
     try {
       const response = await axios.delete(
@@ -87,68 +144,42 @@ export const WishlistProvider = ({ children }) => {
       );
 
       if (response.data.success) {
-        setWishlist(response.data.wishlist || []);
-        toast.success('Removed from wishlist');
-        return true;
+        // Keep the optimistic update
+        return { success: true };
       } else {
+        // Revert optimistic update
+        setWishlistItems(originalItems);
         toast.error(response.data.message || 'Failed to remove from wishlist');
-        return false;
+        return { success: false };
       }
     } catch (error) {
-      console.error('Error removing from wishlist:', error);
-      toast.error(error.response?.data?.message || 'Failed to remove from wishlist');
-      return false;
+      console.error('Remove from wishlist error:', error);
+      // Revert optimistic update
+      setWishlistItems(originalItems);
+      toast.error('Failed to remove from wishlist');
+      return { success: false };
+    } finally {
+      setButtonLoading(loadingKey, false);
     }
   };
 
-  // Check if item is in wishlist
-  const isInWishlist = (productId) => {
-    console.log('Checking wishlist for product:', productId); // Debug log
-    console.log('Current wishlist:', wishlist); // Debug log
-    
-    const found = wishlist.some(item => {
-      const itemId = item.product_id?._id || item.product_id || item._id;
-      console.log('Comparing:', itemId, 'with', productId); // Debug log
-      return itemId === productId;
-    });
-    
-    console.log('Product found in wishlist:', found); // Debug log
-    return found;
-  };
-
-  // Get wishlist item count (ONLY FOR NAVBAR)
-  const getWishlistItemCount = () => {
-    return wishlist.length;
-  };
-
-  // Clear wishlist (for logout)
-  const clearWishlist = () => {
-    setWishlist([]);
-  };
-
-  // Fetch wishlist when user logs in
+  // Fetch wishlist when user logs in/out
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchWishlist();
-    } else {
-      clearWishlist();
-    }
+    fetchWishlist();
   }, [isLoggedIn]);
 
   const value = {
-    wishlist,
+    wishlistItems,
     loading,
     addToWishlist,
     removeFromWishlist,
     isInWishlist,
-    getWishlistItemCount, // ONLY THIS FOR NAVBAR
-    clearWishlist,
     fetchWishlist,
+    isButtonLoading,
   };
 
-  return (
-    <WishlistContext.Provider value={value}>
-      {children}
-    </WishlistContext.Provider>
-  );
+  return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 };
+
+export { WishlistContext };
+export default WishlistContext;

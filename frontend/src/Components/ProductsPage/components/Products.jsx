@@ -10,12 +10,12 @@ import Button from "../../Common/Button";
 
 const Products = ({ products, formatPrice, isMobile = false }) => {
   const { isLoggedIn } = useContext(AppContent);
-  const { addToCart } = useCart(); 
+  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart(); 
   const {
     isInWishlist,
     addToWishlist,
     removeFromWishlist,
-    loading: wishlistLoading,
+    isButtonLoading: isWishlistButtonLoading,
   } = useWishlist();
 
   const handleAddToCart = useMemo(() => async (e, productId) => {
@@ -87,6 +87,9 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
               : product.product_price;
 
           const productInWishlist = isInWishlist(product._id);
+          const isWishlistLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`) || 
+                                   isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+          const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
           return (
             <div key={product._id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
@@ -114,22 +117,26 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     </span>
                   )}
 
-                  {/* Always Visible Wishlist Button for Mobile */}
+                  {/* Wishlist Button with Loading State */}
                   <button
                     onClick={(e) => toggleWishlist(e, product._id)}
-                    disabled={wishlistLoading}
-                    className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                    disabled={isWishlistLoading}
+                    className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
                       productInWishlist
                         ? "bg-red-500 text-white"
                         : "bg-white/90 text-gray-600 hover:text-red-500 hover:bg-white shadow-sm"
-                    } ${wishlistLoading ? "cursor-wait opacity-70" : ""}`}
+                    } ${isWishlistLoading ? "cursor-wait opacity-70" : ""}`}
                     aria-label={
                       productInWishlist
                         ? "Remove from wishlist"
                         : "Add to wishlist"
                     }
                   >
-                    <i className="fas fa-heart text-xs"></i>
+                    {isWishlistLoading ? (
+                      <i className="fas fa-spinner fa-spin text-xs"></i>
+                    ) : (
+                      <i className="fas fa-heart text-xs"></i>
+                    )}
                   </button>
 
                   {/* Out of Stock Overlay */}
@@ -174,14 +181,28 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                   </div>
                 </div>
 
-                {/* Add to Cart Button - Smaller */}
+                {/* Add to Cart Button with Loading State */}
                 {inStock ? (
                   <button
                     onClick={(e) => handleAddToCart(e, product._id)}
-                    className="w-full bg-primary text-white text-xs py-1.5 rounded-md hover:bg-primary/90 transition-colors font-medium"
+                    disabled={isCartLoading}
+                    className={`w-full text-white text-xs py-1.5 rounded-md font-medium transition-all duration-200 ${
+                      isCartLoading 
+                        ? "bg-primary/70 cursor-wait" 
+                        : "bg-primary hover:bg-primary/90"
+                    }`}
                   >
-                    <i className="fas fa-shopping-cart mr-1"></i>
-                    Add to Cart
+                    {isCartLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin mr-1"></i>
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-shopping-cart mr-1"></i>
+                        Add to Cart
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
@@ -217,6 +238,9 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
             : product.product_price;
 
         const productInWishlist = isInWishlist(product._id);
+        const isWishlistLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`) || 
+                                 isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+        const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
         return (
           <div key={product._id} className="group relative h-full">
@@ -254,26 +278,28 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     </div>
                   )}
 
-                  {/* Wishlist Button */}
+                  {/* Wishlist Button with Loading State */}
                   <button
                     onClick={(e) => toggleWishlist(e, product._id)}
-                    disabled={wishlistLoading}
+                    disabled={isWishlistLoading}
                     className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                       productInWishlist
                         ? "bg-red-500 text-white opacity-100"
                         : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100"
-                    } ${wishlistLoading ? "cursor-wait opacity-70" : ""}`}
+                    } ${isWishlistLoading ? "cursor-wait opacity-70" : ""}`}
                     aria-label={
                       productInWishlist
                         ? "Remove from wishlist"
                         : "Add to wishlist"
                     }
                   >
-                    <i
-                      className={`fas fa-heart text-sm ${
+                    {isWishlistLoading ? (
+                      <i className="fas fa-spinner fa-spin text-sm"></i>
+                    ) : (
+                      <i className={`fas fa-heart text-sm ${
                         productInWishlist ? "text-white" : ""
-                      }`}
-                    ></i>
+                      }`}></i>
+                    )}
                   </button>
                 </div>
 
@@ -316,16 +342,23 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
               </div>
             </Link>
 
-            {/* Hover Add to Cart Button for Desktop */}
+            {/* Hover Add to Cart Button for Desktop with Loading State */}
             {inStock ? (
               <Button
-                className="absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
+                className={`absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  isCartLoading ? "cursor-wait" : ""
+                }`}
                 variant="primary"
                 size="icon"
                 onClick={(e) => handleAddToCart(e, product._id)}
+                disabled={isCartLoading}
                 aria-label="Add to cart"
               >
-                <i className="fas fa-shopping-cart text-sm"></i>
+                {isCartLoading ? (
+                  <i className="fas fa-spinner fa-spin text-sm"></i>
+                ) : (
+                  <i className="fas fa-shopping-cart text-sm"></i>
+                )}
               </Button>
             ) : (
               <Button
