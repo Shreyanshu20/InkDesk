@@ -310,7 +310,7 @@ function NavbarBottom() {
                 {item.hasDropdown ? (
                   // For dropdown items like Shop, use a button with route-based active state
                   <button
-                    className={`px-6 py-2 text-sm font-medium transition-colors ${
+                    className={`px-6 py-2 text-base font-medium transition-colors ${
                       location.pathname === '/shop' // Check if currently on /shop route
                         ? "text-[#E66354] border-b-2 border-[#E66354]" // Active state
                         : "text-text hover:text-[#E66354]" // Same hover effect as others
@@ -327,7 +327,7 @@ function NavbarBottom() {
                   <NavLink
                     to={item.link}
                     className={({ isActive }) =>
-                      `px-6 py-2 text-sm font-medium transition-colors ${
+                      `px-6 py-2 text-base font-medium transition-colors ${
                         isActive
                           ? "text-[#E66354] border-b-2 border-[#E66354]"
                           : "text-text hover:text-[#E66354]"
@@ -352,9 +352,9 @@ function NavbarBottom() {
                     ) : (
                       // Normal Categories Display
                       item.categories.map((category, catIndex) => (
-                        <div key={catIndex} className="space-y-3">
+                        <div key={catIndex} className="space-y-4">
                           <h3
-                            className={`font-bold uppercase text-sm tracking-wider ${
+                            className={`font-bold uppercase text-base tracking-wider ${
                               category.title === "Browse All"
                                 ? "text-blue-600 dark:text-blue-400"
                                 : "text-[#E66354]"
@@ -362,12 +362,12 @@ function NavbarBottom() {
                           >
                             {category.title}
                           </h3>
-                          <ul className="space-y-2">
+                          <ul className="space-y-3">
                             {category.items.map((subItem, subIndex) => (
                               <li key={subIndex}>
                                 <Link
                                   to={subItem.link}
-                                  className={`transition-colors text-sm ${
+                                  className={`transition-colors text-base ${
                                     category.title === "Browse All"
                                       ? "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                                       : "text-text hover:text-[#E66354]"
