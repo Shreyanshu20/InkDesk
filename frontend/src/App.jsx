@@ -1,9 +1,8 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import React, { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Import your components
 import Layout from "./Layouts.jsx";
 import HomePage from "./Components/HomePage/HomePage";
 import ProductsPage from "./Components/ProductsPage/ProductsPage";
@@ -21,13 +20,48 @@ import AuthForm from "./Components/Authentication/AuthForm.jsx";
 import ForgetPassword from "./Components/Authentication/ForgetPassword.jsx";
 import NotFound from "./Components/NotFound.jsx";
 import OrderDetails from "./Components/User/OrderDetails";
-import BuyNowCheckout from "./Components/BuyNow/BuyNowModal.jsx";
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Only show toast if user is on homepage and came from external source
+    const isHomepage = location.pathname === "/";
+    const isExternalEntry =
+      !document.referrer ||
+      !document.referrer.includes(window.location.hostname);
+    const hasShownToast = sessionStorage.getItem("hasShownServerToast");
+
+    if (isHomepage && isExternalEntry && !hasShownToast) {
+      sessionStorage.setItem("hasShownServerToast", "true");
+
+      setTimeout(() => {
+        toast.info(
+          "🎨 Welcome to InkDesk! Loading may take a moment - thanks for waiting!",
+          {
+            position: "top-center",
+            autoClose: 6000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            style: {
+              width: "500px",
+              maxWidth: "90vw",
+              fontSize: "16px",
+              textAlign: "center",
+              margin: "0 auto",
+              top: "20px",
+            },
+          }
+        );
+      }, 1500);
+    }
+  }, []);
+
   return (
     <>
       <ToastContainer
-        position="top-right"
+        position="top-center"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -38,6 +72,8 @@ function App() {
         pauseOnHover
         toastStyle={{
           fontFamily: '"Red Rose", serif',
+          width: "500px",
+          maxWidth: "90vw",
         }}
       />
 
@@ -46,10 +82,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="shop">
             <Route index element={<ProductsPage />} />
-            <Route
-              path="/shop/category/:category"
-              element={<ProductsPage />}
-            />
+            <Route path="/shop/category/:category" element={<ProductsPage />} />
             <Route
               path="/shop/category/:category/:subcategory"
               element={<ProductsPage />}
