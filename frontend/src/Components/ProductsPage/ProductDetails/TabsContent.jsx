@@ -327,7 +327,7 @@ function TabsContent({ activeTab, product }) {
               <i className="fas fa-truck text-blue-600 dark:text-blue-400 text-lg md:text-xl"></i>
               <h4 className="text-sm md:text-base font-bold text-blue-900 dark:text-blue-300">Free Shipping</h4>
             </div>
-            <p className="text-xs md:text-sm text-blue-800 dark:text-blue-300">On orders over ₹999. Delivery in 5-7 business days.</p>
+            <p className="text-xs md:text-sm text-blue-800 dark:text-blue-300">On orders over ₹99. Delivery in 5-7 business days.</p>
           </div>
           
           <div className="bg-green-50 dark:bg-green-900/20 p-4 md:p-6 rounded-xl border border-green-200 dark:border-green-700">
