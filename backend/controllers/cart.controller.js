@@ -1,6 +1,7 @@
 const Product = require('../models/product.model');
 const User = require('../models/User.model');
 
+// ========== CART MANAGEMENT CONTROLLER FUNCTIONS ==========//
 module.exports.addToCart = async (req, res) => {
   try {
     const { product_id: productId, quantity = 1 } = req.body;

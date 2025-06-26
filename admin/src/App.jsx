@@ -3,16 +3,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Import the screen size hook
 import { useScreenSize } from "./hooks/useScreenSize";
-
-// Import the mobile restriction component
 import MobileRestriction from "./Components/Common/MobileRestriction";
-
-// Import the admin context
 import { AdminContextProvider, useAdmin } from "./Context/AdminContext.jsx";
 
-// Import components
 import Layout from "./Layouts";
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Products from "./Components/Products/Products";
@@ -30,11 +24,9 @@ import Settings from "./Components/Settings/Settings";
 import AdminLogin from "./Components/Auth/AdminLogin";
 import AdminForgotPassword from "./Components/Auth/AdminForgotPassword";
 
-// Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isLoading, isAuthenticated } = useAdmin();
 
-  // Show loading spinner while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -46,7 +38,6 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -54,11 +45,9 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Mobile-aware Protected Route Component
 const MobileAwareProtectedRoute = ({ children }) => {
   const { isMobile } = useScreenSize();
 
-  // Show mobile restriction on small screens
   if (isMobile) {
     return <MobileRestriction />;
   }
@@ -66,11 +55,9 @@ const MobileAwareProtectedRoute = ({ children }) => {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 };
 
-// Mobile-aware Login Component
 const MobileAwareLogin = ({ children }) => {
   const { isMobile } = useScreenSize();
 
-  // Show mobile restriction on small screens
   if (isMobile) {
     return <MobileRestriction />;
   }
@@ -78,7 +65,6 @@ const MobileAwareLogin = ({ children }) => {
   return children;
 };
 
-// Redirect Component for root path
 const RedirectToAdmin = () => {
   return <Navigate to="/admin" replace />;
 };

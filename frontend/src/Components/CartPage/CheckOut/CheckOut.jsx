@@ -351,10 +351,6 @@ const CheckOut = () => {
       });
 
       if (response.data.success) {
-        if (!buyNowMode) {
-          await clearCart();
-        }
-
         const codFee = paymentMethod === "cod" ? 40 : 0;
         const finalTotal = (activeCartSummary.totalPrice || 0) + shipping + tax + codFee;
 
@@ -379,9 +375,16 @@ const CheckOut = () => {
           status: 'pending'
         };
 
+        // Set order data and step first, before clearing cart
         setOrderData(successOrderData);
-        toast.success("Order placed successfully!");
         setStep(4);
+        
+        // Clear cart after setting order success state
+        if (!buyNowMode) {
+          await clearCart();
+        }
+
+        toast.success("Order placed successfully!");
       } else {
         toast.error(response.data.message || "Failed to place order");
       }
@@ -485,6 +488,15 @@ const CheckOut = () => {
           <div className="flex justify-center items-center min-h-screen md:min-h-[80vh]">
             <div className="w-full max-w-4xl">
               <OrderSuccess orderData={orderData} formatPrice={formatPrice} />
+            </div>
+          </div>
+        )}
+
+        {step === 4 && !orderData && (
+          <div className="flex justify-center items-center min-h-screen md:min-h-[80vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading order details...</p>
             </div>
           </div>
         )}

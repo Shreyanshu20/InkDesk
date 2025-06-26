@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const bannerController = require('../controllers/banner.controller.js');
-const { userAuth, adminOnly, adminPanelAuth } = require('../middleware/userAuth.js');
+const { userAuth, adminOnly, adminPanelAuth } = require('../middleware/userAuth');
+const bannerController = require('../controllers/banner.controller');
 
-// Public routes 
+// ========== PUBLIC BANNER ROUTES ==========//
 router.get('/', bannerController.getBanners);
 
-// authentication and authorization middleware
-router.use('/admin', userAuth);
-router.use('/admin', adminPanelAuth);
+// ========== ADMIN BANNER ROUTES ==========//
+router.use('/admin', userAuth, adminPanelAuth);
 
 // READ operations - accessible by both admin and user roles
 router.get('/admin', bannerController.getAdminBanners);

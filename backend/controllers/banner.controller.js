@@ -1,5 +1,7 @@
 const Banner = require('../models/banner.model.js');
 
+// ========== BANNER MANAGEMENT CONTROLLER FUNCTIONS ==========//
+
 module.exports.getBanners = async (req, res) => {
   try {
     const { location } = req.query;

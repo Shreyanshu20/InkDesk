@@ -7,7 +7,6 @@ import App from "./App.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import ScrollToTop from "./Components/Common/ScrollToTop.jsx";
 
-// Import all providers
 import { ThemeProvider } from "./Context/ThemeContext.jsx";
 import { AppContentProvider } from "./Context/AppContent.jsx";
 import { CategoryProvider } from "./Context/CategoryContext.jsx";
@@ -17,7 +16,6 @@ import { ReviewProvider } from "./Context/ReviewContext.jsx";
 
 axios.defaults.withCredentials = true;
 
-// Set the correct backend URL
 if (window.location.origin === import.meta.env.VITE_BACKEND_URL) {
   axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 }

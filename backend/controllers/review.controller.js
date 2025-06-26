@@ -1,6 +1,7 @@
 const Review = require('../models/review.model');
 const Product = require('../models/product.model');
 
+// ========== REVIEW MANAGEMENT CONTROLLER FUNCTIONS ==========//
 module.exports.createReview = async (req, res) => {
     try {
         const userId = req.userId;

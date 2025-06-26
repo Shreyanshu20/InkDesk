@@ -1,7 +1,7 @@
 const Category = require('../models/category.model');
 const SubCategory = require('../models/subCategory.model');
 
-// Get all categories
+// ========== CATEGORY CONTROLLER FUNCTIONS ==========//
 module.exports.getCategories = async (req, res) => {
   try {
     const categories = await Category.find()

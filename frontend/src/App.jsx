@@ -25,7 +25,6 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    // Only show toast if user is on homepage and came from external source
     const isHomepage = location.pathname === "/";
     const isExternalEntry =
       !document.referrer ||
@@ -51,6 +50,7 @@ function App() {
               textAlign: "center",
               margin: "0 auto",
               top: "20px",
+              fontFamily: '"Red Rose", serif',
             },
           }
         );
@@ -61,7 +61,7 @@ function App() {
   return (
     <>
       <ToastContainer
-        position="top-center"
+        position="top-right"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -72,8 +72,6 @@ function App() {
         pauseOnHover
         toastStyle={{
           fontFamily: '"Red Rose", serif',
-          width: "500px",
-          maxWidth: "90vw",
         }}
       />
 
@@ -99,11 +97,11 @@ function App() {
           <Route path="checkout" element={<CheckOut />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="account" element={<MyAccount />} />
-          <Route path="/my-account" element={<MyAccount />} />
+          <Route path="my-account" element={<MyAccount />} />
           <Route path="orders" element={<MyOrders />} />
           <Route path="orders/:orderId" element={<OrderDetails />} />
-          <Route path="/my-account/orders" element={<MyOrders />} />
-          <Route path="/order-details/:orderId" element={<OrderDetails />} />
+          <Route path="my-account/orders" element={<MyOrders />} />
+          <Route path="order-details/:orderId" element={<OrderDetails />} />
           <Route path="verify-email" element={<EmailVerify />} />
           <Route path="signup" element={<AuthForm />} />
           <Route path="login" element={<AuthForm />} />

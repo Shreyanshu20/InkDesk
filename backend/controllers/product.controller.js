@@ -1,6 +1,7 @@
 const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 
+// ========== PRODUCT RETRIEVAL CONTROLLER FUNCTIONS ==========//
 module.exports.getProducts = async (req, res) => {
   try {
     const {
@@ -26,8 +27,6 @@ module.exports.getProducts = async (req, res) => {
     }
 
     if (search) {
-      console.log("🔍 Main products API called with search:", search);
-      
       const searchRegex = new RegExp(search, 'i');
       filter.$or = [
         { product_name: searchRegex },
@@ -36,8 +35,6 @@ module.exports.getProducts = async (req, res) => {
         { product_category: searchRegex },
         { product_subcategory: searchRegex }
       ];
-      
-      console.log("🎯 Search filter applied:", filter.$or);
     }
 
     if (category && category !== 'all') {
@@ -190,6 +187,7 @@ module.exports.getProductById = async (req, res) => {
   }
 };
 
+// ========== PRODUCT FILTERING CONTROLLER FUNCTIONS ==========//
 module.exports.getBrands = async (req, res) => {
   try {
     const brands = await Product.distinct('product_brand', {
@@ -261,11 +259,8 @@ module.exports.getProductsBySubcategory = async (req, res) => {
 module.exports.searchProducts = async (req, res) => {
   try {
     const { q } = req.query;
-    
-    console.log("🔍 Search API called with query:", q);
 
     if (!q || q.trim() === '') {
-      console.log("❌ Empty search query provided");
       return res.json({
         success: true,
         products: [],
@@ -274,8 +269,6 @@ module.exports.searchProducts = async (req, res) => {
     }
 
     const searchTerm = q.trim();
-    console.log("🎯 Processing search for:", searchTerm);
-    
     const searchRegex = new RegExp(searchTerm, 'i');
     
     // Create a weighted search query for better relevance
@@ -334,17 +327,6 @@ module.exports.searchProducts = async (req, res) => {
     // Populate category information
     await Product.populate(products, { path: 'category', select: 'category_name' });
 
-    console.log(`✅ Search completed. Found ${products.length} products for "${searchTerm}"`);
-    
-    // Log first few results for debugging
-    if (products.length > 0) {
-      console.log("🎯 Top search results:", products.slice(0, 3).map(p => ({
-        name: p.product_name,
-        brand: p.product_brand,
-        score: p.relevanceScore
-      })));
-    }
-
     res.json({
       success: true,
       products,
@@ -352,7 +334,6 @@ module.exports.searchProducts = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Search error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to search products',

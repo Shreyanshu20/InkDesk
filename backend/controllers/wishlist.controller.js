@@ -1,6 +1,38 @@
 const User = require('../models/User.model');
 const Product = require('../models/product.model');
 
+// ========== WISHLIST MANAGEMENT CONTROLLER FUNCTIONS ==========//
+
+module.exports.getWishlist = async (req, res) => {
+  try {
+    const user_id = req.userId;
+
+    const user = await User.findById(user_id)
+      .populate({
+        path: 'wishlist',
+        select: 'product_name product_price product_image product_brand product_stock product_rating product_discount'
+      });
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    const wishlistItems = user.wishlist.map(product => ({
+      _id: Math.random().toString(36),
+      product_id: product,
+      user_id: user_id
+    }));
+
+    res.json({
+      success: true,
+      wishlist: wishlistItems,
+      count: user.wishlist.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to get wishlist" });
+  }
+};
+
 module.exports.addToWishlist = async (req, res) => {
   try {
     const { product_id } = req.body;
@@ -45,36 +77,6 @@ module.exports.addToWishlist = async (req, res) => {
   }
 };
 
-module.exports.getWishlist = async (req, res) => {
-  try {
-    const user_id = req.userId;
-
-    const user = await User.findById(user_id)
-      .populate({
-        path: 'wishlist',
-        select: 'product_name product_price product_image product_brand product_stock product_rating product_discount'
-      });
-
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    const wishlistItems = user.wishlist.map(product => ({
-      _id: Math.random().toString(36),
-      product_id: product,
-      user_id: user_id
-    }));
-
-    res.json({
-      success: true,
-      wishlist: wishlistItems,
-      count: user.wishlist.length
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to get wishlist" });
-  }
-};
-
 module.exports.removeFromWishlist = async (req, res) => {
   try {
     const { product_id } = req.params;
@@ -113,4 +115,4 @@ module.exports.removeFromWishlist = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to remove from wishlist" });
   }
-}
+};

@@ -8,7 +8,6 @@ router.use(userAuth);
 router.use(adminPanelAuth);
 
 
-
 // ========== PRODUCT MANAGEMENT ROUTES ==========//
 // READ operations - accessible by both admin and user
 router.get('/products', adminController.getAdminProducts);

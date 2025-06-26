@@ -1,6 +1,8 @@
 const { cloudinary } = require('../config/cloudinary');
 const fs = require('fs');
 
+// ========== UPLOAD MANAGEMENT CONTROLLER FUNCTIONS ==========//
+
 module.exports.uploadProductImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -302,7 +304,6 @@ module.exports.uploadBannerImages = async (req, res) => {
 
     const uploadResults = await Promise.all(uploadPromises);
 
-    // Cleanup temp files
     req.files.forEach(file => {
       try {
         fs.unlinkSync(file.path);
@@ -324,7 +325,6 @@ module.exports.uploadBannerImages = async (req, res) => {
     });
 
   } catch (error) {
-    // Cleanup temp files on error
     if (req.files) {
       req.files.forEach(file => {
         try {

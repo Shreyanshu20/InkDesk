@@ -4,9 +4,8 @@ const User = require('../models/User.model');
 const Category = require('../models/category.model');
 const Review = require('../models/review.model');
 
-
-//=============Product Management for Admin=================//
-// Get all products with filtering (Admin version)
+// ========== PRODUCT MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
 module.exports.getAdminProducts = async (req, res) => {
     try {
         const {
@@ -24,13 +23,9 @@ module.exports.getAdminProducts = async (req, res) => {
             status
         } = req.query;
 
-        const userId = req.userId; // From userAuth middleware
-        console.log('🔑 Admin products request - User ID:', userId);
+        const userId = req.userId;
+        let filter = {};
 
-        // FIXED: Build filter object - show ALL products, not just owned by this user
-        let filter = {}; // Remove the owner filter
-
-        // Search filter
         if (search && search.trim()) {
             filter.$or = [
                 { product_name: { $regex: search, $options: 'i' } },
@@ -41,53 +36,42 @@ module.exports.getAdminProducts = async (req, res) => {
             ];
         }
 
-        // Category filter by ObjectId
         if (selectedCategories && selectedCategories !== 'all') {
             const categoryIds = Array.isArray(selectedCategories) ? selectedCategories : [selectedCategories];
             filter.category = { $in: categoryIds };
         }
 
-        // Category filter by name (fallback)
         if (category && category !== 'all') {
             filter.product_category = { $regex: new RegExp(category, 'i') };
         }
 
-        // Subcategory filter
         if (subcategory && subcategory !== 'all') {
             filter.product_subcategory = { $regex: new RegExp(subcategory, 'i') };
         }
 
-        // Brand filter
         if (brand && brand !== 'all') {
             const brands = Array.isArray(brand) ? brand : [brand];
             filter.product_brand = { $in: brands };
         }
 
-        // Price filter
         if (maxPrice) {
             filter.product_price = { $lte: parseFloat(maxPrice) };
         }
 
-        // Stock/Status filter
         if (inStock === 'true') {
             filter.product_stock = { $gt: 0 };
         } else if (inStock === 'false') {
             filter.product_stock = { $lte: 0 };
         }
 
-        // Status filter (frontend compatibility)
         if (status === 'active') {
             filter.product_stock = { $gt: 0 };
         } else if (status === 'out_of_stock') {
             filter.product_stock = { $lte: 0 };
         }
 
-        console.log('🔍 Admin filter object:', JSON.stringify(filter, null, 2));
-
-        // Calculate pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        // Build sort object
         let sort = {};
         if (sortBy === 'product_price') {
             sort = { product_price: order === 'asc' ? 1 : -1 };
@@ -103,19 +87,15 @@ module.exports.getAdminProducts = async (req, res) => {
             sort = { createdAt: order === 'asc' ? 1 : -1 };
         }
 
-        // Execute query - FIXED: Remove owner filter to show ALL products
         const products = await Product.find(filter)
             .populate('category', 'category_name')
-            .populate('owner', 'first_name last_name email') // Add owner info for display
+            .populate('owner', 'first_name last_name email')
             .sort(sort)
             .skip(skip)
             .limit(parseInt(limit));
 
-        // Get total count for pagination
         const totalProducts = await Product.countDocuments(filter);
         const totalPages = Math.ceil(totalProducts / parseInt(limit));
-
-        console.log(`✅ Found ${products.length} products (${totalProducts} total) - ALL PRODUCTS`);
 
         res.json({
             success: true,
@@ -131,7 +111,6 @@ module.exports.getAdminProducts = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error fetching admin products:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching admin products',
@@ -140,21 +119,86 @@ module.exports.getAdminProducts = async (req, res) => {
     }
 };
 
-// Create product (Admin)
+module.exports.getAdminStats = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        const stats = await Promise.all([
+            Product.countDocuments({}),
+            Product.countDocuments({ product_stock: { $gt: 0 } }),
+            Product.countDocuments({ product_stock: { $lte: 0 } }),
+            Product.aggregate([
+                { $group: { _id: null, totalValue: { $sum: { $multiply: ['$product_price', '$product_stock'] } } } }
+            ])
+        ]);
+
+        const totalProducts = stats[0];
+        const activeProducts = stats[1];
+        const outOfStockProducts = stats[2];
+        const totalInventoryValue = stats[3][0]?.totalValue || 0;
+
+        res.json({
+            success: true,
+            stats: {
+                totalProducts,
+                activeProducts,
+                outOfStockProducts,
+                totalInventoryValue
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching statistics',
+            error: error.message
+        });
+    }
+};
+
+module.exports.getAdminProductById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.userId;
+
+        const product = await Product.findById(id)
+            .populate('category', 'category_name')
+            .populate('owner', 'first_name last_name email');
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            product
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching product',
+            error: error.message
+        });
+    }
+};
+
+// WRITE operations - admin only
 module.exports.createProduct = async (req, res) => {
     try {
         const userId = req.userId;
-        console.log('➕ Creating product for user:', userId);
 
-        // Validate required fields
         const {
             product_name,
             product_description,
             product_price,
             product_stock,
             product_category,
-            product_images, // Add this to handle multiple images
-            product_image    // Keep for backward compatibility
+            product_images,
+            product_image
         } = req.body;
 
         if (!product_name || !product_description || !product_price || product_stock === undefined || !product_category) {
@@ -164,7 +208,6 @@ module.exports.createProduct = async (req, res) => {
             });
         }
 
-        // Find category by name to get ObjectId
         let categoryId = null;
         if (product_category) {
             const category = await Category.findOne({
@@ -172,39 +215,31 @@ module.exports.createProduct = async (req, res) => {
             });
             if (category) {
                 categoryId = category._id;
-                console.log('📂 Found category:', category.category_name);
-            } else {
-                console.log('⚠️ Category not found, will use string:', product_category);
             }
         }
 
-        // Handle images - process both new array format and old single image
         let processedImages = [];
 
         if (product_images && Array.isArray(product_images) && product_images.length > 0) {
-            // New multiple images format
             processedImages = product_images.map((img, index) => ({
                 url: img.url || img,
                 public_id: img.public_id || '',
                 alt_text: img.alt_text || `${product_name} - Image ${index + 1}`
             }));
-            console.log('📸 Using multiple images:', processedImages.length);
         } else if (product_image) {
-            // Backward compatibility - single image
             processedImages = [{
                 url: product_image,
                 public_id: '',
                 alt_text: product_name
             }];
-            console.log('📸 Using single image as array');
         }
 
         const productData = {
             ...req.body,
             owner: userId,
             category: categoryId,
-            product_images: processedImages, // Store processed images array
-            product_image: processedImages.length > 0 ? processedImages[0].url : '', // Keep main image for compatibility
+            product_images: processedImages,
+            product_image: processedImages.length > 0 ? processedImages[0].url : '',
             product_rating: 0,
             review_count: 0,
             createdAt: new Date(),
@@ -214,11 +249,8 @@ module.exports.createProduct = async (req, res) => {
         const product = new Product(productData);
         const savedProduct = await product.save();
 
-        // Populate category for response
         const populatedProduct = await Product.findById(savedProduct._id)
             .populate('category', 'category_name');
-
-        console.log(`✅ Product created with ${processedImages.length} images:`, savedProduct._id);
 
         res.status(201).json({
             success: true,
@@ -227,7 +259,6 @@ module.exports.createProduct = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error creating product:', error);
         res.status(500).json({
             success: false,
             message: 'Error creating product',
@@ -236,15 +267,11 @@ module.exports.createProduct = async (req, res) => {
     }
 };
 
-// Update product (Admin)
 module.exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.userId;
 
-        console.log(`🔄 Updating product ${id} by user ${userId}`);
-
-        // Find the product
         const product = await Product.findById(id);
 
         if (!product) {
@@ -254,7 +281,6 @@ module.exports.updateProduct = async (req, res) => {
             });
         }
 
-        // Check if user owns this product
         if (product.owner.toString() !== userId) {
             return res.status(403).json({
                 success: false,
@@ -262,7 +288,6 @@ module.exports.updateProduct = async (req, res) => {
             });
         }
 
-        // Find category by name if category is being updated
         let updateData = { ...req.body, updatedAt: new Date() };
 
         if (req.body.product_category) {
@@ -274,14 +299,11 @@ module.exports.updateProduct = async (req, res) => {
             }
         }
 
-        // Update the product
         const updatedProduct = await Product.findByIdAndUpdate(
             id,
             updateData,
             { new: true, runValidators: true }
         ).populate('category', 'category_name');
-
-        console.log(`✅ Product ${id} updated successfully`);
 
         res.json({
             success: true,
@@ -290,7 +312,6 @@ module.exports.updateProduct = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error updating product:', error);
         res.status(500).json({
             success: false,
             message: 'Error updating product',
@@ -299,13 +320,11 @@ module.exports.updateProduct = async (req, res) => {
     }
 };
 
-// Delete product function
 module.exports.deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.userId; // From userAuth middleware
+        const userId = req.userId;
 
-        // Find the product
         const product = await Product.findById(id);
 
         if (!product) {
@@ -315,7 +334,6 @@ module.exports.deleteProduct = async (req, res) => {
             });
         }
 
-        // Check if user owns this product
         if (product.owner.toString() !== userId) {
             return res.status(403).json({
                 success: false,
@@ -323,7 +341,6 @@ module.exports.deleteProduct = async (req, res) => {
             });
         }
 
-        // Delete the product
         await Product.findByIdAndDelete(id);
 
         res.json({
@@ -332,7 +349,6 @@ module.exports.deleteProduct = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error deleting product:', error);
         res.status(500).json({
             success: false,
             message: 'Error deleting product',
@@ -341,44 +357,6 @@ module.exports.deleteProduct = async (req, res) => {
     }
 };
 
-// Get single product by ID (Admin)
-module.exports.getAdminProductById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.userId;
-
-        console.log(`🔍 Fetching product ${id} for admin panel`);
-
-        // FIXED: Find ANY product by ID, not just owned by user
-        const product = await Product.findById(id)
-            .populate('category', 'category_name')
-            .populate('owner', 'first_name last_name email'); // Add owner info
-
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
-
-        console.log(`✅ Product found - Owner: ${product.owner?.email || 'Unknown'}, Viewer: ${userId}`);
-
-        res.json({
-            success: true,
-            product
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching product:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching product',
-            error: error.message
-        });
-    }
-};
-
-// Bulk delete products (Admin)
 module.exports.bulkDeleteProducts = async (req, res) => {
     try {
         const { productIds } = req.body;
@@ -391,9 +369,6 @@ module.exports.bulkDeleteProducts = async (req, res) => {
             });
         }
 
-        console.log(`🗑️ Bulk deleting ${productIds.length} products for user ${userId}`);
-
-        // Find products that belong to this user
         const products = await Product.find({
             _id: { $in: productIds },
             owner: userId
@@ -413,13 +388,10 @@ module.exports.bulkDeleteProducts = async (req, res) => {
             });
         }
 
-        // Delete the products
         const deleteResult = await Product.deleteMany({
             _id: { $in: productIds },
             owner: userId
         });
-
-        console.log(`✅ Bulk deleted ${deleteResult.deletedCount} products`);
 
         res.json({
             success: true,
@@ -428,7 +400,6 @@ module.exports.bulkDeleteProducts = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error bulk deleting products:', error);
         res.status(500).json({
             success: false,
             message: 'Error deleting products',
@@ -437,297 +408,8 @@ module.exports.bulkDeleteProducts = async (req, res) => {
     }
 };
 
-// Get admin dashboard stats
-module.exports.getAdminStats = async (req, res) => {
-    try {
-        const userId = req.userId;
-
-        // FIXED: Get stats for ALL products, not just user's products
-        const stats = await Promise.all([
-            Product.countDocuments({}), // All products
-            Product.countDocuments({ product_stock: { $gt: 0 } }), // All active products
-            Product.countDocuments({ product_stock: { $lte: 0 } }), // All out of stock products
-            Product.aggregate([
-                { $group: { _id: null, totalValue: { $sum: { $multiply: ['$product_price', '$product_stock'] } } } }
-            ])
-        ]);
-
-        const totalProducts = stats[0];
-        const activeProducts = stats[1];
-        const outOfStockProducts = stats[2];
-        const totalInventoryValue = stats[3][0]?.totalValue || 0;
-
-        console.log('📊 Admin stats (ALL PRODUCTS):', {
-            totalProducts,
-            activeProducts,
-            outOfStockProducts,
-            totalInventoryValue
-        });
-
-        res.json({
-            success: true,
-            stats: {
-                totalProducts,
-                activeProducts,
-                outOfStockProducts,
-                totalInventoryValue
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching admin stats:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching statistics',
-            error: error.message
-        });
-    }
-};
-
-
-//================== Order Management for Admin ==================//
-
-module.exports.getAdminOrders = async (req, res) => {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            status = '',
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = req.query;
-
-        console.log('🔍 Admin orders request:', {
-            page,
-            limit,
-            search,
-            status,
-            sortBy,
-            sortOrder
-        });
-
-        // Build query for ALL orders (not filtered by seller)
-        let query = {};
-
-        // Add status filter
-        if (status && status !== 'all') {
-            query.status = status;
-        }
-
-        // Add search filter
-        if (search) {
-            const searchRegex = new RegExp(search, 'i');
-
-            // Find users matching search terms
-            const matchingUsers = await User.find({
-                $or: [
-                    { first_name: searchRegex },
-                    { last_name: searchRegex },
-                    { email: searchRegex }
-                ]
-            }).select('_id');
-
-            const matchingUserIds = matchingUsers.map(u => u._id);
-
-            query.$or = [
-                { order_number: searchRegex },
-                { user_id: { $in: matchingUserIds } },
-                { 'shipping_address.name': searchRegex }
-            ];
-        }
-
-        // Build sort object
-        let sortObject = {};
-        if (sortBy === 'user_id') {
-            sortObject.createdAt = sortOrder === 'asc' ? 1 : -1;
-        } else if (sortBy === 'total_amount') {
-            sortObject.total_amount = sortOrder === 'asc' ? 1 : -1;
-        } else {
-            sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
-        }
-
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-
-        console.log('📊 Query:', JSON.stringify(query, null, 2));
-        console.log('🔄 Sort:', sortObject);
-
-        // Get ALL orders with pagination
-        const orders = await Order.find(query)
-            .populate('user_id', 'first_name last_name email phone')
-            .populate({
-                path: 'items.product_id',
-                select: 'product_name product_price product_image owner'
-            })
-            .sort(sortObject)
-            .skip(skip)
-            .limit(parseInt(limit))
-            .lean();
-
-        // Get total count
-        const totalOrders = await Order.countDocuments(query);
-
-        console.log(`📦 Found ${orders.length} orders total: ${totalOrders}`);
-
-        const pagination = {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(totalOrders / parseInt(limit)),
-            totalOrders,
-            hasNextPage: parseInt(page) < Math.ceil(totalOrders / parseInt(limit)),
-            hasPrevPage: parseInt(page) > 1
-        };
-
-        res.json({
-            success: true,
-            orders: orders,
-            pagination
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching admin orders:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch orders',
-            error: error.message
-        });
-    }
-};
-
-module.exports.getAdminOrderStats = async (req, res) => {
-    try {
-        console.log('📊 Getting order stats for all orders');
-
-        // Get ALL orders (not filtered by seller)
-        const orders = await Order.find({}).select('status');
-
-        // Calculate statistics
-        const stats = {
-            total: orders.length,
-            pending: orders.filter(o => o.status === 'pending').length,
-            processing: orders.filter(o => o.status === 'processing').length,
-            shipped: orders.filter(o => o.status === 'shipped').length,
-            delivered: orders.filter(o => o.status === 'delivered').length,
-            cancelled: orders.filter(o => o.status === 'cancelled').length
-        };
-
-        console.log('📈 Order stats:', stats);
-
-        res.json({
-            success: true,
-            stats
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching order stats:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch order statistics',
-            error: error.message
-        });
-    }
-};
-
-module.exports.getAdminOrderById = async (req, res) => {
-    try {
-        const orderId = req.params.id;
-
-        console.log('🔍 Getting order details:', orderId);
-
-        const order = await Order.findById(orderId)
-            .populate('user_id', 'first_name last_name email phone')
-            .populate('items.product_id', 'product_name product_price product_image owner');
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            order
-        });
-    } catch (error) {
-        console.error('❌ Error fetching order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch order'
-        });
-    }
-};
-
-module.exports.updateAdminOrderStatus = async (req, res) => {
-    try {
-        const orderId = req.params.id;
-        const { status } = req.body;
-
-        if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Valid status is required'
-            });
-        }
-
-        const order = await Order.findById(orderId);
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        order.status = status;
-        await order.save();
-
-        console.log(`✅ Updated order ${orderId} status to ${status}`);
-
-        res.json({
-            success: true,
-            message: 'Order status updated successfully',
-            order
-        });
-    } catch (error) {
-        console.error('❌ Error updating order status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update order status'
-        });
-    }
-};
-
-module.exports.deleteAdminOrder = async (req, res) => {
-    try {
-        const orderId = req.params.id;
-
-        const order = await Order.findByIdAndDelete(orderId);
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        console.log(`🗑️ Deleted order ${orderId}`);
-
-        res.json({
-            success: true,
-            message: 'Order deleted successfully'
-        });
-    } catch (error) {
-        console.error('❌ Error deleting order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete order'
-        });
-    }
-};
-
-
-// ========== CATEGORY MANAGEMENT ==============//
-
+// ========== CATEGORY MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
 module.exports.getAdminCategories = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, sortBy, sortOrder } = req.query;
@@ -762,7 +444,6 @@ module.exports.getAdminCategories = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching admin categories:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch categories'
@@ -773,8 +454,6 @@ module.exports.getAdminCategories = async (req, res) => {
 module.exports.getAdminCategoryById = async (req, res) => {
     try {
         const { id } = req.params;
-
-        console.log('🔍 Admin fetching category:', id);
 
         if (!id.match(/^[0-9a-fA-F]{24}$/)) {
             return res.status(400).json({
@@ -807,7 +486,6 @@ module.exports.getAdminCategoryById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error fetching admin category:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch category'
@@ -815,11 +493,44 @@ module.exports.getAdminCategoryById = async (req, res) => {
     }
 };
 
+module.exports.getAdminSubCategories = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid category ID format'
+            });
+        }
+
+        const category = await Category.findById(id)
+            .populate('subcategories', 'subcategory_name subcategory_image');
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            subcategories: category.subcategories || []
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch subcategories'
+        });
+    }
+};
+
+// WRITE operations - admin only
 module.exports.createAdminCategory = async (req, res) => {
     try {
         const { category_name, category_image, description } = req.body;
-
-        console.log('➕ Admin creating category:', { category_name, category_image });
 
         if (!category_name) {
             return res.status(400).json({
@@ -828,7 +539,6 @@ module.exports.createAdminCategory = async (req, res) => {
             });
         }
 
-        // Check if category already exists
         const existingCategory = await Category.findOne({
             category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
         });
@@ -848,15 +558,12 @@ module.exports.createAdminCategory = async (req, res) => {
 
         await category.save();
 
-        console.log('✅ Admin category created:', category._id);
-
         res.status(201).json({
             success: true,
             message: 'Category created successfully',
             category
         });
     } catch (error) {
-        console.error('❌ Error creating admin category:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to create category',
@@ -870,8 +577,6 @@ module.exports.updateAdminCategory = async (req, res) => {
         const { id } = req.params;
         const { category_name, category_image, description } = req.body;
 
-        console.log('✏️ Admin updating category:', id, { category_name, category_image });
-
         if (!category_name) {
             return res.status(400).json({
                 success: false,
@@ -879,7 +584,6 @@ module.exports.updateAdminCategory = async (req, res) => {
             });
         }
 
-        // Check if another category with same name exists
         const existingCategory = await Category.findOne({
             _id: { $ne: id },
             category_name: { $regex: new RegExp(`^${category_name}$`, 'i') }
@@ -897,7 +601,6 @@ module.exports.updateAdminCategory = async (req, res) => {
             description: description || ''
         };
 
-        // Only update image if provided
         if (category_image !== undefined) {
             updateData.category_image = category_image;
         }
@@ -915,15 +618,12 @@ module.exports.updateAdminCategory = async (req, res) => {
             });
         }
 
-        console.log('✅ Admin category updated:', id);
-
         res.json({
             success: true,
             message: 'Category updated successfully',
             category
         });
     } catch (error) {
-        console.error('❌ Error updating admin category:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update category',
@@ -936,7 +636,6 @@ module.exports.deleteAdminCategory = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if category is being used by any products
         const productsUsingCategory = await Product.countDocuments({
             category: id
         });
@@ -962,7 +661,6 @@ module.exports.deleteAdminCategory = async (req, res) => {
             message: 'Category deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting category:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to delete category'
@@ -970,219 +668,61 @@ module.exports.deleteAdminCategory = async (req, res) => {
     }
 };
 
-
-
-//========== SUBCATEGORY MANAGEMENT ==========//
-
-module.exports.getAdminSubCategories = async (req, res) => {
+// ========== SUBCATEGORY MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
+module.exports.getAdminSubcategoriesList = async (req, res) => {
     try {
-        const { id } = req.params;
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            category_id = '',
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
 
-        console.log('🔍 Admin fetching subcategories for category:', id);
+        let query = {};
 
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid category ID format'
-            });
+        if (category_id && category_id !== 'all') {
+            query.category_id = category_id;
         }
 
-        const category = await Category.findById(id)
-            .populate('subcategories', 'subcategory_name subcategory_image');
-
-        if (!category) {
-            return res.status(404).json({
-                success: false,
-                message: 'Category not found'
-            });
+        if (search) {
+            query.subcategory_name = { $regex: search, $options: 'i' };
         }
+
+        let sortObject = {};
+        sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const SubCategory = require('../models/subCategory.model');
+        const subcategories = await SubCategory.find(query)
+            .populate('category_id', 'category_name')
+            .sort(sortObject)
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        const totalSubcategories = await SubCategory.countDocuments(query);
+
+        const pagination = {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalSubcategories / parseInt(limit)),
+            totalSubcategories,
+            hasNextPage: parseInt(page) < Math.ceil(totalSubcategories / parseInt(limit)),
+            hasPrevPage: parseInt(page) > 1
+        };
 
         res.json({
             success: true,
-            subcategories: category.subcategories || []
+            subcategories,
+            pagination
         });
 
     } catch (error) {
-        console.error('❌ Error fetching admin category subcategories:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch subcategories'
-        });
-    }
-};
-
-module.exports.createAdminSubcategory = async (req, res) => {
-    try {
-        const { subcategory_name, category_id, subcategory_image } = req.body;
-
-        console.log('➕ Admin creating subcategory:', { subcategory_name, category_id });
-
-        if (!subcategory_name || !category_id) {
-            return res.status(400).json({
-                success: false,
-                message: 'Subcategory name and category ID are required'
-            });
-        }
-
-        // Check if category exists
-        const category = await Category.findById(category_id);
-        if (!category) {
-            return res.status(404).json({
-                success: false,
-                message: 'Category not found'
-            });
-        }
-
-        // Check if subcategory already exists in this category
-        const SubCategory = require('../models/subCategory.model');
-        const existingSubcategory = await SubCategory.findOne({
-            subcategory_name: { $regex: new RegExp(`^${subcategory_name}$`, 'i') },
-            category_id: category_id
-        });
-
-        if (existingSubcategory) {
-            return res.status(400).json({
-                success: false,
-                message: 'Subcategory already exists in this category'
-            });
-        }
-
-        const subcategory = new SubCategory({
-            subcategory_name,
-            subcategory_image: subcategory_image || '',
-            category_id
-        });
-
-        const savedSubcategory = await subcategory.save();
-
-        // Add subcategory to category's subcategories array
-        category.subcategories.push(savedSubcategory._id);
-        await category.save();
-
-        console.log('✅ Admin subcategory created:', savedSubcategory._id);
-
-        res.status(201).json({
-            success: true,
-            message: 'Subcategory created successfully',
-            subcategory: savedSubcategory
-        });
-    } catch (error) {
-        console.error('❌ Error creating admin subcategory:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create subcategory',
-            error: error.message
-        });
-    }
-};
-
-module.exports.updateAdminSubcategory = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { subcategory_name, subcategory_image } = req.body;
-
-        console.log('✏️ Admin updating subcategory:', id, { subcategory_name });
-
-        if (!subcategory_name) {
-            return res.status(400).json({
-                success: false,
-                message: 'Subcategory name is required'
-            });
-        }
-
-        const SubCategory = require('../models/subCategory.model');
-        const subcategory = await SubCategory.findById(id);
-        if (!subcategory) {
-            return res.status(404).json({
-                success: false,
-                message: 'Subcategory not found'
-            });
-        }
-
-        // Check if another subcategory with same name exists in the same category
-        const existingSubcategory = await SubCategory.findOne({
-            _id: { $ne: id },
-            subcategory_name: { $regex: new RegExp(`^${subcategory_name}$`, 'i') },
-            category_id: subcategory.category_id
-        });
-
-        if (existingSubcategory) {
-            return res.status(400).json({
-                success: false,
-                message: 'Subcategory name already exists in this category'
-            });
-        }
-
-        subcategory.subcategory_name = subcategory_name;
-        if (subcategory_image !== undefined) {
-            subcategory.subcategory_image = subcategory_image;
-        }
-        await subcategory.save();
-
-        console.log('✅ Admin subcategory updated:', id);
-
-        res.json({
-            success: true,
-            message: 'Subcategory updated successfully',
-            subcategory: subcategory
-        });
-    } catch (error) {
-        console.error('❌ Error updating admin subcategory:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update subcategory',
-            error: error.message
-        });
-    }
-};
-
-module.exports.deleteAdminSubcategory = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        console.log('🗑️ Admin deleting subcategory:', id);
-
-        const SubCategory = require('../models/subCategory.model');
-        const subcategory = await SubCategory.findById(id);
-        if (!subcategory) {
-            return res.status(404).json({
-                success: false,
-                message: 'Subcategory not found'
-            });
-        }
-
-        // Check if subcategory is being used by any products
-        const productsUsingSubcategory = await Product.countDocuments({
-            product_subcategory: subcategory.subcategory_name
-        });
-
-        if (productsUsingSubcategory > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot delete subcategory. It is being used by ${productsUsingSubcategory} product(s).`
-            });
-        }
-
-        // Remove subcategory from category's subcategories array
-        await Category.findByIdAndUpdate(
-            subcategory.category_id,
-            { $pull: { subcategories: id } }
-        );
-
-        // Delete the subcategory
-        await SubCategory.findByIdAndDelete(id);
-
-        console.log('✅ Admin subcategory deleted:', id);
-
-        res.json({
-            success: true,
-            message: 'Subcategory deleted successfully'
-        });
-    } catch (error) {
-        console.error('❌ Error deleting admin subcategory:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete subcategory',
+            message: 'Failed to fetch subcategories',
             error: error.message
         });
     }
@@ -1191,8 +731,6 @@ module.exports.deleteAdminSubcategory = async (req, res) => {
 module.exports.getAdminSubcategoryById = async (req, res) => {
     try {
         const { id } = req.params;
-
-        console.log('🔍 Admin fetching subcategory:', id);
 
         if (!id.match(/^[0-9a-fA-F]{24}$/)) {
             return res.status(400).json({
@@ -1227,7 +765,6 @@ module.exports.getAdminSubcategoryById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error fetching admin subcategory:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch subcategory'
@@ -1235,76 +772,165 @@ module.exports.getAdminSubcategoryById = async (req, res) => {
     }
 };
 
-module.exports.getAdminSubcategoriesList = async (req, res) => {
+// WRITE operations - admin only
+module.exports.createAdminSubcategory = async (req, res) => {
     try {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            category_id = '',
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = req.query;
+        const { subcategory_name, category_id, subcategory_image } = req.body;
 
-        console.log('📋 Admin fetching subcategories list:', { page, limit, search, category_id });
-
-        // Build query
-        let query = {};
-
-        // Add category filter
-        if (category_id && category_id !== 'all') {
-            query.category_id = category_id;
+        if (!subcategory_name || !category_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Subcategory name and category ID are required'
+            });
         }
 
-        // Add search filter
-        if (search) {
-            query.subcategory_name = { $regex: search, $options: 'i' };
+        const category = await Category.findById(category_id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
         }
-
-        // Build sort object
-        let sortObject = {};
-        sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-        const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const SubCategory = require('../models/subCategory.model');
-        const subcategories = await SubCategory.find(query)
-            .populate('category_id', 'category_name')
-            .sort(sortObject)
-            .skip(skip)
-            .limit(parseInt(limit));
-
-        const totalSubcategories = await SubCategory.countDocuments(query);
-
-        console.log(`📋 Found ${subcategories.length} subcategories of ${totalSubcategories} total`);
-
-        const pagination = {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(totalSubcategories / parseInt(limit)),
-            totalSubcategories,
-            hasNextPage: parseInt(page) < Math.ceil(totalSubcategories / parseInt(limit)),
-            hasPrevPage: parseInt(page) > 1
-        };
-
-        res.json({
-            success: true,
-            subcategories,
-            pagination
+        const existingSubcategory = await SubCategory.findOne({
+            subcategory_name: { $regex: new RegExp(`^${subcategory_name}$`, 'i') },
+            category_id: category_id
         });
 
+        if (existingSubcategory) {
+            return res.status(400).json({
+                success: false,
+                message: 'Subcategory already exists in this category'
+            });
+        }
+
+        const subcategory = new SubCategory({
+            subcategory_name,
+            subcategory_image: subcategory_image || '',
+            category_id
+        });
+
+        const savedSubcategory = await subcategory.save();
+
+        category.subcategories.push(savedSubcategory._id);
+        await category.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Subcategory created successfully',
+            subcategory: savedSubcategory
+        });
     } catch (error) {
-        console.error('❌ Error fetching admin subcategories list:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch subcategories',
+            message: 'Failed to create subcategory',
             error: error.message
         });
     }
 };
 
-// ========== USER MANAGEMENT ==========//
+module.exports.updateAdminSubcategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { subcategory_name, subcategory_image } = req.body;
 
-module.exports.getUsers = async (req, res) => {
+        if (!subcategory_name) {
+            return res.status(400).json({
+                success: false,
+                message: 'Subcategory name is required'
+            });
+        }
+
+        const SubCategory = require('../models/subCategory.model');
+        const subcategory = await SubCategory.findById(id);
+        if (!subcategory) {
+            return res.status(404).json({
+                success: false,
+                message: 'Subcategory not found'
+            });
+        }
+
+        const existingSubcategory = await SubCategory.findOne({
+            _id: { $ne: id },
+            subcategory_name: { $regex: new RegExp(`^${subcategory_name}$`, 'i') },
+            category_id: subcategory.category_id
+        });
+
+        if (existingSubcategory) {
+            return res.status(400).json({
+                success: false,
+                message: 'Subcategory name already exists in this category'
+            });
+        }
+
+        subcategory.subcategory_name = subcategory_name;
+        if (subcategory_image !== undefined) {
+            subcategory.subcategory_image = subcategory_image;
+        }
+        await subcategory.save();
+
+        res.json({
+            success: true,
+            message: 'Subcategory updated successfully',
+            subcategory: subcategory
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update subcategory',
+            error: error.message
+        });
+    }
+};
+
+module.exports.deleteAdminSubcategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const SubCategory = require('../models/subCategory.model');
+        const subcategory = await SubCategory.findById(id);
+        if (!subcategory) {
+            return res.status(404).json({
+                success: false,
+                message: 'Subcategory not found'
+            });
+        }
+
+        const productsUsingSubcategory = await Product.countDocuments({
+            product_subcategory: subcategory.subcategory_name
+        });
+
+        if (productsUsingSubcategory > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete subcategory. It is being used by ${productsUsingSubcategory} product(s).`
+            });
+        }
+
+        await Category.findByIdAndUpdate(
+            subcategory.category_id,
+            { $pull: { subcategories: id } }
+        );
+
+        await SubCategory.findByIdAndDelete(id);
+
+        res.json({
+            success: true,
+            message: 'Subcategory deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete subcategory',
+            error: error.message
+        });
+    }
+};
+
+// ========== ORDER MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
+module.exports.getAdminOrders = async (req, res) => {
     try {
         const {
             page = 1,
@@ -1315,414 +941,15 @@ module.exports.getUsers = async (req, res) => {
             sortOrder = 'desc'
         } = req.query;
 
-        console.log('🔍 Admin users request:', {
-            page,
-            limit,
-            search,
-            status,
-            sortBy,
-            sortOrder
-        });
-
-        // Build query
         let query = {};
 
-        // Add status filter
         if (status && status !== 'all') {
             query.status = status;
         }
 
-        // Add search filter
-        if (search) {
-            const searchRegex = new RegExp(search, 'i');
-            query.$or = [
-                { first_name: searchRegex },
-                { last_name: searchRegex },
-                { email: searchRegex },
-                { phone: searchRegex }
-            ];
-        }
-
-        // Build sort object
-        let sortObject = {};
-        if (sortBy === 'name') {
-            sortObject.first_name = sortOrder === 'asc' ? 1 : -1;
-        } else {
-            sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
-        }
-
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-
-        // Get users with pagination
-        const users = await User.find(query)
-            .select('-password -verify_Otp -forget_password_otp')
-            .sort(sortObject)
-            .skip(skip)
-            .limit(parseInt(limit))
-            .lean();
-
-        // Get total count
-        const totalUsers = await User.countDocuments(query);
-
-        console.log(`👥 Found ${users.length} users of ${totalUsers} total`);
-
-        const pagination = {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(totalUsers / parseInt(limit)),
-            total: totalUsers,
-            hasNextPage: parseInt(page) < Math.ceil(totalUsers / parseInt(limit)),
-            hasPrevPage: parseInt(page) > 1
-        };
-
-        res.json({
-            success: true,
-            users: users,
-            pagination
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching admin users:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch users',
-            error: error.message
-        });
-    }
-};
-
-module.exports.getUserById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        console.log('🔍 Admin fetching user:', id);
-
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid user ID format'
-            });
-        }
-
-        const user = await User.findById(id).select('-password -verify_Otp -forget_password_otp');
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Fetch user's orders
-        const orders = await Order.find({ user_id: id })
-            .select('_id order_number status total_amount createdAt items')
-            .populate('items.product_id', 'product_name product_price')
-            .sort({ createdAt: -1 })
-            .limit(20); // Get last 20 orders
-
-        // Create activity log from orders and user data
-        const activityLog = [];
-
-        // Add order activities
-        orders.forEach(order => {
-            activityLog.push({
-                type: 'order',
-                message: `Placed order #${order.order_number || order._id.toString().slice(-8)} - ${order.status}`,
-                timestamp: order.createdAt,
-                details: {
-                    orderId: order._id,
-                    status: order.status,
-                    amount: order.total_amount
-                }
-            });
-        });
-
-        // Add account creation activity
-        activityLog.push({
-            type: 'account',
-            message: 'Account created',
-            timestamp: user.createdAt
-        });
-
-        // Sort activity log by timestamp (newest first)
-        activityLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-        res.json({
-            success: true,
-            user: {
-                id: user._id,
-                _id: user._id,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                phone: user.phone,
-                role: user.role,
-                status: user.status,
-                isAccountVerified: user.isAccountVerified,
-                shopping_cart: user.shopping_cart || [],
-                wishlist: user.wishlist || [],
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt,
-                // Add order history and activity log
-                orders: orders,
-                activityLog: activityLog,
-                // Mock security data (you can expand this later)
-                twoFactorEnabled: false,
-                sessions: [],
-                address: user.address_details || null,
-                notes: user.notes || ''
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching admin user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch user'
-        });
-    }
-};
-
-module.exports.updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { first_name, last_name, email, phone, role, status } = req.body;
-
-        console.log('✏️ Admin updating user:', id, { first_name, last_name, email, role, status });
-
-        // Validate required fields
-        if (!first_name || !email) {
-            return res.status(400).json({
-                success: false,
-                message: 'First name and email are required'
-            });
-        }
-
-        // Validate role
-        const validRoles = ['user', 'admin', 'manager', 'customer'];
-        if (role && !validRoles.includes(role)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid role specified'
-            });
-        }
-
-        // Validate status
-        const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
-        if (status && !validStatuses.includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid status specified'
-            });
-        }
-
-        // Check if user exists
-        const existingUser = await User.findById(id);
-        if (!existingUser) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Check if email is already used by another user
-        if (email !== existingUser.email) {
-            const emailExists = await User.findOne({
-                _id: { $ne: id },
-                email: email.toLowerCase()
-            });
-
-            if (emailExists) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email is already in use by another user'
-                });
-            }
-        }
-
-        // Prepare update data
-        const updateData = {
-            first_name: first_name.trim(),
-            last_name: (last_name || '').trim(),
-            email: email.toLowerCase().trim(),
-            role: role || existingUser.role || 'user',
-            status: status || existingUser.status || 'active',
-            updatedAt: new Date()
-        };
-
-        // Only update phone if provided
-        if (phone !== undefined) {
-            updateData.phone = phone.trim();
-        }
-
-        console.log('🔄 Update data:', updateData);
-
-        // Update user with proper options
-        const updatedUser = await User.findByIdAndUpdate(
-            id,
-            { $set: updateData },
-            {
-                new: true,
-                runValidators: true,
-                upsert: false
-            }
-        ).select('-password -verify_Otp -forget_password_otp');
-
-        if (!updatedUser) {
-            return res.status(404).json({
-                success: false,
-                message: 'Failed to update user'
-            });
-        }
-
-        console.log('✅ Admin user updated successfully:', updatedUser._id);
-
-        res.json({
-            success: true,
-            message: 'User updated successfully',
-            user: updatedUser
-        });
-
-    } catch (error) {
-        console.error('❌ Error updating admin user:', error);
-
-        // Handle specific validation errors
-        if (error.name === 'ValidationError') {
-            const validationErrors = Object.values(error.errors).map(err => err.message);
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: validationErrors
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update user',
-            error: error.message
-        });
-    }
-};
-
-module.exports.updateUserStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        console.log('🔄 Admin updating user status:', id, 'to', status);
-
-        if (!status || !['active', 'inactive', 'suspended', 'pending'].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Valid status is required (active, inactive, suspended, pending)'
-            });
-        }
-
-        const user = await User.findByIdAndUpdate(
-            id,
-            { status, updatedAt: new Date() },
-            { new: true, runValidators: true }
-        ).select('-password -verify_Otp -forget_password_otp');
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        console.log('✅ Admin user status updated:', id, 'to', status);
-
-        res.json({
-            success: true,
-            message: 'User status updated successfully',
-            user
-        });
-    } catch (error) {
-        console.error('❌ Error updating user status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update user status',
-            error: error.message
-        });
-    }
-};
-
-module.exports.deleteUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        console.log('🗑️ Admin deleting user:', id);
-
-        // Check if user has orders
-        const userOrders = await Order.countDocuments({ user_id: id });
-
-        if (userOrders > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot delete user. They have ${userOrders} order(s). Consider suspending instead.`
-            });
-        }
-
-        const user = await User.findByIdAndDelete(id);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        console.log('✅ Admin user deleted:', id);
-
-        res.json({
-            success: true,
-            message: 'User deleted successfully'
-        });
-    } catch (error) {
-        console.error('❌ Error deleting user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete user',
-            error: error.message
-        });
-    }
-};
-
-// ========== REVIEW MANAGEMENT ==========//
-
-module.exports.getAdminReviews = async (req, res) => {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            rating = '',
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = req.query;
-
-        console.log('🔍 Admin reviews request:', {
-            page,
-            limit,
-            search,
-            rating,
-            sortBy,
-            sortOrder
-        });
-
-        // Build query for ALL reviews
-        let query = {};
-
-        // Add rating filter
-        if (rating && rating !== 'all') {
-            query.rating = parseInt(rating);
-        }
-
-        // Add search filter
         if (search) {
             const searchRegex = new RegExp(search, 'i');
 
-            // Find users matching search terms
             const matchingUsers = await User.find({
                 $or: [
                     { first_name: searchRegex },
@@ -1731,127 +958,64 @@ module.exports.getAdminReviews = async (req, res) => {
                 ]
             }).select('_id');
 
-            // Find products matching search terms
-            const matchingProducts = await Product.find({
-                product_name: searchRegex
-            }).select('_id');
-
             const matchingUserIds = matchingUsers.map(u => u._id);
-            const matchingProductIds = matchingProducts.map(p => p._id);
 
             query.$or = [
-                { comment: searchRegex },
+                { order_number: searchRegex },
                 { user_id: { $in: matchingUserIds } },
-                { product_id: { $in: matchingProductIds } }
+                { 'shipping_address.name': searchRegex }
             ];
         }
 
-        // Build sort object
         let sortObject = {};
-        sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        if (sortBy === 'user_id') {
+            sortObject.createdAt = sortOrder === 'asc' ? 1 : -1;
+        } else if (sortBy === 'total_amount') {
+            sortObject.total_amount = sortOrder === 'asc' ? 1 : -1;
+        } else {
+            sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        // Get ALL reviews with pagination
-        const reviews = await Review.find(query)
-            .populate('user_id', 'first_name last_name email avatar')
-            .populate('product_id', 'product_name product_image category')
+        const orders = await Order.find(query)
+            .populate('user_id', 'first_name last_name email phone')
+            .populate({
+                path: 'items.product_id',
+                select: 'product_name product_price product_image owner'
+            })
             .sort(sortObject)
             .skip(skip)
             .limit(parseInt(limit))
             .lean();
 
-        // Get total count
-        const totalReviews = await Review.countDocuments(query);
-
-        console.log(`📝 Found ${reviews.length} reviews of ${totalReviews} total`);
+        const totalOrders = await Order.countDocuments(query);
 
         const pagination = {
             currentPage: parseInt(page),
-            totalPages: Math.ceil(totalReviews / parseInt(limit)),
-            totalReviews,
-            hasNextPage: parseInt(page) < Math.ceil(totalReviews / parseInt(limit)),
+            totalPages: Math.ceil(totalOrders / parseInt(limit)),
+            totalOrders,
+            hasNextPage: parseInt(page) < Math.ceil(totalOrders / parseInt(limit)),
             hasPrevPage: parseInt(page) > 1
         };
 
         res.json({
             success: true,
-            reviews: reviews,
+            orders: orders,
             pagination
         });
 
     } catch (error) {
-        console.error('❌ Error fetching admin reviews:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch reviews',
+            message: 'Failed to fetch orders',
             error: error.message
         });
     }
 };
 
-module.exports.deleteAdminReview = async (req, res) => {
-    try {
-        const reviewId = req.params.id;
-
-        console.log('🗑️ Admin deleting review:', reviewId);
-
-        const review = await Review.findById(reviewId);
-
-        if (!review) {
-            return res.status(404).json({
-                success: false,
-                message: 'Review not found'
-            });
-        }
-
-        const productId = review.product_id;
-
-        await Review.findByIdAndDelete(reviewId);
-
-        // Update product rating after deletion
-        try {
-            const reviews = await Review.find({ product_id: productId });
-
-            if (reviews.length > 0) {
-                const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-                const avgRating = Math.round((totalRating / reviews.length) * 10) / 10;
-
-                await Product.findByIdAndUpdate(productId, {
-                    product_rating: avgRating,
-                    review_count: reviews.length
-                });
-            } else {
-                await Product.findByIdAndUpdate(productId, {
-                    product_rating: 0,
-                    review_count: 0
-                });
-            }
-        } catch (updateError) {
-            console.log('⚠️ Error updating product rating:', updateError.message);
-        }
-
-        console.log(`✅ Deleted review ${reviewId}`);
-
-        res.json({
-            success: true,
-            message: 'Review deleted successfully'
-        });
-    } catch (error) {
-        console.error('❌ Error deleting review:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete review'
-        });
-    }
-};
-
-// ========== STATISTICS ==========
-
 module.exports.getOrderStats = async (req, res) => {
     try {
-        console.log('📊 Getting order statistics for admin');
-
         const allOrders = await Order.find({});
 
         const stats = {
@@ -1877,7 +1041,6 @@ module.exports.getOrderStats = async (req, res) => {
             }).length
         };
 
-        // Calculate average order value
         const completedOrders = allOrders.filter(o =>
             o.status !== 'cancelled' && o.total_amount > 0
         );
@@ -1885,15 +1048,12 @@ module.exports.getOrderStats = async (req, res) => {
             stats.averageOrderValue = stats.totalRevenue / completedOrders.length;
         }
 
-        console.log('📈 Order stats:', stats);
-
         res.json({
             success: true,
             stats
         });
 
     } catch (error) {
-        console.error('❌ Error fetching order stats:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch order statistics'
@@ -1901,10 +1061,168 @@ module.exports.getOrderStats = async (req, res) => {
     }
 };
 
+module.exports.getAdminOrderById = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+
+        const order = await Order.findById(orderId)
+            .populate('user_id', 'first_name last_name email phone')
+            .populate('items.product_id', 'product_name product_price product_image owner');
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            order
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch order'
+        });
+    }
+};
+
+// WRITE operations - admin only
+module.exports.updateAdminOrderStatus = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const { status } = req.body;
+
+        if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid status is required'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        order.status = status;
+        await order.save();
+
+        res.json({
+            success: true,
+            message: 'Order status updated successfully',
+            order
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update order status'
+        });
+    }
+};
+
+module.exports.deleteAdminOrder = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+
+        const order = await Order.findByIdAndDelete(orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Order deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete order'
+        });
+    }
+};
+
+// ========== USER MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
+module.exports.getUsers = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            status = '',
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+
+        let query = {};
+
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            query.$or = [
+                { first_name: searchRegex },
+                { last_name: searchRegex },
+                { email: searchRegex },
+                { phone: searchRegex }
+            ];
+        }
+
+        let sortObject = {};
+        if (sortBy === 'name') {
+            sortObject.first_name = sortOrder === 'asc' ? 1 : -1;
+        } else {
+            sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const users = await User.find(query)
+            .select('-password -verify_Otp -forget_password_otp')
+            .sort(sortObject)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .lean();
+
+        const totalUsers = await User.countDocuments(query);
+
+        const pagination = {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalUsers / parseInt(limit)),
+            total: totalUsers,
+            hasNextPage: parseInt(page) < Math.ceil(totalUsers / parseInt(limit)),
+            hasPrevPage: parseInt(page) > 1
+        };
+
+        res.json({
+            success: true,
+            users: users,
+            pagination
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch users',
+            error: error.message
+        });
+    }
+};
+
 module.exports.getUserStats = async (req, res) => {
     try {
-        console.log('📊 Getting user statistics for admin');
-
         const allUsers = await User.find({});
 
         const stats = {
@@ -1922,15 +1240,12 @@ module.exports.getUserStats = async (req, res) => {
             }).length
         };
 
-        console.log('📈 User stats:', stats);
-
         res.json({
             success: true,
             stats
         });
 
     } catch (error) {
-        console.error('❌ Error fetching user stats:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch user statistics'
@@ -1938,10 +1253,378 @@ module.exports.getUserStats = async (req, res) => {
     }
 };
 
+module.exports.getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format'
+            });
+        }
+
+        const user = await User.findById(id).select('-password -verify_Otp -forget_password_otp');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const orders = await Order.find({ user_id: id })
+            .select('_id order_number status total_amount createdAt items')
+            .populate('items.product_id', 'product_name product_price')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        const activityLog = [];
+
+        orders.forEach(order => {
+            activityLog.push({
+                type: 'order',
+                message: `Placed order #${order.order_number || order._id.toString().slice(-8)} - ${order.status}`,
+                timestamp: order.createdAt,
+                details: {
+                    orderId: order._id,
+                    status: order.status,
+                    amount: order.total_amount
+                }
+            });
+        });
+
+        activityLog.push({
+            type: 'account',
+            message: 'Account created',
+            timestamp: user.createdAt
+        });
+
+        activityLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                _id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                status: user.status,
+                isAccountVerified: user.isAccountVerified,
+                shopping_cart: user.shopping_cart || [],
+                wishlist: user.wishlist || [],
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                orders: orders,
+                activityLog: activityLog,
+                twoFactorEnabled: false,
+                sessions: [],
+                address: user.address_details || null,
+                notes: user.notes || ''
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user'
+        });
+    }
+};
+
+module.exports.getUserAddresses = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const userWithAddresses = await User.findById(id).populate('address_details');
+
+        res.json({
+            success: true,
+            addresses: userWithAddresses.address_details || []
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user addresses'
+        });
+    }
+};
+
+// WRITE operations - admin only
+module.exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { first_name, last_name, email, phone, role, status } = req.body;
+
+        if (!first_name || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'First name and email are required'
+            });
+        }
+
+        const validRoles = ['user', 'admin', 'manager', 'customer'];
+        if (role && !validRoles.includes(role)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid role specified'
+            });
+        }
+
+        const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status specified'
+            });
+        }
+
+        const existingUser = await User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (email !== existingUser.email) {
+            const emailExists = await User.findOne({
+                _id: { $ne: id },
+                email: email.toLowerCase()
+            });
+
+            if (emailExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is already in use by another user'
+                });
+            }
+        }
+
+        const updateData = {
+            first_name: first_name.trim(),
+            last_name: (last_name || '').trim(),
+            email: email.toLowerCase().trim(),
+            role: role || existingUser.role || 'user',
+            status: status || existingUser.status || 'active',
+            updatedAt: new Date()
+        };
+
+        if (phone !== undefined) {
+            updateData.phone = phone.trim();
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            {
+                new: true,
+                runValidators: true,
+                upsert: false
+            }
+        ).select('-password -verify_Otp -forget_password_otp');
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'Failed to update user'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'User updated successfully',
+            user: updatedUser
+        });
+
+    } catch (error) {
+        if (error.name === 'ValidationError') {
+            const validationErrors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: validationErrors
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update user',
+            error: error.message
+        });
+    }
+};
+
+module.exports.updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status || !['active', 'inactive', 'suspended', 'pending'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid status is required (active, inactive, suspended, pending)'
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { status, updatedAt: new Date() },
+            { new: true, runValidators: true }
+        ).select('-password -verify_Otp -forget_password_otp');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'User status updated successfully',
+            user
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update user status',
+            error: error.message
+        });
+    }
+};
+
+module.exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const userOrders = await Order.countDocuments({ user_id: id });
+
+        if (userOrders > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete user. They have ${userOrders} order(s). Consider suspending instead.`
+            });
+        }
+
+        const user = await User.findByIdAndDelete(id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete user',
+            error: error.message
+        });
+    }
+};
+
+// ========== REVIEW MANAGEMENT CONTROLLER FUNCTIONS ==========//
+// READ operations - accessible by both admin and user
+module.exports.getAdminReviews = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            rating = '',
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+
+        let query = {};
+
+        if (rating && rating !== 'all') {
+            query.rating = parseInt(rating);
+        }
+
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+
+            const matchingUsers = await User.find({
+                $or: [
+                    { first_name: searchRegex },
+                    { last_name: searchRegex },
+                    { email: searchRegex }
+                ]
+            }).select('_id');
+
+            const matchingProducts = await Product.find({
+                product_name: searchRegex
+            }).select('_id');
+
+            const matchingUserIds = matchingUsers.map(u => u._id);
+            const matchingProductIds = matchingProducts.map(p => p._id);
+
+            query.$or = [
+                { comment: searchRegex },
+                { user_id: { $in: matchingUserIds } },
+                { product_id: { $in: matchingProductIds } }
+            ];
+        }
+
+        let sortObject = {};
+        sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const reviews = await Review.find(query)
+            .populate('user_id', 'first_name last_name email avatar')
+            .populate('product_id', 'product_name product_image category')
+            .sort(sortObject)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .lean();
+
+        const totalReviews = await Review.countDocuments(query);
+
+        const pagination = {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalReviews / parseInt(limit)),
+            totalReviews,
+            hasNextPage: parseInt(page) < Math.ceil(totalReviews / parseInt(limit)),
+            hasPrevPage: parseInt(page) > 1
+        };
+
+        res.json({
+            success: true,
+            reviews: reviews,
+            pagination
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch reviews',
+            error: error.message
+        });
+    }
+};
+
 module.exports.getReviewStats = async (req, res) => {
     try {
-        console.log('📊 Getting review stats for admin');
-
         const allReviews = await Review.find({});
 
         const stats = {
@@ -1954,13 +1637,10 @@ module.exports.getReviewStats = async (req, res) => {
             averageRating: 0
         };
 
-        // Calculate average rating
         if (allReviews.length > 0) {
             const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
             stats.averageRating = Number((totalRating / allReviews.length).toFixed(1));
         }
-
-        console.log('📈 Review stats:', stats);
 
         res.json({
             success: true,
@@ -1968,7 +1648,6 @@ module.exports.getReviewStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error fetching review stats:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch review statistics'
@@ -1976,36 +1655,53 @@ module.exports.getReviewStats = async (req, res) => {
     }
 };
 
-// Add this function after the existing user management functions:
-
-module.exports.getUserAddresses = async (req, res) => {
+// WRITE operations - admin only
+module.exports.deleteAdminReview = async (req, res) => {
     try {
-        const { id } = req.params;
+        const reviewId = req.params.id;
 
-        console.log('🔍 Admin fetching addresses for user:', id);
+        const review = await Review.findById(reviewId);
 
-        // Find user first
-        const user = await User.findById(id);
-        if (!user) {
+        if (!review) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Review not found'
             });
         }
 
-        // Get addresses like user.controller.js does
-        const userWithAddresses = await User.findById(id).populate('address_details');
-        
+        const productId = review.product_id;
+
+        await Review.findByIdAndDelete(reviewId);
+
+        try {
+            const reviews = await Review.find({ product_id: productId });
+
+            if (reviews.length > 0) {
+                const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+                const avgRating = Math.round((totalRating / reviews.length) * 10) / 10;
+
+                await Product.findByIdAndUpdate(productId, {
+                    product_rating: avgRating,
+                    review_count: reviews.length
+                });
+            } else {
+                await Product.findByIdAndUpdate(productId, {
+                    product_rating: 0,
+                    review_count: 0
+                });
+            }
+        } catch (updateError) {
+            // Silent fail for rating update
+        }
+
         res.json({
             success: true,
-            addresses: userWithAddresses.address_details || []
+            message: 'Review deleted successfully'
         });
-
     } catch (error) {
-        console.error('❌ Error fetching user addresses:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch user addresses'
+            message: 'Failed to delete review'
         });
     }
 };

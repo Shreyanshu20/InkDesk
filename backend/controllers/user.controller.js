@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { transporter } = require('../config/nodemailer');
 const { profileEmailTemplates } = require('../config/profileEmailTemplates');
 
-
+// ========== USER PROFILE CONTROLLER FUNCTIONS ==========//
 module.exports.getProfile = async (req, res) => {
     try {
         const userId = req.userId;
@@ -237,6 +237,7 @@ module.exports.deleteAccount = async (req, res) => {
     }
 };
 
+// ========== USER ADDRESS CONTROLLER FUNCTIONS ==========//
 module.exports.getAddress = async (req, res) => {
     try {
         const userId = req.userId;

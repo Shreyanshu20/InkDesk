@@ -3,16 +3,18 @@ const router = express.Router();
 const { userAuth } = require('../middleware/userAuth');
 const userController = require('../controllers/user.controller');
 
-// Profile management routes
-router.get('/profile', userAuth, userController.getProfile);
-router.post('/update-profile', userAuth, userController.updateProfile);
-router.put('/change-password', userAuth, userController.changePassword);
-router.delete('/delete-account', userAuth, userController.deleteAccount);
+router.use(userAuth);
 
-// Address management routes
-router.get('/addresses', userAuth, userController.getAddress);
-router.post('/addresses', userAuth, userController.saveAddress);
-router.put('/addresses/:id', userAuth, userController.updateAddress);
-router.delete('/addresses/:id', userAuth, userController.deleteAddress);
+// ========== USER PROFILE MANAGEMENT ROUTES ==========//
+router.get('/profile', userController.getProfile);
+router.post('/update-profile', userController.updateProfile);
+router.put('/change-password', userController.changePassword);
+router.delete('/delete-account', userController.deleteAccount);
+
+// ========== USER ADDRESS MANAGEMENT ROUTES ==========//
+router.get('/addresses', userController.getAddress);
+router.post('/addresses', userController.saveAddress);
+router.put('/addresses/:id', userController.updateAddress);
+router.delete('/addresses/:id', userController.deleteAddress);
 
 module.exports = router;

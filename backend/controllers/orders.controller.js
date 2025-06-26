@@ -4,6 +4,8 @@ const User = require('../models/User.model');
 const { transporter } = require('../config/nodemailer');
 const { orderConfirmationTemplate } = require('../config/orderEmailTemplate');
 
+// ========== ORDER MANAGEMENT CONTROLLER FUNCTIONS ==========//
+
 const calculateOrderTotals = (subtotal) => {
   const freeShippingThreshold = 999;
   const shipping = subtotal >= freeShippingThreshold ? 0 : 99;
@@ -162,97 +164,6 @@ module.exports.createOrder = async (req, res) => {
   }
 };
 
-module.exports.getUserOrders = async (req, res) => {
-  try {
-    const userId = req.userId;
-
-    const orders = await Order.find({ user_id: userId })
-      .populate('items.product_id', 'product_name product_image product_price product_brand')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      orders
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch orders'
-    });
-  }
-};
-
-module.exports.getOrderDetails = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const orderId = req.params.orderId;
-
-    const order = await Order.findOne({ _id: orderId, user_id: userId })
-      .populate('items.product_id', 'product_name product_image product_price product_brand');
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      order
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch order details'
-    });
-  }
-};
-
-module.exports.cancelOrder = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const orderId = req.params.orderId;
-
-    const order = await Order.findOne({ _id: orderId, user_id: userId });
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    if (order.status === 'delivered' || order.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot cancel this order'
-      });
-    }
-
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(
-        item.product_id,
-        { $inc: { product_stock: item.quantity } }
-      );
-    }
-
-    order.status = 'cancelled';
-    await order.save();
-
-    res.json({
-      success: true,
-      message: 'Order cancelled successfully'
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cancel order'
-    });
-  }
-};
-
 module.exports.buyNowOrder = async (req, res) => {
   try {
     const userId = req.userId;
@@ -364,6 +275,97 @@ module.exports.buyNowOrder = async (req, res) => {
       success: false,
       message: 'Failed to place order',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+module.exports.getUserOrders = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const orders = await Order.find({ user_id: userId })
+      .populate('items.product_id', 'product_name product_image product_price product_brand')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders'
+    });
+  }
+};
+
+module.exports.getOrderDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({ _id: orderId, user_id: userId })
+      .populate('items.product_id', 'product_name product_image product_price product_brand');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order details'
+    });
+  }
+};
+
+module.exports.cancelOrder = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({ _id: orderId, user_id: userId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel this order'
+      });
+    }
+
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(
+        item.product_id,
+        { $inc: { product_stock: item.quantity } }
+      );
+    }
+
+    order.status = 'cancelled';
+    await order.save();
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel order'
     });
   }
 };

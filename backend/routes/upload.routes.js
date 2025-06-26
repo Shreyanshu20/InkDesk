@@ -1,8 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const uploadController = require('../controllers/upload.controller.js');
-const { userAuth } = require('../middleware/userAuth.js');
+const { userAuth } = require('../middleware/userAuth');
+const uploadController = require('../controllers/upload.controller');
 
 const upload = multer({
   dest: 'uploads/',
@@ -18,29 +18,20 @@ const upload = multer({
   }
 });
 
-
-// Upload Product images
+// ========== PRODUCT IMAGE UPLOAD ROUTES ==========//
 router.post('/product-images', userAuth, upload.array('images', 6), uploadController.uploadProductImages);
-
-// Delete product image
 router.delete('/product-images/:publicId', userAuth, uploadController.deleteProductImage);
 
-// Upload Category images
+// ========== CATEGORY IMAGE UPLOAD ROUTES ==========//
 router.post('/category-images', userAuth, upload.array('images', 1), uploadController.uploadCategoryImages);
-
-// Delete category image
 router.delete('/category-images/:publicId', userAuth, uploadController.deleteCategoryImage);
 
-// Upload Subcategory images
+// ========== SUBCATEGORY IMAGE UPLOAD ROUTES ==========//
 router.post('/subcategory-images', userAuth, upload.array('images', 1), uploadController.uploadSubcategoryImages);
-
-// Delete subcategory image
 router.delete('/subcategory-images/:publicId', userAuth, uploadController.deleteSubcategoryImage);
 
-// Upload Banner images
+// ========== BANNER IMAGE UPLOAD ROUTES ==========//
 router.post('/banner-image', userAuth, upload.array('images', 2), uploadController.uploadBannerImages);
-
-// Delete banner image
 router.delete('/banner-images/:publicId', userAuth, uploadController.deleteBannerImage);
 
 module.exports = router;

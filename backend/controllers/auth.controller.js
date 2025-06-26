@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { transporter } = require("../config/nodemailer");
 const { authEmailTemplates } = require("../config/authEmailTemplates");
 
+// ========== UTILITY FUNCTIONS ==========//
 const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -28,6 +29,8 @@ const clearCookie = (res) => {
         path: '/'
     });
 };
+
+// ========== AUTHENTICATION CONTROLLER FUNCTIONS ==========//
 
 module.exports.register = async (req, res) => {
     const { first_name, last_name, email, password, role } = req.body;
@@ -97,7 +100,6 @@ module.exports.register = async (req, res) => {
                 html: otpTemplate.html,
                 text: otpTemplate.text
             };
-
             await transporter.sendMail(mailOptions);
         } catch (emailError) {
             // Silent email error
@@ -220,6 +222,7 @@ module.exports.logout = async (req, res) => {
     }
 };
 
+// ========== EMAIL VERIFICATION CONTROLLER FUNCTIONS ==========//
 module.exports.sendVerificationEmail = async (req, res) => {
     try {
         const userId = req.userId;
@@ -346,6 +349,7 @@ module.exports.verifyAccount = async (req, res) => {
     }
 };
 
+// ========== PASSWORD RESET CONTROLLER FUNCTIONS ==========//
 module.exports.sendResetPasswordEmail = async (req, res) => {
     const { email } = req.body;
 
@@ -472,6 +476,7 @@ module.exports.resetPassword = async (req, res) => {
     }
 };
 
+// ========== USER AUTHENTICATION STATUS CONTROLLER FUNCTIONS ==========//
 module.exports.isAuth = async (req, res) => {
     try {
         let token = req.cookies.userToken || req.cookies.token;

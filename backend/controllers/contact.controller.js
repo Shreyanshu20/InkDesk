@@ -1,6 +1,7 @@
 const { transporter } = require('../config/nodemailer');
 const { contactEmailTemplates } = require('../config/contactEmailTemplate');
 
+// ========== CONTACT CONTROLLER FUNCTIONS ==========//
 module.exports.sendMessage = async (req, res) => {
     try {
         const { name, email, subject, message } = req.body;
