@@ -1,6 +1,5 @@
 module.exports.profileEmailTemplates = {
 
-    // Profile Update Success Email Template
     profileUpdateSuccess: (user, updatedFields) => {
         const html = `
       <!DOCTYPE html>
@@ -10,98 +9,43 @@ module.exports.profileEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Profile Updated Successfully</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
-              @keyframes bounce {
-                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                  40% { transform: translateY(-10px); }
-                  60% { transform: translateY(-5px); }
-              }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .success-icon { font-size: 60px; margin-bottom: 20px; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .update-card { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 2px solid #dc2626; 
-                  border-radius: 16px; 
-                  padding: 32px; 
-                  margin: 40px 0; 
-                  text-align: left;
-                  position: relative;
+                  background: #f0fdf4; 
+                  border: 2px solid #22c55e; 
+                  border-radius: 8px; 
+                  padding: 24px; 
+                  margin: 30px 0; 
+                  text-align: left; 
               }
-              .update-card::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-                  border-radius: 16px 16px 0 0;
-              }
-              .update-title { font-size: 20px; color: #dc2626; font-weight: 600; margin-bottom: 16px; text-align: center; }
+              .update-title { font-size: 18px; color: #15803d; font-weight: 600; margin-bottom: 16px; text-align: center; }
               .update-list { list-style: none; padding: 0; margin: 0; }
-              .update-list li { font-size: 16px; color: #64748b; margin-bottom: 12px; padding-left: 24px; position: relative; }
-              .update-list li::before { content: '✓'; position: absolute; left: 0; top: 0; color: #dc2626; font-weight: bold; }
-              .update-time { font-size: 14px; color: #64748b; text-align: center; margin-top: 16px; font-weight: 500; }
+              .update-list li { font-size: 14px; color: #15803d; margin-bottom: 8px; padding-left: 20px; position: relative; }
+              .update-list li::before { content: '✓'; position: absolute; left: 0; font-weight: bold; }
+              .update-time { font-size: 12px; color: #666; text-align: center; margin-top: 16px; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin-top: 32px; 
-                  font-family: 'Red Rose', serif; 
-                  transition: all 0.3s ease;
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-                  .success-icon { font-size: 64px; }
-              }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -141,12 +85,10 @@ module.exports.profileEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -189,7 +131,6 @@ module.exports.profileEmailTemplates = {
         };
     },
 
-    // Password Change Success Email Template  
     passwordChangeSuccess: (user) => {
         const html = `
       <!DOCTYPE html>
@@ -199,89 +140,41 @@ module.exports.profileEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Password Changed Successfully</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
-              @keyframes bounce {
-                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                  40% { transform: translateY(-10px); }
-                  60% { transform: translateY(-5px); }
-              }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .success-icon { font-size: 60px; margin-bottom: 20px; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .success-card { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 2px solid #dc2626; 
-                  border-radius: 16px; 
-                  padding: 32px; 
-                  margin: 40px 0; 
-                  position: relative;
-              }
-              .success-card::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-                  border-radius: 16px 16px 0 0;
-              }
-              .success-text { font-size: 18px; color: #dc2626; font-weight: 500; margin-bottom: 16px; }
-              .change-time { font-size: 16px; color: #64748b; font-weight: 400; }
-              .security-tips { 
-                  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
-                  border: 2px solid #ef4444; 
-                  border-radius: 12px; 
+                  background: #f0fdf4; 
+                  border: 2px solid #22c55e; 
+                  border-radius: 8px; 
                   padding: 24px; 
-                  margin: 32px 0; 
-                  text-align: left;
+                  margin: 30px 0; 
               }
-              .security-title { font-size: 18px; color: #b91c1c; font-weight: 600; margin-bottom: 12px; text-align: center; }
+              .success-text { font-size: 16px; color: #15803d; font-weight: 500; margin-bottom: 12px; }
+              .change-time { font-size: 14px; color: #666; }
+              .security-tips { 
+                  background: #fef3c7; 
+                  border: 1px solid #f59e0b; 
+                  border-radius: 6px; 
+                  padding: 20px; 
+                  margin: 20px 0; 
+                  text-align: left; 
+              }
+              .security-title { font-size: 16px; color: #92400e; font-weight: 600; margin-bottom: 12px; text-align: center; }
               .security-list { list-style: none; padding: 0; margin: 0; }
-              .security-list li { font-size: 16px; color: #b91c1c; margin-bottom: 8px; padding-left: 24px; position: relative; }
-              .security-list li::before { content: '🔒'; position: absolute; left: 0; top: 0; }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-                  .success-icon { font-size: 64px; }
-                  .security-tips { padding: 20px; }
-              }
+              .security-list li { font-size: 14px; color: #92400e; margin-bottom: 8px; padding-left: 20px; position: relative; }
+              .security-list li::before { content: '•'; position: absolute; left: 0; font-weight: bold; }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -299,9 +192,7 @@ module.exports.profileEmailTemplates = {
                   </div>
 
                   <div class="success-card">
-                      <div class="success-text">
-                          ✅ Your password has been updated successfully
-                      </div>
+                      <div class="success-text">✅ Your password has been updated successfully</div>
                       <div class="change-time">
                           Changed on ${new Date().toLocaleDateString('en-IN', { 
                               year: 'numeric', 
@@ -326,12 +217,10 @@ module.exports.profileEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>

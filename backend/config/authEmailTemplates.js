@@ -1,6 +1,5 @@
 module.exports.authEmailTemplates = {
 
-    // Registration Welcome Email (after verification)
     registrationWelcome: (user) => {
         const html = `
       <!DOCTYPE html>
@@ -10,134 +9,57 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Welcome to InkDesk</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .offer-card { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
+                  background: #fef2f2; 
                   border: 2px solid #dc2626; 
-                  border-radius: 16px; 
-                  padding: 32px; 
-                  margin: 40px 0; 
+                  border-radius: 8px; 
+                  padding: 24px; 
                   text-align: center; 
-                  position: relative;
-                  overflow: hidden;
+                  margin: 30px 0; 
               }
-              .offer-card::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-              }
-              .offer-title { font-size: 24px; font-weight: 700; color: #dc2626; margin-bottom: 12px; font-family: 'Red Rose', serif; }
+              .offer-title { font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 12px; }
               .offer-code { 
-                  font-size: 28px; 
-                  font-weight: 700; 
-                  color: #ffffff; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  padding: 16px 24px; 
-                  border-radius: 12px; 
+                  font-size: 24px; 
+                  font-weight: bold; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 12px 20px; 
+                  border-radius: 6px; 
                   display: inline-block; 
                   margin: 12px 0; 
-                  font-family: 'Red Rose', serif; 
-                  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
-                  letter-spacing: 2px;
               }
-              .offer-terms { font-size: 14px; color: #64748b; margin-top: 12px; }
+              .offer-terms { font-size: 14px; color: #666; }
+              .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
+              .feature { text-align: center; padding: 16px; background: #f9f9f9; border-radius: 6px; }
+              .feature-icon { font-size: 20px; margin-bottom: 8px; }
+              .feature-text { font-size: 14px; font-weight: 600; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin: 32px 8px 8px 8px; 
-                  transition: all 0.3s ease; 
-                  font-family: 'Red Rose', serif; 
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .features { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 40px 0; }
-              .feature { 
-                  text-align: center; 
-                  padding: 24px; 
-                  background: #fafafa; 
-                  border: 1px solid #e5e7eb; 
-                  border-radius: 12px; 
-                  transition: all 0.3s ease;
-                  position: relative;
-              }
-              .feature:hover {
-                  transform: translateY(-4px);
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.1);
-                  border-color: #dc2626;
-              }
-              .feature::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 3px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
-                  border-radius: 12px 12px 0 0;
-                  opacity: 0;
-                  transition: opacity 0.3s ease;
-              }
-              .feature:hover::before {
-                  opacity: 1;
-              }
-              .feature-icon { font-size: 28px; margin-bottom: 12px; }
-              .feature-text { font-size: 16px; color: #374151; font-weight: 600; }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
               @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
+                  .container { margin: 10px; }
+                  .content { padding: 30px 20px; }
                   .features { grid-template-columns: 1fr; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-                  .offer-code { font-size: 24px; }
               }
           </style>
       </head>
@@ -151,11 +73,12 @@ module.exports.authEmailTemplates = {
               <div class="content">
                   <div class="greeting">Welcome, ${user.first_name || 'User'}!</div>
                   <div class="message">
-                      Your InkDesk account is now active and ready. Discover premium stationery and office supplies with fast delivery across India.
+                      Thank you for joining InkDesk! Your account is now active and ready to use. 
+                      Start exploring our premium collection of stationery and office supplies.
                   </div>
 
                   <div class="offer-card">
-                      <div class="offer-title">🎉 Special Welcome Offer</div>
+                      <div class="offer-title">🎉 Welcome Offer</div>
                       <div class="offer-code">WELCOME20</div>
                       <div class="offer-terms">20% off your first order • Valid for 30 days • Min. order ₹99</div>
                   </div>
@@ -186,12 +109,10 @@ module.exports.authEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -208,7 +129,7 @@ module.exports.authEmailTemplates = {
 
       Hello ${user.first_name || 'User'},
 
-      Your InkDesk account is now active. Discover premium stationery and office supplies with fast delivery.
+      Thank you for joining InkDesk! Your account is now active and ready to use.
 
       WELCOME OFFER: Use code WELCOME20 for 20% off your first order (Valid 30 days, Min. ₹99)
 
@@ -225,7 +146,6 @@ module.exports.authEmailTemplates = {
         };
     },
 
-    // OTP Verification Email Template
     verificationOtp: (user, otp) => {
         const html = `
       <!DOCTYPE html>
@@ -235,109 +155,53 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Verify Your Account</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .otp-container { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 3px dashed #dc2626; 
-                  border-radius: 16px; 
-                  padding: 40px; 
-                  margin: 40px 0; 
-                  position: relative;
+                  background: #fef2f2; 
+                  border: 2px dashed #dc2626; 
+                  border-radius: 8px; 
+                  padding: 30px; 
+                  margin: 30px 0; 
               }
-              .otp-container::before {
-                  content: '';
-                  position: absolute;
-                  top: -3px;
-                  left: -3px;
-                  right: -3px;
-                  bottom: -3px;
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-                  border-radius: 19px;
-                  z-index: -1;
-                  opacity: 0.1;
-              }
-              .otp-label { font-size: 16px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+              .otp-label { font-size: 14px; color: #666; margin-bottom: 12px; text-transform: uppercase; font-weight: 600; }
               .otp-code { 
-                  font-size: 48px; 
-                  font-weight: 700; 
-                  background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); 
-                  -webkit-background-clip: text; 
-                  -webkit-text-fill-color: transparent; 
-                  background-clip: text;
-                  letter-spacing: 8px; 
-                  margin: 20px 0; 
-                  font-family: 'Red Rose', serif; 
+                  font-size: 36px; 
+                  font-weight: bold; 
+                  color: #dc2626; 
+                  letter-spacing: 4px; 
+                  margin: 16px 0; 
               }
-              .otp-note { font-size: 16px; color: #64748b; margin-top: 20px; }
+              .otp-note { font-size: 14px; color: #666; }
               .warning { 
-                  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-                  border: 2px solid #f59e0b; 
-                  border-radius: 12px; 
-                  padding: 20px; 
-                  margin: 32px 0; 
+                  background: #fef3c7; 
+                  border: 1px solid #f59e0b; 
+                  border-radius: 6px; 
+                  padding: 16px; 
+                  margin: 20px 0; 
               }
-              .warning-text { font-size: 16px; color: #92400e; font-weight: 500; }
+              .warning-text { font-size: 14px; color: #92400e; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin-top: 32px; 
-                  font-family: 'Red Rose', serif; 
-                  transition: all 0.3s ease;
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .otp-code { font-size: 36px; letter-spacing: 4px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-              }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -350,7 +214,7 @@ module.exports.authEmailTemplates = {
               <div class="content">
                   <div class="greeting">🔐 Verify Your Account</div>
                   <div class="message">
-                      Hello ${user.first_name || 'User'}, please use the verification code below to complete your InkDesk account setup.
+                      Hello ${user.first_name || 'User'}, please use the verification code below to complete your account setup.
                   </div>
 
                   <div class="otp-container">
@@ -370,12 +234,10 @@ module.exports.authEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -407,7 +269,6 @@ module.exports.authEmailTemplates = {
         };
     },
 
-    // Password Reset Email Template
     forgotPassword: (user, otp) => {
         const html = `
       <!DOCTYPE html>
@@ -417,108 +278,53 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Reset Your Password</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .otp-container { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 3px dashed #dc2626; 
-                  border-radius: 16px; 
-                  padding: 40px; 
-                  margin: 40px 0; 
-                  position: relative;
+                  background: #fef2f2; 
+                  border: 2px dashed #dc2626; 
+                  border-radius: 8px; 
+                  padding: 30px; 
+                  margin: 30px 0; 
               }
-              .otp-container::before {
-                  content: '';
-                  position: absolute;
-                  top: -3px;
-                  left: -3px;
-                  right: -3px;
-                  bottom: -3px;
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-                  border-radius: 19px;
-                  z-index: -1;
-                  opacity: 0.1;
-              }
-              .otp-label { font-size: 16px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+              .otp-label { font-size: 14px; color: #666; margin-bottom: 12px; text-transform: uppercase; font-weight: 600; }
               .otp-code { 
-                  font-size: 48px; 
-                  font-weight: 700; 
-                  background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); 
-                  -webkit-background-clip: text; 
-                  -webkit-text-fill-color: transparent; 
-                  background-clip: text;
-                  letter-spacing: 8px; 
-                  margin: 20px 0; 
-                  font-family: 'Red Rose', serif; 
+                  font-size: 36px; 
+                  font-weight: bold; 
+                  color: #dc2626; 
+                  letter-spacing: 4px; 
+                  margin: 16px 0; 
               }
-              .otp-note { font-size: 16px; color: #64748b; margin-top: 20px; }
+              .otp-note { font-size: 14px; color: #666; }
               .security-warning { 
-                  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
-                  border: 2px solid #ef4444; 
-                  border-radius: 12px; 
-                  padding: 20px; 
-                  margin: 32px 0; 
+                  background: #fee2e2; 
+                  border: 1px solid #ef4444; 
+                  border-radius: 6px; 
+                  padding: 16px; 
+                  margin: 20px 0; 
               }
-              .security-text { font-size: 16px; color: #b91c1c; font-weight: 500; }
+              .security-text { font-size: 14px; color: #b91c1c; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin-top: 32px; 
-                  font-family: 'Red Rose', serif; 
-                  transition: all 0.3s ease;
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-              }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -551,12 +357,10 @@ module.exports.authEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -590,7 +394,6 @@ module.exports.authEmailTemplates = {
         };
     },
 
-    // Account Verification Success Email
     verificationSuccess: (user) => {
         const html = `
       <!DOCTYPE html>
@@ -600,93 +403,38 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Account Verified Successfully</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
-              @keyframes bounce {
-                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                  40% { transform: translateY(-10px); }
-                  60% { transform: translateY(-5px); }
-              }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .success-icon { font-size: 60px; margin-bottom: 20px; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .success-card { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 2px solid #dc2626; 
-                  border-radius: 16px; 
-                  padding: 32px; 
-                  margin: 40px 0; 
-                  position: relative;
+                  background: #f0fdf4; 
+                  border: 2px solid #22c55e; 
+                  border-radius: 8px; 
+                  padding: 24px; 
+                  margin: 30px 0; 
               }
-              .success-card::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-                  border-radius: 16px 16px 0 0;
-              }
-              .success-text { font-size: 18px; color: #dc2626; font-weight: 500; }
+              .success-text { font-size: 16px; color: #15803d; font-weight: 500; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin-top: 32px; 
-                  font-family: 'Red Rose', serif; 
-                  transition: all 0.3s ease;
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-                  .success-icon { font-size: 64px; }
-              }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -716,12 +464,10 @@ module.exports.authEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -753,7 +499,6 @@ module.exports.authEmailTemplates = {
         };
     },
 
-    // Password Reset Success Email Template
     passwordResetSuccess: (user) => {
         const html = `
       <!DOCTYPE html>
@@ -763,107 +508,51 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Password Reset Successful</title>
           <style>
-              @import url('https://fonts.googleapis.com/css2?family=Red+Rose:wght@300;400;500;600;700&display=swap');
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Red Rose', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05); }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%); padding: 50px 32px; text-align: center; position: relative; }
-              .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'); opacity: 0.3; }
-              .logo { color: #ffffff; font-size: 36px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-              .tagline { color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 500; position: relative; z-index: 1; }
-              .content { padding: 50px 32px; text-align: center; background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
-              .success-icon { font-size: 80px; margin-bottom: 32px; animation: bounce 2s infinite; }
-              @keyframes bounce {
-                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                  40% { transform: translateY(-10px); }
-                  60% { transform: translateY(-5px); }
-              }
-              .greeting { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-family: 'Red Rose', serif; }
-              .message { font-size: 18px; color: #64748b; margin-bottom: 40px; line-height: 1.8; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+              .tagline { font-size: 14px; opacity: 0.9; }
+              .content { padding: 40px 30px; text-align: center; }
+              .success-icon { font-size: 60px; margin-bottom: 20px; }
+              .greeting { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+              .message { font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
               .success-card { 
-                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); 
-                  border: 2px solid #dc2626; 
-                  border-radius: 16px; 
-                  padding: 32px; 
-                  margin: 40px 0; 
-                  position: relative;
-              }
-              .success-card::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
-                  border-radius: 16px 16px 0 0;
-              }
-              .success-text { font-size: 18px; color: #dc2626; font-weight: 500; margin-bottom: 16px; }
-              .reset-time { font-size: 16px; color: #64748b; font-weight: 400; }
-              .security-tips { 
-                  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); 
-                  border: 2px solid #ef4444; 
-                  border-radius: 12px; 
+                  background: #f0fdf4; 
+                  border: 2px solid #22c55e; 
+                  border-radius: 8px; 
                   padding: 24px; 
-                  margin: 32px 0; 
-                  text-align: left;
+                  margin: 30px 0; 
               }
-              .security-title { font-size: 18px; color: #b91c1c; font-weight: 600; margin-bottom: 12px; text-align: center; }
+              .success-text { font-size: 16px; color: #15803d; font-weight: 500; margin-bottom: 12px; }
+              .reset-time { font-size: 14px; color: #666; }
+              .security-tips { 
+                  background: #fef3c7; 
+                  border: 1px solid #f59e0b; 
+                  border-radius: 6px; 
+                  padding: 20px; 
+                  margin: 20px 0; 
+                  text-align: left; 
+              }
+              .security-title { font-size: 16px; color: #92400e; font-weight: 600; margin-bottom: 12px; text-align: center; }
               .security-list { list-style: none; padding: 0; margin: 0; }
-              .security-list li { font-size: 16px; color: #b91c1c; margin-bottom: 8px; padding-left: 24px; position: relative; }
-              .security-list li::before { content: '🔒'; position: absolute; left: 0; top: 0; }
+              .security-list li { font-size: 14px; color: #92400e; margin-bottom: 8px; padding-left: 20px; position: relative; }
+              .security-list li::before { content: '•'; position: absolute; left: 0; font-weight: bold; }
               .cta-button { 
                   display: inline-block; 
-                  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                  color: #ffffff; 
-                  padding: 18px 36px; 
-                  border-radius: 50px; 
+                  background: #dc2626; 
+                  color: white; 
+                  padding: 14px 28px; 
+                  border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
-                  font-size: 18px; 
-                  margin-top: 32px; 
-                  font-family: 'Red Rose', serif; 
-                  transition: all 0.3s ease;
-                  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.35);
+                  margin: 20px 0; 
               }
-              .cta-button:hover { 
-                  transform: translateY(-3px); 
-                  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.45);
-              }
-              .footer { 
-                  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%); 
-                  color: #fef2f2; 
-                  text-align: center; 
-                  padding: 40px 32px; 
-                  position: relative;
-              }
-              .footer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footerGrain" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="20" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23footerGrain)"/></svg>'); opacity: 0.2; }
-              .footer-logo { font-size: 28px; font-weight: 700; margin-bottom: 12px; font-family: 'Red Rose', serif; position: relative; z-index: 1; }
-              .footer-text { font-size: 16px; color: #fecaca; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; position: relative; z-index: 1; }
-              .footer-links a { 
-                  color: #fecaca; 
-                  text-decoration: none; 
-                  font-size: 16px; 
-                  font-weight: 500; 
-                  transition: all 0.3s ease;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-              }
-              .footer-links a:hover { 
-                  color: #ffffff; 
-                  background: rgba(255, 255, 255, 0.1);
-                  transform: translateY(-2px);
-              }
-              .footer-bottom { font-size: 14px; color: #fca5a5; padding-top: 20px; border-top: 1px solid rgba(239, 68, 68, 0.3); position: relative; z-index: 1; }
-              @media (max-width: 600px) {
-                  .container { margin: 20px; border-radius: 16px; }
-                  .header, .content { padding: 40px 24px; }
-                  .footer-links { flex-direction: column; gap: 16px; }
-                  .greeting { font-size: 28px; }
-                  .success-icon { font-size: 64px; }
-                  .security-tips { padding: 20px; }
-              }
+              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+              .footer-links { margin: 20px 0; }
+              .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
+              .footer-bottom { font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #555; }
           </style>
       </head>
       <body>
@@ -881,9 +570,7 @@ module.exports.authEmailTemplates = {
                   </div>
 
                   <div class="success-card">
-                      <div class="success-text">
-                          ✅ Your password has been updated successfully
-                      </div>
+                      <div class="success-text">✅ Your password has been updated successfully</div>
                       <div class="reset-time">
                           Reset completed on ${new Date().toLocaleDateString('en-IN', { 
                               year: 'numeric', 
@@ -912,12 +599,10 @@ module.exports.authEmailTemplates = {
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
-                  <div class="footer-text">Your trusted partner for quality stationery</div>
                   <div class="footer-links">
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
                       <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
