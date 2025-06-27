@@ -150,17 +150,17 @@ const orderConfirmationTemplate = (user, order, orderProducts, shippingAddress, 
                 </div>
 
                 <div class="cta-buttons">
-                    <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/orders" class="cta-button secondary">Track Order</a>
-                    <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop" class="cta-button">Shop Again</a>
+                    <a href="${process.env.FRONTEND_URL}/orders" class="cta-button secondary">Track Order</a>
+                    <a href="${process.env.FRONTEND_URL}/shop" class="cta-button">Shop Again</a>
                 </div>
             </div>
 
             <div class="footer">
                 <div class="footer-logo">InkDesk</div>
                 <div class="footer-links">
-                    <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                    <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
-                    <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/help">Help</a>
+                    <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                    <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
+                    <a href="${process.env.FRONTEND_URL}/help">Help</a>
                 </div>
                 <div class="footer-bottom">
                     © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -200,7 +200,7 @@ Phone: ${shippingAddress.phone}
 
 Estimated Delivery: ${formatDate(deliveryStart)} - ${formatDate(deliveryEnd)}
 
-Track your order: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/orders
+Track your order: ${process.env.FRONTEND_URL}/orders
 
 Thank you for shopping with InkDesk!
 Support: support@inkdesk.com

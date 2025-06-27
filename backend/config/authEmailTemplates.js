@@ -103,16 +103,16 @@ module.exports.authEmailTemplates = {
                   </div>
 
                   <div style="text-align: center;">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop" class="cta-button">Start Shopping</a>
+                      <a href="${process.env.FRONTEND_URL}/shop" class="cta-button">Start Shopping</a>
                   </div>
               </div>
 
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                      <a href="${process.env.FRONTEND_URL}/about">About</a>
+                      <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -133,7 +133,7 @@ module.exports.authEmailTemplates = {
 
       WELCOME OFFER: Use code WELCOME20 for 20% off your first order (Valid 30 days, Min. ₹99)
 
-      Start Shopping: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop
+      Start Shopping: ${process.env.FRONTEND_URL}/shop
 
       Best regards,
       The InkDesk Team
@@ -227,7 +227,7 @@ module.exports.authEmailTemplates = {
                       <div class="warning-text">⏱️ This code expires in 10 minutes. Never share this code with anyone.</div>
                   </div>
 
-                  <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/verify-email?email=${encodeURIComponent(user.email)}" class="cta-button">
+                  <a href="${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(user.email)}" class="cta-button">
                       Verify Account
                   </a>
               </div>
@@ -235,9 +235,9 @@ module.exports.authEmailTemplates = {
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                      <a href="${process.env.FRONTEND_URL}/about">About</a>
+                      <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -256,7 +256,7 @@ module.exports.authEmailTemplates = {
 
       Your verification code: ${otp}
 
-      This code expires in 10 minutes. Complete verification: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/verify-email?email=${encodeURIComponent(user.email)}
+      This code expires in 10 minutes. Complete verification: ${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(user.email)}
 
       Best regards,
       The InkDesk Team
@@ -350,7 +350,7 @@ module.exports.authEmailTemplates = {
                       <div class="security-text">🔒 This code expires in 10 minutes. If you didn't request this, please ignore this email.</div>
                   </div>
 
-                  <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/reset-password?email=${encodeURIComponent(user.email)}" class="cta-button">
+                  <a href="${process.env.FRONTEND_URL}/reset-password?email=${encodeURIComponent(user.email)}" class="cta-button">
                       Reset Password
                   </a>
               </div>
@@ -358,9 +358,9 @@ module.exports.authEmailTemplates = {
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                      <a href="${process.env.FRONTEND_URL}/about">About</a>
+                      <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -379,7 +379,7 @@ module.exports.authEmailTemplates = {
 
       Your password reset code: ${otp}
 
-      This code expires in 10 minutes. Reset password: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/reset-password?email=${encodeURIComponent(user.email)}
+      This code expires in 10 minutes. Reset password: ${process.env.FRONTEND_URL}/reset-password?email=${encodeURIComponent(user.email)}
 
       If you didn't request this, please ignore this email.
 
@@ -457,7 +457,7 @@ module.exports.authEmailTemplates = {
                       </div>
                   </div>
 
-                  <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop" class="cta-button">
+                  <a href="${process.env.FRONTEND_URL}/shop" class="cta-button">
                       Start Shopping
                   </a>
               </div>
@@ -465,9 +465,9 @@ module.exports.authEmailTemplates = {
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                      <a href="${process.env.FRONTEND_URL}/about">About</a>
+                      <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -486,7 +486,7 @@ module.exports.authEmailTemplates = {
 
       Congratulations! Your InkDesk account has been successfully verified and is now fully active.
 
-      Start shopping: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop
+      Start shopping: ${process.env.FRONTEND_URL}/shop
 
       Welcome to InkDesk!
       The InkDesk Team
@@ -572,13 +572,13 @@ module.exports.authEmailTemplates = {
                   <div class="success-card">
                       <div class="success-text">✅ Your password has been updated successfully</div>
                       <div class="reset-time">
-                          Reset completed on ${new Date().toLocaleDateString('en-IN', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                          })}
+                          Reset completed on ${new Date().toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}
                       </div>
                   </div>
 
@@ -592,7 +592,7 @@ module.exports.authEmailTemplates = {
                       </ul>
                   </div>
 
-                  <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/login" class="cta-button">
+                  <a href="${process.env.FRONTEND_URL}/login" class="cta-button">
                       Login to Your Account
                   </a>
               </div>
@@ -600,9 +600,9 @@ module.exports.authEmailTemplates = {
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/shop">Shop</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/about">About</a>
-                      <a href="${process.env.ORIGIN_URL || 'http://localhost:5173'}/contact">Contact</a>
+                      <a href="${process.env.FRONTEND_URL}/shop">Shop</a>
+                      <a href="${process.env.FRONTEND_URL}/about">About</a>
+                      <a href="${process.env.FRONTEND_URL}/contact">Contact</a>
                   </div>
                   <div class="footer-bottom">
                       © ${new Date().getFullYear()} InkDesk. All rights reserved.<br>
@@ -621,13 +621,13 @@ module.exports.authEmailTemplates = {
 
       Your InkDesk account password has been successfully changed and your account is now secure.
 
-      Reset completed on ${new Date().toLocaleDateString('en-IN', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-      })}
+      Reset completed on ${new Date().toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}
 
       Security Tips:
       - Use a strong, unique password for your InkDesk account
@@ -635,7 +635,7 @@ module.exports.authEmailTemplates = {
       - Enable two-factor authentication for extra security
       - Log out from shared or public devices
 
-      Login to your account: ${process.env.ORIGIN_URL || 'http://localhost:5173'}/login
+      Login to your account: ${process.env.FRONTEND_URL}/login
 
       Best regards,
       The InkDesk Team
