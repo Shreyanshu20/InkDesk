@@ -20,9 +20,7 @@ function Banner() {
         if (data.success && data.banners.length > 0) {
           setBannerData(data.banners[0]);
         }
-      } catch (error) {
-        console.error("Error fetching homepage banner:", error);
-      }
+      } catch (error) {}
     };
 
     fetchBanner();
@@ -76,26 +74,18 @@ function Banner() {
           }
         >
           <div className="relative px-4 py-6 md:px-8 md:py-10 text-center">
-            {/* Background Overlay Box */}
             <div className="bg-gradient-to-br from-red-400 to-red-900 max-w-xl mx-auto rounded-lg p-4 md:p-6 text-white">
-              {/* Compact Icon */}
               <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full mb-3 md:mb-4">
                 <i className="fas fa-gift text-sm md:text-base"></i>
               </div>
-
-              {/* Compact Title */}
               <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 md:mb-3 leading-tight">
                 {banner.title}
               </h2>
-
-              {/* Shorter Subtitle */}
               {banner.subtitle && (
                 <p className="text-sm md:text-base text-white/90 mb-4 md:mb-6 leading-relaxed">
                   {banner.subtitle}
                 </p>
               )}
-
-              {/* Responsive Form */}
               <form
                 onSubmit={handleSubscribe}
                 className="max-w-xs sm:max-w-md md:max-w-lg mx-auto mb-4 md:mb-6"
@@ -127,8 +117,6 @@ function Banner() {
                   </button>
                 </div>
               </form>
-
-              {/* Compact Trust Indicators */}
               <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-xs text-white/80 mb-3 md:mb-4">
                 <span className="flex items-center">
                   <i className="fas fa-shield-alt mr-1.5 text-green-400"></i>
@@ -143,8 +131,6 @@ function Banner() {
                   No Spam
                 </span>
               </div>
-
-              {/* Message */}
               {message && (
                 <div
                   className={`inline-block px-3 py-2 rounded-md text-xs font-medium ${

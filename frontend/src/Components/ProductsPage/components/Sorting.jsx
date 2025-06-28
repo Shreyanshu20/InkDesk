@@ -19,18 +19,15 @@ const Sorting = ({ sortOption, setSortOption, isMobile = false }) => {
     return option ? option.label : "Sort";
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (sortRef.current && !sortRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-
     if (showDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -63,7 +60,6 @@ const Sorting = ({ sortOption, setSortOption, isMobile = false }) => {
           ></i>
         </div>
       </button>
-
       {showDropdown && (
         <div
           className={`absolute ${

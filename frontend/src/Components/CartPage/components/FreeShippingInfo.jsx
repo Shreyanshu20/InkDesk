@@ -1,5 +1,3 @@
-import React from "react";
-
 function FreeShippingInfo({ amountForFreeShipping }) {
   return (
     <>

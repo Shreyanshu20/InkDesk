@@ -1,8 +1,7 @@
-// Shared pricing configuration for consistency across all pages
 export const PRICING_CONFIG = {
     currency: "INR",
     locale: "en-IN",
-    taxRate: 0.18, // 18% GST
+    taxRate: 0.18, 
     freeShippingThreshold: 99,
     shippingCost: 50,
 

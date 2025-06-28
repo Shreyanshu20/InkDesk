@@ -78,36 +78,45 @@ const CheckOut = () => {
 
   const formatPrice = PRICING_CONFIG.formatPrice;
   const freeShippingThreshold = PRICING_CONFIG.freeShippingThreshold;
-  const shipping = PRICING_CONFIG.calculateShipping(activeCartSummary.totalPrice);
-  const amountForFreeShipping = PRICING_CONFIG.getAmountForFreeShipping(activeCartSummary.totalPrice);
-  const freeShippingProgress = Math.min(100, (activeCartSummary.totalPrice / freeShippingThreshold) * 100);
+  const shipping = PRICING_CONFIG.calculateShipping(
+    activeCartSummary.totalPrice
+  );
+  const amountForFreeShipping = PRICING_CONFIG.getAmountForFreeShipping(
+    activeCartSummary.totalPrice
+  );
+  const freeShippingProgress = Math.min(
+    100,
+    (activeCartSummary.totalPrice / freeShippingThreshold) * 100
+  );
   const tax = PRICING_CONFIG.calculateTax(activeCartSummary.totalPrice);
   const total = PRICING_CONFIG.calculateTotal(activeCartSummary.totalPrice);
 
   const transformedCartItems = checkoutItems.map((item) => {
-    // Handle image URL properly
     let imageUrl = "https://placehold.co/120x160?text=No+Image";
-    
-    if (item.product_id?.product_images && item.product_id.product_images.length > 0) {
-      // Handle new product_images array format
+    if (
+      item.product_id?.product_images &&
+      item.product_id.product_images.length > 0
+    ) {
       const firstImage = item.product_id.product_images[0];
-      if (typeof firstImage === 'string') {
-        imageUrl = firstImage.startsWith('http') ? firstImage : `${backendUrl}${firstImage}`;
+      if (typeof firstImage === "string") {
+        imageUrl = firstImage.startsWith("http")
+          ? firstImage
+          : `${backendUrl}${firstImage}`;
       } else if (firstImage?.url) {
-        imageUrl = firstImage.url.startsWith('http') ? firstImage.url : `${backendUrl}${firstImage.url}`;
+        imageUrl = firstImage.url.startsWith("http")
+          ? firstImage.url
+          : `${backendUrl}${firstImage.url}`;
       }
     } else if (item.product_id?.product_image) {
-      // Handle backward compatibility single image
-      imageUrl = item.product_id.product_image.startsWith('http') 
-        ? item.product_id.product_image 
+      imageUrl = item.product_id.product_image.startsWith("http")
+        ? item.product_id.product_image
         : `${backendUrl}${item.product_id.product_image}`;
     }
-
     return {
       id: item._id,
       name: item.product_id?.product_name || "Unknown Product",
       brand: item.product_id?.product_brand || "Unknown brand",
-      author: item.product_id?.product_brand || "Unknown brand", // Add author field for consistency
+      author: item.product_id?.product_brand || "Unknown brand",
       price: item.product_id?.product_price || 0,
       quantity: item.quantity,
       totalPrice: (item.product_id?.product_price || 0) * item.quantity,
@@ -145,45 +154,46 @@ const CheckOut = () => {
 
   const handlePaymentSubmit = (e) => {
     e.preventDefault();
-
     if (!isPaymentFormValid()) {
       toast.error("Please fill in all required payment details");
       return;
     }
-
     setStep(3);
   };
 
   const isPaymentFormValid = () => {
     switch (paymentMethod) {
       case "card":
-        const isCardNumberValid = paymentDetails.cardNumber.replace(/\s/g, "").length === 16;
-        const isCardHolderValid = paymentDetails.cardHolderName.trim().length >= 2;
+        const isCardNumberValid =
+          paymentDetails.cardNumber.replace(/\s/g, "").length === 16;
+        const isCardHolderValid =
+          paymentDetails.cardHolderName.trim().length >= 2;
         const isCvvValid = paymentDetails.cvv.length >= 3;
-
         const isExpiryValid = (() => {
-          if (paymentDetails.expiryDate.length !== 5 || !paymentDetails.expiryDate.includes("/")) {
+          if (
+            paymentDetails.expiryDate.length !== 5 ||
+            !paymentDetails.expiryDate.includes("/")
+          ) {
             return false;
           }
-
           const [month, year] = paymentDetails.expiryDate.split("/");
           const monthNum = parseInt(month);
           const yearNum = parseInt(year);
-
           if (monthNum < 1 || monthNum > 12) return false;
-
           const currentYear = new Date().getFullYear() % 100;
           const currentMonth = new Date().getMonth() + 1;
-
           if (yearNum < currentYear) return false;
           if (yearNum === currentYear && monthNum < currentMonth) return false;
-
           return true;
         })();
-
-        return isCardNumberValid && isCardHolderValid && isExpiryValid && isCvvValid;
+        return (
+          isCardNumberValid && isCardHolderValid && isExpiryValid && isCvvValid
+        );
       case "upi":
-        return paymentDetails.upiId.trim().length > 0 && paymentDetails.upiId.includes("@");
+        return (
+          paymentDetails.upiId.trim().length > 0 &&
+          paymentDetails.upiId.includes("@")
+        );
       case "wallet":
         return paymentDetails.selectedWallet.trim().length > 0;
       case "cod":
@@ -223,13 +233,10 @@ const CheckOut = () => {
   const handleExpiryDateInput = (e) => {
     let value = e.target.value;
     value = value.replace(/\D/g, "");
-
     if (value.length > 4) {
       value = value.substring(0, 4);
     }
-
     let formattedValue = "";
-
     if (value.length === 0) {
       formattedValue = "";
     } else if (value.length === 1) {
@@ -249,30 +256,26 @@ const CheckOut = () => {
       let month = parseInt(value.substring(0, 2));
       if (month > 12) month = 12;
       if (month === 0) month = 1;
-
       const year = value.substring(2);
       formattedValue = month.toString().padStart(2, "0") + "/" + year;
     } else if (value.length === 4) {
       let month = parseInt(value.substring(0, 2));
       let year = parseInt(value.substring(2));
-
       if (month > 12) month = 12;
       if (month === 0) month = 1;
-
       const currentYear = new Date().getFullYear() % 100;
       const currentMonth = new Date().getMonth() + 1;
-
       if (year < currentYear - 1) {
         year = currentYear;
       }
-
       if (year === currentYear && month < currentMonth) {
         month = currentMonth;
       }
-
-      formattedValue = month.toString().padStart(2, "0") + "/" + year.toString().padStart(2, "0");
+      formattedValue =
+        month.toString().padStart(2, "0") +
+        "/" +
+        year.toString().padStart(2, "0");
     }
-
     setPaymentDetails((prev) => ({
       ...prev,
       expiryDate: formattedValue,
@@ -311,12 +314,9 @@ const CheckOut = () => {
 
   const handleConfirmOrder = async () => {
     setLoading(true);
-
     try {
       const endpoint = buyNowMode ? "/orders/buy-now" : "/orders/create";
-
       let orderPayload;
-
       if (buyNowMode) {
         orderPayload = {
           product_id: buyNowProduct.id,
@@ -345,15 +345,17 @@ const CheckOut = () => {
           },
         };
       }
-
-      const response = await axios.post(`${backendUrl}${endpoint}`, orderPayload, {
-        withCredentials: true,
-      });
-
+      const response = await axios.post(
+        `${backendUrl}${endpoint}`,
+        orderPayload,
+        {
+          withCredentials: true,
+        }
+      );
       if (response.data.success) {
         const codFee = paymentMethod === "cod" ? 40 : 0;
-        const finalTotal = (activeCartSummary.totalPrice || 0) + shipping + tax + codFee;
-
+        const finalTotal =
+          (activeCartSummary.totalPrice || 0) + shipping + tax + codFee;
         const successOrderData = {
           orderNumber: response.data.order.order_number,
           orderId: response.data.order._id,
@@ -369,21 +371,20 @@ const CheckOut = () => {
           total: finalTotal,
           orderDate: new Date().toISOString(),
           estimatedDelivery: {
-            start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN"),
-            end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN"),
+            start: new Date(
+              Date.now() + 5 * 24 * 60 * 60 * 1000
+            ).toLocaleDateString("en-IN"),
+            end: new Date(
+              Date.now() + 7 * 24 * 60 * 60 * 1000
+            ).toLocaleDateString("en-IN"),
           },
-          status: 'pending'
+          status: "pending",
         };
-
-        // Set order data and step first, before clearing cart
         setOrderData(successOrderData);
         setStep(4);
-        
-        // Clear cart after setting order success state
         if (!buyNowMode) {
           await clearCart();
         }
-
         toast.success("Order placed successfully!");
       } else {
         toast.error(response.data.message || "Failed to place order");

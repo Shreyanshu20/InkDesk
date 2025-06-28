@@ -5,9 +5,7 @@ function Footer() {
   return (
     <footer className="bg-gradient-to-br from-red-600 to-red-900 pt-16 pb-8 px-6 md:px-8 lg:px-20 text-white">
       <div className="container mx-auto">
-        {/* Main footer content - Three columns */}
         <div className="flex flex-col lg:flex-row gap-10 mb-12">
-          {/* Company Info */}
           <div className="lg:max-w-2xl w-full">
             <div className="flex items-center mb-5">
               <Link to="/" className="flex items-center">
@@ -65,7 +63,6 @@ function Footer() {
               </p>
             </div>
           </div>
-          {/* Quick Links */}
           <div className="w-full">
             <h3 className="font-semibold mb-5 text-lg text-white">
               Quick Links
@@ -127,7 +124,6 @@ function Footer() {
               </li>
             </ul>
           </div>
-          {/* Products */}
           <div className="w-full">
             <h3 className="font-semibold mb-5 text-lg text-white">Products</h3>
             <ul className="space-y-3">
@@ -197,14 +193,10 @@ function Footer() {
             </ul>
           </div>
         </div>
-
-        {/* Copyright section */}
         <div className="border-t border-white/10 pt-6 text-center">
           <div className="text-sm text-white/80 mb-4">
             &copy; {new Date().getFullYear()} InkDesk. All rights reserved.
           </div>
-
-          {/* Policy Links */}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             <Link
               to="#"

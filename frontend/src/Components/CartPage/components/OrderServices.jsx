@@ -1,5 +1,3 @@
-import React from "react";
-
 function OrderServices() {
   return (
     <>
@@ -15,7 +13,7 @@ function OrderServices() {
           <div className="flex items-end space-x-2">
             <i className="fas fa-exchange-alt text-primary mt-1"></i>
             <p className="text-xs text-text/70">
-              <span className="font-medium text-text">30-day returns</span> on
+              <span className="font-medium text-text">10-day returns</span> on
               all products
             </p>
           </div>

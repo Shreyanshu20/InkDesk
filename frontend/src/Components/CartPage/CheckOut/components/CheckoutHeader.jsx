@@ -1,5 +1,3 @@
-import React from 'react';
-
 const CheckoutHeader = () => {
   return (
     <section className="py-4 md:py-8 bg-gradient-to-b from-secondary/20 to-background/80">

@@ -2,7 +2,7 @@ import React, { useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AppContent } from "../../../Context/AppContent";
-import { useCart } from "../../../Context/CartContext"; 
+import { useCart } from "../../../Context/CartContext";
 import { useWishlist } from "../../../Context/WishlistContext";
 import StarRating from "../../Common/StarRating";
 import PriceDisplay from "../../Common/PriceDisplay";
@@ -10,7 +10,7 @@ import Button from "../../Common/Button";
 
 const Products = ({ products, formatPrice, isMobile = false }) => {
   const { isLoggedIn } = useContext(AppContent);
-  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart(); 
+  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart();
   const {
     isInWishlist,
     addToWishlist,
@@ -18,42 +18,35 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
     isButtonLoading: isWishlistButtonLoading,
   } = useWishlist();
 
-  const handleAddToCart = useMemo(() => async (e, productId) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!isLoggedIn) {
-      toast.error("Please login to add items to cart");
-      return;
-    }
-
-    await addToCart(productId, 1);
-  }, [isLoggedIn, addToCart]);
+  const handleAddToCart = useMemo(
+    () => async (e, productId) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isLoggedIn) {
+        toast.error("Please login to add items to cart");
+        return;
+      }
+      await addToCart(productId, 1);
+    },
+    [isLoggedIn, addToCart]
+  );
 
   const toggleWishlist = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!isLoggedIn) {
       toast.info("Please login to add items to wishlist");
       return;
     }
-
-    // Use product._id (the MongoDB ObjectId) not product.id
     const actualProductId = productId;
-    console.log('Toggling wishlist for product:', actualProductId); // Debug log
-    
     const productInWishlist = isInWishlist(actualProductId);
-
     try {
       if (productInWishlist) {
         await removeFromWishlist(actualProductId);
       } else {
         await addToWishlist(actualProductId);
       }
-    } catch (error) {
-      console.error("Wishlist toggle error:", error);
-    }
+    } catch (error) {}
   };
 
   const calculateDiscount = (price, discountPercentage) => {
@@ -63,7 +56,13 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
 
   if (!products || products.length === 0) {
     return (
-      <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
+      <div
+        className={`grid gap-4 ${
+          isMobile
+            ? "grid-cols-2"
+            : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+        }`}
+      >
         {Array.from({ length: isMobile ? 4 : 8 }).map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="bg-gray-200 rounded-lg h-64 w-full mb-4"></div>
@@ -75,7 +74,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
     );
   }
 
-  // Mobile Layout (2 columns) - Image focused
   if (isMobile) {
     return (
       <div className="grid grid-cols-2 gap-3">
@@ -91,15 +89,21 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
               : product.product_price;
 
           const productInWishlist = isInWishlist(product._id);
-          const isWishlistLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`) || 
-                                   isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+          const isWishlistLoading =
+            isWishlistButtonLoading(`add-wishlist-${product._id}`) ||
+            isWishlistButtonLoading(`remove-wishlist-${product._id}`);
           const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
           return (
-            <div key={product._id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+            <div
+              key={product._id}
+              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
+            >
               <Link to={`/shop/product/${product._id}`} className="block">
-                {/* Product Image - Made taller for mobile */}
-                <div className="relative bg-gray-100 dark:bg-gray-700" style={{ aspectRatio: '3/4' }}>
+                <div
+                  className="relative bg-gray-100 dark:bg-gray-700"
+                  style={{ aspectRatio: "3/4" }}
+                >
                   <img
                     src={
                       product.product_image ||
@@ -110,18 +114,15 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      e.target.src = "https://placehold.co/300x400?text=No+Image";
+                      e.target.src =
+                        "https://placehold.co/300x400?text=No+Image";
                     }}
                   />
-
-                  {/* Discount Badge */}
                   {discount > 0 && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {discount}% OFF
                     </span>
                   )}
-
-                  {/* Wishlist Button with Loading State */}
                   <button
                     onClick={(e) => toggleWishlist(e, product._id)}
                     disabled={isWishlistLoading}
@@ -142,8 +143,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                       <i className="fas fa-heart text-xs"></i>
                     )}
                   </button>
-
-                  {/* Out of Stock Overlay */}
                   {!inStock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
@@ -153,16 +152,12 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                   )}
                 </div>
               </Link>
-
-              {/* Product Info - Compact */}
               <div className="p-2.5">
                 <Link to={`/shop/product/${product._id}`}>
                   <h3 className="font-medium text-xs mb-1 line-clamp-2 text-text hover:text-primary transition-colors leading-tight">
                     {product.product_name}
                   </h3>
                 </Link>
-                
-                {/* Rating - Smaller */}
                 <div className="mb-1.5">
                   <StarRating
                     rating={product.product_rating || 0}
@@ -170,8 +165,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     showText={false}
                   />
                 </div>
-
-                {/* Price - Compact */}
                 <div className="mb-2">
                   <div className="flex items-center gap-1">
                     <span className="text-sm font-bold text-primary">
@@ -184,15 +177,13 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     )}
                   </div>
                 </div>
-
-                {/* Add to Cart Button with Loading State */}
                 {inStock ? (
                   <button
                     onClick={(e) => handleAddToCart(e, product._id)}
                     disabled={isCartLoading}
                     className={`w-full text-white text-xs py-1.5 rounded-md font-medium transition-all duration-200 ${
-                      isCartLoading 
-                        ? "bg-primary/70 cursor-wait" 
+                      isCartLoading
+                        ? "bg-primary/70 cursor-wait"
                         : "bg-primary hover:bg-primary/90"
                     }`}
                   >
@@ -212,7 +203,9 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      toast.info("We'll notify you when this product is back in stock!");
+                      toast.info(
+                        "We'll notify you when this product is back in stock!"
+                      );
                     }}
                     className="w-full bg-gray-400 text-white text-xs py-1.5 rounded-md font-medium"
                   >
@@ -242,15 +235,15 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
             : product.product_price;
 
         const productInWishlist = isInWishlist(product._id);
-        const isWishlistLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`) || 
-                                 isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+        const isWishlistLoading =
+          isWishlistButtonLoading(`add-wishlist-${product._id}`) ||
+          isWishlistButtonLoading(`remove-wishlist-${product._id}`);
         const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
         return (
           <div key={product._id} className="group relative h-full">
             <Link to={`/shop/product/${product._id}`} className="block h-full">
               <div className="bg-gray-50 dark:bg-gray-800 text-text rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:scale-[1.01] h-full flex flex-col group border-b-4 border-transparent hover:border-primary">
-                {/* Product Image */}
                 <div className="relative aspect-square bg-gray-50 flex-shrink-0">
                   <img
                     src={
@@ -262,18 +255,15 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
                     onError={(e) => {
-                      e.target.src = "https://placehold.co/300x400?text=No+Image";
+                      e.target.src =
+                        "https://placehold.co/300x400?text=No+Image";
                     }}
                   />
-
-                  {/* Discount Badge */}
                   {discount > 0 && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {discount}% OFF
                     </span>
                   )}
-
-                  {/* Out of Stock Overlay */}
                   {!inStock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="bg-black/80 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -281,8 +271,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                       </span>
                     </div>
                   )}
-
-                  {/* Wishlist Button with Loading State */}
                   <button
                     onClick={(e) => toggleWishlist(e, product._id)}
                     disabled={isWishlistLoading}
@@ -300,20 +288,19 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                     {isWishlistLoading ? (
                       <i className="fas fa-spinner fa-spin text-sm"></i>
                     ) : (
-                      <i className={`fas fa-heart text-sm ${
-                        productInWishlist ? "text-white" : ""
-                      }`}></i>
+                      <i
+                        className={`fas fa-heart text-sm ${
+                          productInWishlist ? "text-white" : ""
+                        }`}
+                      ></i>
                     )}
                   </button>
                 </div>
-
-                {/* Product Info */}
                 <div className="p-4 flex-1 flex flex-col justify-between min-h-[140px]">
                   <div className="flex-1">
                     <h3 className="font-medium mb-2 line-clamp-2 h-12 overflow-hidden leading-6">
                       {product.product_name}
                     </h3>
-
                     <div className="h-5 mb-2">
                       {product.product_brand && (
                         <p className="text-xs text-text/70">
@@ -321,7 +308,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                         </p>
                       )}
                     </div>
-
                     <div className="mb-3 h-4">
                       <StarRating
                         rating={product.product_rating || 0}
@@ -330,7 +316,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                       />
                     </div>
                   </div>
-
                   <div className="mt-auto">
                     <PriceDisplay
                       price={discountedPrice}
@@ -345,8 +330,6 @@ const Products = ({ products, formatPrice, isMobile = false }) => {
                 </div>
               </div>
             </Link>
-
-            {/* Hover Add to Cart Button for Desktop with Loading State */}
             {inStock ? (
               <Button
                 className={`absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 ${

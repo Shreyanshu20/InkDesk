@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 function About() {
   return (
     <div className="bg-background">
-      {/* Hero Section with PageHeader-style gradient */}
       <section className="relative py-16 md:py-24 bg-gradient-to-b from-primary/40 to-background/90">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl relative z-10">
           <div className="max-w-3xl mx-auto text-center">
@@ -22,10 +21,8 @@ function About() {
             </p>
           </div>
         </div>
-        {/* Removed the sharp clip-path line */}
       </section>
 
-      {/* Our Mission with enhanced visuals */}
       <section className="py-12 md:py-20 lg:py-28">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
@@ -74,7 +71,6 @@ function About() {
         </div>
       </section>
 
-      {/* Our Journey with timeline styling */}
       <section className="py-12 md:py-20 bg-gradient-to-r from-background via-accent/5 to-background">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
@@ -90,7 +86,9 @@ function About() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
             <div className="bg-white dark:bg-[#1a1212] p-6 md:p-8 rounded-lg shadow-md border-t-4 border-primary hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
               <div className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-primary/20 rounded-full mb-4 md:mb-6 mx-auto">
-                <span className="text-primary text-lg md:text-xl font-bold">2015</span>
+                <span className="text-primary text-lg md:text-xl font-bold">
+                  2015
+                </span>
               </div>
               <h3 className="text-lg md:text-xl font-bold text-text mb-3 md:mb-4 text-center">
                 The Beginning
@@ -104,7 +102,9 @@ function About() {
 
             <div className="bg-white dark:bg-[#1a1212] p-6 md:p-8 rounded-lg shadow-md border-t-4 border-primary hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
               <div className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-primary/20 rounded-full mb-4 md:mb-6 mx-auto">
-                <span className="text-primary text-lg md:text-xl font-bold">2019</span>
+                <span className="text-primary text-lg md:text-xl font-bold">
+                  2019
+                </span>
               </div>
               <h3 className="text-lg md:text-xl font-bold text-text mb-3 md:mb-4 text-center">
                 Expansion
@@ -118,7 +118,9 @@ function About() {
 
             <div className="bg-white dark:bg-[#1a1212] p-6 md:p-8 rounded-lg shadow-md border-t-4 border-primary hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
               <div className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-primary/20 rounded-full mb-4 md:mb-6 mx-auto">
-                <span className="text-primary text-lg md:text-xl font-bold">2022</span>
+                <span className="text-primary text-lg md:text-xl font-bold">
+                  2022
+                </span>
               </div>
               <h3 className="text-lg md:text-xl font-bold text-text mb-3 md:mb-4 text-center">
                 Going Digital
@@ -133,7 +135,6 @@ function About() {
         </div>
       </section>
 
-      {/* Our Values with improved cards */}
       <section className="py-12 md:py-20 lg:py-28">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
@@ -205,7 +206,6 @@ function About() {
         </div>
       </section>
 
-      {/* Team Section with improved cards */}
       <section className="py-12 md:py-20 bg-gradient-to-bl from-secondary/10 via-background to-accent/5">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
@@ -232,7 +232,9 @@ function About() {
                 />
               </div>
               <div className="p-4 md:p-6">
-                <h3 className="text-lg md:text-xl font-bold text-text">Sarah Johnson</h3>
+                <h3 className="text-lg md:text-xl font-bold text-text">
+                  Sarah Johnson
+                </h3>
                 <p className="text-primary font-medium mb-3 md:mb-4 text-sm md:text-base">
                   <i className="fas fa-briefcase mr-2 text-primary/70"></i>
                   Founder & CEO
@@ -253,7 +255,9 @@ function About() {
                 />
               </div>
               <div className="p-4 md:p-6">
-                <h3 className="text-lg md:text-xl font-bold text-text">David Chen</h3>
+                <h3 className="text-lg md:text-xl font-bold text-text">
+                  David Chen
+                </h3>
                 <p className="text-primary font-medium mb-3 md:mb-4 text-sm md:text-base">
                   <i className="fas fa-palette mr-2 text-primary/70"></i>
                   Creative Director
@@ -274,7 +278,9 @@ function About() {
                 />
               </div>
               <div className="p-4 md:p-6">
-                <h3 className="text-lg md:text-xl font-bold text-text">Maya Rodriguez</h3>
+                <h3 className="text-lg md:text-xl font-bold text-text">
+                  Maya Rodriguez
+                </h3>
                 <p className="text-primary font-medium mb-3 md:mb-4 text-sm md:text-base">
                   <i className="fas fa-book mr-2 text-primary/70"></i>
                   Head of Curation
@@ -289,7 +295,6 @@ function About() {
         </div>
       </section>
 
-      {/* Testimonial Section with improved styling */}
       <section className="py-12 md:py-20 lg:py-28">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
@@ -326,7 +331,9 @@ function About() {
                   <i className="fas fa-user text-gray-400 text-lg md:text-xl"></i>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="font-bold text-text text-sm md:text-base">Emma Thompson</p>
+                  <p className="font-bold text-text text-sm md:text-base">
+                    Emma Thompson
+                  </p>
                   <p className="text-primary/80 text-xs md:text-sm">
                     <i className="fas fa-paint-brush mr-1"></i> Graphic Designer
                   </p>
@@ -358,7 +365,9 @@ function About() {
                   <i className="fas fa-user text-gray-400 text-lg md:text-xl"></i>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="font-bold text-text text-sm md:text-base">Michael Roberts</p>
+                  <p className="font-bold text-text text-sm md:text-base">
+                    Michael Roberts
+                  </p>
                   <p className="text-primary/80 text-xs md:text-sm">
                     <i className="fas fa-pen-fancy mr-1"></i> Author
                   </p>
@@ -369,7 +378,6 @@ function About() {
         </div>
       </section>
 
-      {/* Contact CTA with enhanced styling */}
       <section className="py-12 md:py-20 bg-gradient-to-r from-primary via-primary/90 to-accent text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <i className="fas fa-envelope text-6xl md:text-9xl absolute top-4 md:top-10 left-4 md:left-10 transform -rotate-12"></i>

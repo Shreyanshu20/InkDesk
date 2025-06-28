@@ -10,7 +10,6 @@ function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch carousel banners
   useEffect(() => {
     const fetchCarouselBanners = async () => {
       try {
@@ -21,14 +20,12 @@ function Hero() {
 
         if (data.success && data.banners.length > 0) {
           const formattedSlides = data.banners.map((banner) => {
-            // Construct proper image URL
             let imageUrl = banner.image;
             if (banner.image && !banner.image.includes("http")) {
               imageUrl = banner.image.startsWith("/")
                 ? `${API_BASE_URL}${banner.image}`
                 : `${API_BASE_URL}/${banner.image}`;
             }
-
             return {
               id: banner._id,
               title: banner.title,
@@ -40,12 +37,10 @@ function Hero() {
               textPosition: banner.textPosition || "left",
             };
           });
-
           setSlides(formattedSlides);
         }
-      } catch (error) {
-        console.error("Error fetching carousel banners:", error);
-      } finally {
+      } catch (error) {}
+      finally {
         setIsLoading(false);
       }
     };
@@ -53,7 +48,6 @@ function Hero() {
     fetchCarouselBanners();
   }, []);
 
-  // Auto-slide functionality
   useEffect(() => {
     if (slides.length > 1) {
       const interval = setInterval(() => {
@@ -85,7 +79,6 @@ function Hero() {
 
   return (
     <section className="relative w-full h-[60vh] md:h-[70vh] lg:h-[80vh] overflow-hidden">
-      {/* Slide Container */}
       <div className="relative w-full h-full">
         {slides.map((slide, index) => (
           <div
@@ -94,18 +87,13 @@ function Hero() {
               index === currentSlide ? "opacity-100" : "opacity-0"
             }`}
           >
-            {/* Background Image */}
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{
                 backgroundImage: `url("${slide.imageUrl}")`,
               }}
             />
-
-            {/* Dark overlay for better text contrast */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-transparent"></div>
-
-            {/* Content positioned based on textPosition from backend */}
             <div
               className={`absolute inset-0 flex items-center px-8 lg:px-16 ${
                 slide.textPosition === "center"
@@ -122,19 +110,14 @@ function Hero() {
                     : "max-w-lg md:max-w-xl lg:max-w-2xl"
                 }`}
               >
-                {/* Title with strong text shadow */}
                 <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight text-white drop-shadow-[2px_2px_2px_rgba(0,0,0,0.5)]">
                   {slide.title}
                 </h1>
-
-                {/* Subtitle with text shadow */}
                 {slide.subtitle && (
                   <p className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 leading-relaxed text-white/95 drop-shadow-[1px_1px_2px_rgba(0,0,0,0.4)]">
                     {slide.subtitle}
                   </p>
                 )}
-
-                {/* CTA Button */}
                 {slide.buttonText && (
                   <div>
                     <Link
@@ -151,8 +134,6 @@ function Hero() {
           </div>
         ))}
       </div>
-
-      {/* Navigation Arrows */}
       {slides.length > 1 && (
         <>
           <button
@@ -162,7 +143,6 @@ function Hero() {
           >
             <i className="fas fa-chevron-left text-sm md:text-base"></i>
           </button>
-
           <button
             onClick={goToNext}
             className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/60 text-gray-700 px-2 py-4  md:py-10 rounded-l-md transition-all duration-300 z-10 hover:shadow-md"
@@ -172,8 +152,6 @@ function Hero() {
           </button>
         </>
       )}
-
-      {/* Slide Indicators */}
       {slides.length > 1 && (
         <div className="absolute bottom-4 md:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
           {slides.map((_, index) => (

@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import PageHeader from "../Common/PageHeader";
 
 function Blogs() {
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -101,14 +99,12 @@ function Blogs() {
 
   const featuredPost = blogPosts.find((post) => post.featured);
 
-  // Static link handler - prevents navigation
   const handleStaticClick = (e) => {
     e.preventDefault();
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section with About page style */}
       <section className="relative py-16 md:py-24 bg-gradient-to-b from-primary/40 to-background/90">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl relative z-10">
           <div className="max-w-3xl mx-auto text-center">
@@ -128,7 +124,6 @@ function Blogs() {
         </div>
       </section>
 
-      {/* Category Filter */}
       <section className="py-6 md:py-8 bg-white dark:bg-[#1a1212] border-y border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="flex flex-wrap justify-center gap-2 md:gap-4">
@@ -149,7 +144,6 @@ function Blogs() {
         </div>
       </section>
 
-      {/* Featured Post */}
       {featuredPost && selectedCategory === "All" && (
         <section className="py-8 md:py-12">
           <div className="container mx-auto px-3 md:px-4 max-w-7xl">
@@ -208,7 +202,6 @@ function Blogs() {
         </section>
       )}
 
-      {/* Blog Posts Grid */}
       <section className="py-8 md:py-16">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8 gap-2">
@@ -229,7 +222,6 @@ function Blogs() {
                 key={post.id}
                 className="bg-white dark:bg-[#1a1212] rounded-lg md:rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-gray-200 dark:border-gray-700"
               >
-                {/* Image */}
                 <div className="relative h-40 md:h-48 overflow-hidden">
                   <img
                     src={post.image}
@@ -247,8 +239,6 @@ function Blogs() {
                     </span>
                   </div>
                 </div>
-
-                {/* Content */}
                 <div className="p-4 md:p-6">
                   <div className="flex flex-wrap items-center text-text/60 text-xs md:text-sm mb-2 md:mb-3 gap-1">
                     <i className="far fa-calendar mr-1"></i>
@@ -259,7 +249,6 @@ function Blogs() {
                     <span className="mx-1 md:mx-2">•</span>
                     <span>By {post.author}</span>
                   </div>
-
                   <h3 className="text-base md:text-lg lg:text-xl font-bold text-text mb-2 md:mb-3 group-hover:text-primary transition-colors line-clamp-2">
                     <button
                       onClick={handleStaticClick}
@@ -268,11 +257,9 @@ function Blogs() {
                       {post.title}
                     </button>
                   </h3>
-
                   <p className="text-text/80 mb-3 md:mb-4 line-clamp-2 md:line-clamp-3 text-xs md:text-sm leading-relaxed">
                     {post.excerpt}
                   </p>
-
                   <button
                     onClick={handleStaticClick}
                     className="inline-flex items-center text-primary font-medium hover:text-primary/80 transition-colors text-xs md:text-sm"
@@ -285,7 +272,6 @@ function Blogs() {
             ))}
           </div>
 
-          {/* No Results */}
           {filteredPosts.length === 0 && (
             <div className="text-center py-8 md:py-12">
               <div className="text-text/40 mb-3 md:mb-4">

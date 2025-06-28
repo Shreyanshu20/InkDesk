@@ -14,7 +14,6 @@ function PriceDisplay({
     xl: "text-3xl",
   };
 
-  // Default format price function if none is provided
   const formatPriceWithFallback = (value) => {
     if (formatPrice && typeof formatPrice === "function") {
       return formatPrice(value);

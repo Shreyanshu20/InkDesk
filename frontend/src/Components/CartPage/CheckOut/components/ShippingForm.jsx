@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { AppContent } from "../../../../Context/AppContent";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -16,18 +15,18 @@ const ShippingForm = ({
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [isPrimaryAddress, setIsPrimaryAddress] = useState(false);
-  const [editingAddressId, setEditingAddressId] = useState('');
+  const [editingAddressId, setEditingAddressId] = useState("");
   const [editAddressData, setEditAddressData] = useState({});
 
   useEffect(() => {
     fetchUserAddresses();
-    
     if (userData?.email) {
-      setShippingDetails(prev => ({
+      setShippingDetails((prev) => ({
         ...prev,
-        email: userData.email
+        email: userData.email,
       }));
     }
+    // eslint-disable-next-line
   }, [userData?.email]);
 
   const fetchUserAddresses = async () => {
@@ -42,8 +41,7 @@ const ShippingForm = ({
 
         if (addresses && addresses.length > 0) {
           setShowAddressForm(false);
-          
-          const primaryAddress = addresses.find(addr => addr.is_primary);
+          const primaryAddress = addresses.find((addr) => addr.is_primary);
           if (primaryAddress) {
             handleAddressSelection(primaryAddress);
           } else {
@@ -53,7 +51,7 @@ const ShippingForm = ({
           setShowAddressForm(true);
         }
       }
-    } catch (error) {
+    } catch {
       setShowAddressForm(true);
     }
   };
@@ -90,9 +88,8 @@ const ShippingForm = ({
     });
   };
 
-  const handleEditAddress = async (address, e) => {
+  const handleEditAddress = (address, e) => {
     e.stopPropagation();
-    
     setEditingAddressId(address._id);
     setEditAddressData({
       first_name: address.first_name,
@@ -103,10 +100,9 @@ const ShippingForm = ({
       state: address.state,
       postal_code: address.postal_code,
       country: address.country,
-      is_primary: address.is_primary
+      is_primary: address.is_primary,
     });
     setShowAddressForm(true);
-    
     setShippingDetails({
       firstName: address.first_name,
       lastName: address.last_name,
@@ -118,12 +114,11 @@ const ShippingForm = ({
       pincode: address.postal_code,
       country: address.country || "India",
     });
-    
     setIsPrimaryAddress(address.is_primary);
   };
 
   const handleCancelEdit = () => {
-    setEditingAddressId('');
+    setEditingAddressId("");
     setEditAddressData({});
     setShowAddressForm(false);
     setShippingDetails({
@@ -142,7 +137,6 @@ const ShippingForm = ({
 
   const handleUpdateAddress = async (e) => {
     e.preventDefault();
-
     try {
       const addressData = {
         first_name: shippingDetails.firstName,
@@ -155,45 +149,38 @@ const ShippingForm = ({
         country: shippingDetails.country,
         is_primary: isPrimaryAddress,
       };
-
       const response = await axios.put(
         `${backendUrl}/user/addresses/${editingAddressId}`,
         addressData,
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
-
       if (response.data.success) {
         await fetchUserAddresses();
-        
-        setEditingAddressId('');
+        setEditingAddressId("");
         setEditAddressData({});
         setShowAddressForm(false);
-        
-        toast.success('Address updated successfully!');
+        toast.success("Address updated successfully!");
       } else {
         toast.error(`Failed to update address: ${response.data.message}`);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to update address. Please try again.";
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to update address. Please try again.";
       toast.error(errorMessage);
     }
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-
     if (editingAddressId) {
       await handleUpdateAddress(e);
       return;
     }
-
     if (selectedAddressId && !showAddressForm) {
       handleShippingSubmit(e);
       return;
     }
-
     try {
       const addressData = {
         first_name: shippingDetails.firstName,
@@ -206,35 +193,39 @@ const ShippingForm = ({
         country: shippingDetails.country,
         is_primary: isPrimaryAddress || userAddresses.length === 0,
       };
-
-      const response = await axios.post(`${backendUrl}/user/addresses`, addressData, {
-        withCredentials: true,
-      });
-
+      const response = await axios.post(
+        `${backendUrl}/user/addresses`,
+        addressData,
+        {
+          withCredentials: true,
+        }
+      );
       if (response.data.success) {
         await fetchUserAddresses();
         setShowAddressForm(false);
-        toast.success('Address saved successfully!');
+        toast.success("Address saved successfully!");
       } else {
         toast.error(`Failed to save address: ${response.data.message}`);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save address. Please try again.");
     }
   };
 
   const handleDeleteAddress = async (addressId, e) => {
     e.stopPropagation();
-
     if (window.confirm("Are you sure you want to delete this address?")) {
       try {
-        const response = await axios.delete(`${backendUrl}/user/addresses/${addressId}`, {
-          withCredentials: true,
-        });
-
+        const response = await axios.delete(
+          `${backendUrl}/user/addresses/${addressId}`,
+          {
+            withCredentials: true,
+          }
+        );
         if (response.data.success) {
-          setUserAddresses((prev) => prev.filter((addr) => addr._id !== addressId));
-
+          setUserAddresses((prev) =>
+            prev.filter((addr) => addr._id !== addressId)
+          );
           if (selectedAddressId === addressId) {
             setSelectedAddressId("");
             setShippingDetails({
@@ -249,18 +240,20 @@ const ShippingForm = ({
               country: "India",
             });
           }
-
-          const remainingAddresses = userAddresses.filter(addr => addr._id !== addressId);
+          const remainingAddresses = userAddresses.filter(
+            (addr) => addr._id !== addressId
+          );
           if (remainingAddresses.length === 0) {
             setShowAddressForm(true);
           }
-
-          toast.success('Address deleted successfully!');
+          toast.success("Address deleted successfully!");
         } else {
           toast.error(`Failed to delete address: ${response.data.message}`);
         }
       } catch (error) {
-        const errorMessage = error.response?.data?.message || "Failed to delete address. Please try again.";
+        const errorMessage =
+          error.response?.data?.message ||
+          "Failed to delete address. Please try again.";
         toast.error(errorMessage);
       }
     }
@@ -274,16 +267,12 @@ const ShippingForm = ({
           Shipping Details
         </h2>
       </div>
-
       <div className="p-4 md:p-6">
-        {/* Address Selection Options */}
         {userAddresses.length > 0 && !showAddressForm && (
           <div className="mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-medium text-text mb-3 md:mb-4">
               Select Shipping Address
             </h3>
-
-            {/* Existing Addresses */}
             <div className="space-y-3 mb-4">
               {userAddresses.map((address) => (
                 <div
@@ -315,17 +304,14 @@ const ShippingForm = ({
                         </span>
                       </div>
                       <p className="text-text/70 text-xs md:text-sm ml-5 md:ml-6">
-                        {address.address_line_1}, {address.city}, {address.state} -{" "}
-                        {address.postal_code}
+                        {address.address_line_1}, {address.city},{" "}
+                        {address.state} - {address.postal_code}
                       </p>
                       <p className="text-text/70 text-xs md:text-sm ml-5 md:ml-6">
                         Phone: {address.phone}
                       </p>
                     </div>
-
-                    {/* Action Buttons */}
                     <div className="flex items-center space-x-1 md:space-x-2 ml-2 md:ml-4">
-                      {/* Edit Button */}
                       <button
                         onClick={(e) => handleEditAddress(address, e)}
                         className="p-1.5 md:p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -333,8 +319,6 @@ const ShippingForm = ({
                       >
                         <i className="fas fa-edit text-xs md:text-sm"></i>
                       </button>
-                      
-                      {/* Delete Button */}
                       <button
                         onClick={(e) => handleDeleteAddress(address._id, e)}
                         className="p-1.5 md:p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
@@ -347,8 +331,6 @@ const ShippingForm = ({
                 </div>
               ))}
             </div>
-
-            {/* Add New Address Button */}
             <button
               type="button"
               onClick={handleAddNewAddress}
@@ -359,14 +341,11 @@ const ShippingForm = ({
             </button>
           </div>
         )}
-
-        {/* Address Form */}
         {(showAddressForm || userAddresses.length === 0) && (
           <form onSubmit={handleFormSubmit}>
-            {/* Form Header */}
             <div className="mb-4 md:mb-6">
               <h3 className="text-base md:text-lg font-medium text-text">
-                {editingAddressId ? 'Edit Address' : 'Add New Address'}
+                {editingAddressId ? "Edit Address" : "Add New Address"}
               </h3>
               {editingAddressId && (
                 <p className="text-xs md:text-sm text-text/60 mt-1">
@@ -374,7 +353,6 @@ const ShippingForm = ({
                 </p>
               )}
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label
@@ -393,7 +371,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="lastName"
@@ -411,7 +388,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="email"
@@ -429,9 +405,10 @@ const ShippingForm = ({
                   required
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Email cannot be changed</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Email cannot be changed
+                </p>
               </div>
-
               <div>
                 <label
                   htmlFor="phone"
@@ -450,7 +427,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div className="md:col-span-2">
                 <label
                   htmlFor="address"
@@ -468,7 +444,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="city"
@@ -486,7 +461,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="state"
@@ -515,7 +489,6 @@ const ShippingForm = ({
                   <option value="West Bengal">West Bengal</option>
                 </select>
               </div>
-
               <div>
                 <label
                   htmlFor="pincode"
@@ -534,7 +507,6 @@ const ShippingForm = ({
                   className="w-full px-3 md:px-4 py-2 md:py-3 rounded-lg border border-gray-300 dark:border-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background/80 text-text text-sm md:text-base"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="country"
@@ -554,8 +526,6 @@ const ShippingForm = ({
                 />
               </div>
             </div>
-
-            {/* Primary Address Checkbox */}
             <div className="mt-4 md:mt-6">
               <label className="flex items-center">
                 <input
@@ -571,18 +541,20 @@ const ShippingForm = ({
                 </span>
               </label>
             </div>
-
             <div className="mt-6 md:mt-8 flex flex-col-reverse md:flex-row justify-end gap-2 md:gap-0">
               {(userAddresses.length > 0 || editingAddressId) && (
                 <button
                   type="button"
-                  onClick={editingAddressId ? handleCancelEdit : () => setShowAddressForm(false)}
+                  onClick={
+                    editingAddressId
+                      ? handleCancelEdit
+                      : () => setShowAddressForm(false)
+                  }
                   className="w-full md:w-auto md:mr-4 bg-background hover:bg-accent/10 border border-gray-300 dark:border-gray-500 hover:border-gray-400 text-text/80 font-medium rounded-md px-4 md:px-6 py-2 md:py-3 transition-all duration-300 text-sm md:text-base"
                 >
                   Cancel
                 </button>
               )}
-              
               <button
                 type="submit"
                 disabled={loading}
@@ -632,8 +604,6 @@ const ShippingForm = ({
             </div>
           </form>
         )}
-
-        {/* Continue Button for Selected Address */}
         {selectedAddressId && !showAddressForm && (
           <div className="mt-6 md:mt-8 flex justify-end">
             <button

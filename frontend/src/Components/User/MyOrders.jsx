@@ -12,7 +12,6 @@ function MyOrders() {
   const [activeTab, setActiveTab] = useState("all");
   const [cancellingOrder, setCancellingOrder] = useState(null);
 
-  // Format price in INR
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -35,7 +34,6 @@ function MyOrders() {
           toast.error("Failed to fetch orders");
         }
       } catch (error) {
-        console.error("Error fetching orders:", error);
         if (error.response?.status === 401) {
           toast.error("Please login to view your orders");
         } else {
@@ -73,20 +71,17 @@ function MyOrders() {
         toast.error(response.data.message || "Failed to cancel order");
       }
     } catch (error) {
-      console.error("Error cancelling order:", error);
       toast.error("Failed to cancel order. Please try again.");
     } finally {
       setCancellingOrder(null);
     }
   };
 
-  // Filter orders based on active tab
   const filteredOrders = orders.filter((order) => {
     if (activeTab === "all") return true;
     return order.status.toLowerCase() === activeTab;
   });
 
-  // Function to display formatted date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -95,7 +90,6 @@ function MyOrders() {
     });
   };
 
-  // Function to determine badge color based on status
   const getStatusBadgeClass = (status) => {
     switch (status.toLowerCase()) {
       case "pending":
@@ -130,7 +124,6 @@ function MyOrders() {
     }
   };
 
-  // Get order counts for each status
   const getOrderCounts = () => {
     const counts = { all: orders.length };
     ["pending", "processing", "shipped", "delivered", "cancelled"].forEach(
@@ -152,7 +145,6 @@ function MyOrders() {
   return (
     <div className="min-h-screen bg-background py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text mb-2 sm:mb-3">
             <i className="fas fa-shopping-bag mr-2 sm:mr-3 text-primary"></i>
@@ -162,8 +154,6 @@ function MyOrders() {
             Track and manage your orders ({orders.length} total)
           </p>
         </div>
-
-        {/* Filter Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm mb-6 sm:mb-8 overflow-hidden border border-gray-200 dark:border-gray-700">
           <div className="flex overflow-x-auto scrollbar-hide">
             {[
@@ -199,8 +189,6 @@ function MyOrders() {
             ))}
           </div>
         </div>
-
-        {/* Orders List */}
         <div className="space-y-4 sm:space-y-6">
           {filteredOrders.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm p-8 sm:p-12 lg:p-16 text-center border border-gray-200 dark:border-gray-700">
@@ -230,9 +218,7 @@ function MyOrders() {
                 className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300"
               >
                 <div className="p-4 sm:p-6 lg:p-8">
-                  {/* Order Header */}
                   <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
-                    {/* Mobile Layout */}
                     <div className="flex items-start justify-between sm:hidden">
                       <div className="flex items-center space-x-3">
                         <div className="text-xl text-primary">
@@ -263,8 +249,6 @@ function MyOrders() {
                         </span>
                       </div>
                     </div>
-
-                    {/* Desktop/Tablet Layout */}
                     <div className="hidden sm:flex sm:flex-col lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex items-center space-x-4 mb-4 lg:mb-0">
                         <div className="text-2xl lg:text-3xl text-primary">
@@ -282,7 +266,6 @@ function MyOrders() {
                           </p>
                         </div>
                       </div>
-
                       <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
                         <span
                           className={`px-3 lg:px-4 py-2 rounded-full text-sm font-semibold border-2 ${getStatusBadgeClass(
@@ -298,21 +281,18 @@ function MyOrders() {
                           </p>
                           <p className="text-text/60 text-sm flex items-center justify-end">
                             <i className="fas fa-shopping-cart mr-2"></i>
-                            {order.items?.length} item{order.items?.length !== 1 ? "s" : ""}
+                            {order.items?.length} item
+                            {order.items?.length !== 1 ? "s" : ""}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Order Items Preview */}
                   <div className="mb-4 sm:mb-6">
                     <h4 className="text-sm sm:text-base lg:text-lg font-semibold text-text mb-3 sm:mb-4 flex items-center">
                       <i className="fas fa-box mr-2 text-primary"></i>
                       Items in this order
                     </h4>
-
-                    {/* Mobile: Stack items vertically */}
                     <div className="space-y-3 sm:hidden">
                       {order.items?.slice(0, 2).map((item, index) => (
                         <div
@@ -353,8 +333,6 @@ function MyOrders() {
                         </div>
                       )}
                     </div>
-
-                    {/* Desktop/Tablet: Grid layout */}
                     <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                       {order.items?.slice(0, 4).map((item, index) => (
                         <div
@@ -401,8 +379,6 @@ function MyOrders() {
                       )}
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
                     <Link
                       to={`/orders/${order._id}`}
@@ -411,7 +387,6 @@ function MyOrders() {
                       <i className="fas fa-eye mr-2"></i>
                       View Details
                     </Link>
-
                     {(order.status === "pending" ||
                       order.status === "processing") && (
                       <button

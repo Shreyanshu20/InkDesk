@@ -1,6 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
@@ -15,14 +14,12 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Just call onAddToCart - it will handle the toast message
     onAddToCart(item.product_id, 1);
   };
 
   const handleBuyNow = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     navigate("/checkout", {
       state: {
         buyNowMode: true,
@@ -80,13 +77,11 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
               e.target.src = "https://placehold.co/300x400?text=No+Image";
             }}
           />
-
           {discountPercentage > 0 && (
             <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-full">
               {discountPercentage}% OFF
             </span>
           )}
-
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span className="bg-black/80 text-white px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-medium">
@@ -95,17 +90,14 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
             </div>
           )}
         </div>
-
         <div className="p-2 md:p-3 flex-1 flex flex-col">
           <div className="flex-1">
             <h3 className="font-medium text-xs md:text-sm mb-1 md:mb-2 line-clamp-2 leading-tight">
               {product.product_name}
             </h3>
-
             {product.product_brand && (
               <p className="text-xs text-text/60 mb-1 md:mb-2">{product.product_brand}</p>
             )}
-
             <div className="flex items-center gap-1 text-xs mb-2">
               <div
                 className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${
@@ -124,7 +116,6 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
                   : `${product.product_stock} in stock`}
               </span>
             </div>
-
             <div className="mb-2">
               <div className="flex items-center gap-1 md:gap-2">
                 <span className="text-sm md:text-base font-bold text-primary">
@@ -140,7 +131,6 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
           </div>
         </div>
       </Link>
-
       <div className="p-2 md:p-3 pt-0 space-y-1.5 md:space-y-2">
         {isOutOfStock ? (
           <button
@@ -162,7 +152,6 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
             Add to Cart
           </button>
         )}
-
         <button
           onClick={handleBuyNow}
           disabled={isOutOfStock}
@@ -171,7 +160,6 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
           <i className="fas fa-bolt text-xs"></i>
           Buy Now
         </button>
-
         <button
           onClick={handleRemove}
           className="w-full border border-red-500 text-red-500 hover:bg-red-500 hover:text-white py-1.5 md:py-2 rounded-md font-medium transition-colors text-xs md:text-sm flex items-center justify-center gap-1 md:gap-2"
@@ -181,7 +169,6 @@ function WishlistItem({ item, onRemove, onAddToCart, onBuyNow, formatPrice }) {
           <span className="md:hidden">Remove</span>
         </button>
       </div>
-
       <div className="hidden md:block px-3 pb-2">
         <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
           <p className="text-xs text-text/50 text-center">

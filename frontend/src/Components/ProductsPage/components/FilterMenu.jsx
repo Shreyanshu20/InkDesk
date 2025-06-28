@@ -20,21 +20,18 @@ const FilterMenu = ({
 }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Count active filters
   const activeFilters =
     selectedCategories.length +
     selectedBrands.length +
     (priceRange[1] < 5000 ? 1 : 0) +
     (inStockOnly ? 1 : 0);
 
-  // Lock body scroll when mobile filters are open
   useEffect(() => {
     if (showMobileFilters) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
     }
-    
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -42,7 +39,6 @@ const FilterMenu = ({
 
   const FilterContent = () => (
     <div className="space-y-6">
-      {/* Categories */}
       <div>
         <h3 className="font-medium mb-3 text-text">Categories</h3>
         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -61,8 +57,6 @@ const FilterMenu = ({
           )}
         </div>
       </div>
-
-      {/* Price Range */}
       <div>
         <h3 className="font-medium mb-3 text-text">
           Price Range: Up to {formatPrice(priceRange[1])}
@@ -105,8 +99,6 @@ const FilterMenu = ({
           </div>
         </div>
       </div>
-
-      {/* Brands */}
       <div>
         <h3 className="font-medium mb-3 text-text">Brands</h3>
         <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -125,8 +117,6 @@ const FilterMenu = ({
           )}
         </div>
       </div>
-
-      {/* Availability */}
       <div>
         <h3 className="font-medium mb-3 text-text">Availability</h3>
         <Checkbox
@@ -136,8 +126,6 @@ const FilterMenu = ({
           onChange={() => setInStockOnly(!inStockOnly)}
         />
       </div>
-
-      {/* Clear Filters Button - For both Mobile and Desktop */}
       <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
         <Button
           onClick={() => {
@@ -176,22 +164,22 @@ const FilterMenu = ({
             </span>
           )}
         </button>
-
-        {/* Mobile Filter Panel */}
-        <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${showMobileFilters ? 'visible' : 'invisible'}`}>
-          {/* Backdrop */}
+        <div
+          className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${
+            showMobileFilters ? "visible" : "invisible"
+          }`}
+        >
           <div
             className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
-              showMobileFilters ? 'opacity-100' : 'opacity-0'
+              showMobileFilters ? "opacity-100" : "opacity-0"
             }`}
             onClick={() => setShowMobileFilters(false)}
           />
-          
-          {/* Filter Panel */}
-          <div className={`absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-out z-40 ${
-            showMobileFilters ? 'translate-x-0' : 'translate-x-full'
-          }`}>
-            {/* Header */}
+          <div
+            className={`absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-out z-40 ${
+              showMobileFilters ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 z-20">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-lg text-text">Filters</h2>
@@ -203,8 +191,6 @@ const FilterMenu = ({
                 </button>
               </div>
             </div>
-            
-            {/* Content */}
             <div className="p-4 overflow-y-auto h-full pb-20">
               <FilterContent />
             </div>
@@ -214,16 +200,13 @@ const FilterMenu = ({
     );
   }
 
-  // Desktop version
   return (
     <div className="w-72">
       <div className="sticky top-4">
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Desktop Header */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="font-semibold text-lg text-text">Filters</h2>
           </div>
-          
           <div className="p-4">
             <FilterContent />
           </div>

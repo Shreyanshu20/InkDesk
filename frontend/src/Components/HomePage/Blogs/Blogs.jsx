@@ -38,7 +38,6 @@ function Blogs() {
   return (
     <section className="py-10 lg:py-16 px-6 bg-background">
       <div className="container mx-auto max-w-7xl">
-        {/* Section Header */}
         <div className="text-center mb-6 md:mb-8 lg:mb-12">
           <h2 className="text-2xl lg:text-3xl font-bold text-text dark:text-white mb-2 md:mb-4">
             Latest from Our Blog
@@ -49,14 +48,12 @@ function Blogs() {
           </p>
         </div>
 
-        {/* Blog Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-8 lg:mb-12">
           {blogPosts.map((post) => (
             <article
               key={post.id}
               className="group bg-gray-50 dark:bg-gray-800 text-text rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:scale-101 h-full flex flex-col border-b-4 border-transparent hover:border-primary"
             >
-              {/* Image */}
               <div className="relative h-32 md:h-40 lg:h-48 overflow-hidden flex-shrink-0">
                 <img
                   src={post.image}
@@ -79,7 +76,6 @@ function Blogs() {
                 </div>
               </div>
 
-              {/* Content */}
               <div className="p-3 md:p-4 lg:p-6 flex-1 flex flex-col">
                 <div className="flex items-center text-text/70 dark:text-gray-400 text-[10px] md:text-xs lg:text-sm mb-2 md:mb-3">
                   <i className="far fa-calendar mr-1 md:mr-2"></i>
@@ -110,7 +106,6 @@ function Blogs() {
           ))}
         </div>
 
-        {/* View All Button */}
         <div className="text-center">
           <Link
             to="/blog"

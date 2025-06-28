@@ -22,18 +22,12 @@ function AuthForm() {
   } = useContext(AppContent);
   const [searchParams] = useSearchParams();
 
-  // Determine if this is signup or login based on path
   const isSignup = location.pathname === "/signup";
-
-  // Get registration success from URL params
   const registeredSuccess = searchParams.get("registered") === "true";
-
-  // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // Initialize form data based on auth type
   const [formData, setFormData] = useState(
     isSignup
       ? {
@@ -50,7 +44,6 @@ function AuthForm() {
         }
   );
 
-  // Clear or re-initialize form when switching between login/signup
   useEffect(() => {
     setFormData(
       isSignup
@@ -71,7 +64,6 @@ function AuthForm() {
     setShowPassword(false);
   }, [isSignup]);
 
-  // Redirect if already logged in and verified
   useEffect(() => {
     if (!loading && isLoggedIn && userData?.isAccountVerified) {
       navigate("/");
@@ -92,21 +84,16 @@ function AuthForm() {
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Common validations
     if (!formData.email?.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Invalid email";
     }
-
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (isSignup && formData.password.length < 8) {
       newErrors.password = "Must be at least 8 characters";
     }
-
-    // Signup-specific validations
     if (isSignup) {
       if (!formData.firstName?.trim()) newErrors.firstName = "Required";
       if (!formData.lastName?.trim()) newErrors.lastName = "Required";
@@ -114,7 +101,6 @@ function AuthForm() {
         newErrors.agreeToTerms = "You must agree to the terms";
       }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -127,7 +113,6 @@ function AuthForm() {
 
       try {
         if (isSignup) {
-          // Registration logic
           const backendData = {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -144,12 +129,8 @@ function AuthForm() {
 
           if (response.data.success) {
             toast.success("Registration successful! Please verify your email.");
-
-            // FIXED: Set logged in immediately after registration since backend sets cookie
             setIsLoggedIn(true);
             setUserData(response.data.user);
-
-            // Direct redirect to verification page
             navigate(
               `/verify-email?email=${encodeURIComponent(
                 formData.email
@@ -159,7 +140,6 @@ function AuthForm() {
             toast.error(response.data.message || "Registration failed");
           }
         } else {
-          // Login logic
           const loginData = {
             email: formData.email,
             password: formData.password,
@@ -175,7 +155,6 @@ function AuthForm() {
 
           if (response.data.success) {
             toast.success("Login successful!");
-
             setIsLoggedIn(true);
             setUserData(response.data.user);
 
@@ -199,7 +178,6 @@ function AuthForm() {
           }
         }
       } catch (error) {
-        console.error("Auth error:", error);
         const errorMessage =
           error.response?.data?.message ||
           `${isSignup ? "Registration" : "Login"} failed. Please try again.`;
@@ -216,7 +194,6 @@ function AuthForm() {
     }
   };
 
-  // Show loading while checking auth
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -228,7 +205,6 @@ function AuthForm() {
     );
   }
 
-  // Don't render form if already logged in and verified
   if (isLoggedIn && userData?.isAccountVerified) {
     return null;
   }
@@ -237,7 +213,6 @@ function AuthForm() {
     <div className="bg-background flex flex-col justify-center px-4 py-6">
       <div className="mx-auto w-full max-w-md md:max-w-lg">
         <div className="bg-white dark:bg-gray-800 p-6 md:p-8 lg:p-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
-          {/* Header */}
           <div className="mb-6 md:mb-8">
             <div className="flex justify-center mb-4">
               <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-red-600/80 to-red-700/80 flex items-center justify-center">
@@ -258,7 +233,6 @@ function AuthForm() {
             </p>
           </div>
 
-          {/* Success message */}
           {registeredSuccess && !isSignup && (
             <div className="mb-4 rounded-lg bg-green-50 dark:bg-green-900/30 p-3 md:p-4 text-sm text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
               <div className="flex items-center">
@@ -268,7 +242,6 @@ function AuthForm() {
             </div>
           )}
 
-          {/* Error message */}
           {errors.form && (
             <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/30 p-3 md:p-4 text-sm text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
               <div className="flex items-center">
@@ -279,7 +252,6 @@ function AuthForm() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-            {/* Signup-only fields */}
             {isSignup && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
@@ -350,7 +322,6 @@ function AuthForm() {
               </div>
             )}
 
-            {/* Email field */}
             <div>
               <label
                 htmlFor="email"
@@ -385,7 +356,6 @@ function AuthForm() {
               )}
             </div>
 
-            {/* Password field with toggle */}
             <div>
               <label
                 htmlFor="password"
@@ -433,7 +403,6 @@ function AuthForm() {
               )}
             </div>
 
-            {/* Login-only fields */}
             {!isSignup && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -464,7 +433,6 @@ function AuthForm() {
               </div>
             )}
 
-            {/* Signup-only terms agreement */}
             {isSignup && (
               <div className="flex items-start space-x-3">
                 <div className="flex items-center h-5 mt-0.5">
@@ -507,7 +475,6 @@ function AuthForm() {
               </div>
             )}
 
-            {/* Submit button */}
             <div className="pt-2">
               <button
                 type="submit"
@@ -533,7 +500,6 @@ function AuthForm() {
             </div>
           </form>
 
-          {/* Footer links */}
           <div className="mt-6 md:mt-8 space-y-4">
             <div className="text-center text-sm">
               <p className="text-gray-600 dark:text-gray-400">
@@ -548,8 +514,6 @@ function AuthForm() {
                 </Link>
               </p>
             </div>
-
-            {/* Admin Access Button */}
             <div className="text-center border-t border-gray-200 dark:border-gray-600 pt-6">
               <a
                 href={import.meta.env.VITE_ADMIN_URL || "http://localhost:5174"}

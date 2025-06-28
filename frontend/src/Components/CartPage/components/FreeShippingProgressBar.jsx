@@ -1,5 +1,3 @@
-import React from 'react';
-
 const FreeShippingProgressBar = ({ amountForFreeShipping, freeShippingProgress, formatPrice }) => {
   if (amountForFreeShipping <= 0) return null;
   

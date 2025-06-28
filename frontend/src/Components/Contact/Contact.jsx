@@ -42,7 +42,6 @@ function Contact() {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error("Contact form error:", error);
       toast.error("Failed to send message. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -51,7 +50,6 @@ function Contact() {
 
   return (
     <div className="bg-background min-h-screen">
-      {/* Hero Section with responsive gradient styling */}
       <section className="relative py-12 md:py-16 lg:py-20 bg-gradient-to-b from-secondary/20 to-background/80">
         <div className="container mx-auto px-3 md:px-4 max-w-7xl relative z-10">
           <div className="max-w-3xl mx-auto text-center">
@@ -76,9 +74,7 @@ function Contact() {
 
       <section className="bg-background">
         <div className="container mx-auto px-3 md:px-4 py-8 md:py-12 lg:py-16 max-w-6xl -mt-4 md:-mt-8">
-          {/* Contact Form and Info Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-start">
-            {/* Contact Form */}
             <div className="bg-gray-50 dark:bg-gray-900 h-full p-4 md:p-6 lg:p-8 rounded-xl md:rounded-2xl shadow-lg border border-primary/10">
               <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-text flex items-center">
                 <i className="fas fa-envelope-open-text text-primary mr-2 md:mr-3 text-lg md:text-xl"></i>
@@ -201,7 +197,6 @@ function Contact() {
               </form>
             </div>
 
-            {/* Contact Info */}
             <div className="bg-gray-50 dark:bg-gray-900 h-full p-4 md:p-6 lg:p-8 rounded-xl md:rounded-2xl shadow-lg border border-primary/10">
               <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-text flex items-center">
                 <i className="fas fa-address-card text-primary mr-2 md:mr-3 text-lg md:text-xl"></i>
@@ -291,7 +286,6 @@ function Contact() {
             </div>
           </div>
 
-          {/* Map */}
           <div className="mt-8 md:mt-12 lg:mt-16">
             <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-text text-center flex items-center justify-center">
               <i className="fas fa-map-marked-alt text-primary mr-2 md:mr-3 text-lg md:text-xl"></i>
@@ -310,7 +304,6 @@ function Contact() {
             </div>
           </div>
 
-          {/* FAQ Section */}
           <div className="mt-8 md:mt-12 lg:mt-16 py-8 md:py-12 lg:py-16 px-4 md:px-6 lg:px-8 rounded-2xl md:rounded-3xl">
             <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 text-text text-center flex flex-col md:flex-row items-center justify-center">
               <i className="fas fa-question-circle text-primary mr-0 md:mr-3 mb-2 md:mb-0 text-lg md:text-xl"></i>
@@ -368,7 +361,6 @@ function Contact() {
             </div>
           </div>
 
-          {/* Call to Action */}
           <div className="mt-8 md:mt-12 lg:mt-16 py-8 md:py-10 lg:py-12 px-4 md:px-6 lg:px-8 rounded-2xl md:rounded-3xl bg-gradient-to-r from-primary to-accent text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-10">
               <i className="fas fa-pen text-4xl md:text-6xl lg:text-9xl absolute top-4 md:top-6 lg:top-10 left-4 md:left-6 lg:left-10 transform -rotate-12"></i>

@@ -1,7 +1,6 @@
 import React from "react";
 
 const CheckoutProgress = ({ step }) => {
-  // Define the steps for the checkout process
   const steps = [
     { number: 1, title: "Shipping", icon: "fas fa-truck" },
     { number: 2, title: "Payment", icon: "fas fa-credit-card" },
@@ -18,7 +17,6 @@ const CheckoutProgress = ({ step }) => {
             style={{ top: "20px", left: "20px", right: "20px" }}
           ></div>
 
-          {/* Progress overlay - Mobile version */}
           <div
             className="md:hidden absolute h-1 bg-primary transition-all duration-500 ease-out"
             style={{
@@ -39,7 +37,6 @@ const CheckoutProgress = ({ step }) => {
             style={{ top: "28px", left: "28px", right: "28px" }}
           ></div>
 
-          {/* Progress overlay - Desktop version */}
           <div
             className="hidden md:block absolute h-1.5 bg-primary transition-all duration-500 ease-out"
             style={{
@@ -55,9 +52,11 @@ const CheckoutProgress = ({ step }) => {
           ></div>
 
           <div className="flex justify-between w-full">
-            {/* Map through the steps to create each step indicator */}
             {steps.map((s, index) => (
-              <div key={s.number} className="relative flex flex-col items-center z-10">
+              <div
+                key={s.number}
+                className="relative flex flex-col items-center z-10"
+              >
                 <div
                   className={`w-10 h-10 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center
                   ${

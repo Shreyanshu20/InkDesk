@@ -18,8 +18,8 @@ import MyOrders from "./Components/User/MyOrders";
 import EmailVerify from "./Components/Authentication/EmailVerify.jsx";
 import AuthForm from "./Components/Authentication/AuthForm.jsx";
 import ForgetPassword from "./Components/Authentication/ForgetPassword.jsx";
-import NotFound from "./Components/NotFound.jsx";
 import OrderDetails from "./Components/User/OrderDetails";
+import NotFound from "./Components/NotFound.jsx";
 
 function App() {
   const location = useLocation();
@@ -36,7 +36,7 @@ function App() {
 
       setTimeout(() => {
         toast.info(
-          "🎨 Welcome to InkDesk! Loading may take a moment - thanks for waiting!",
+          "Welcome to InkDesk! Loading may take a moment - Thanks for waiting!",
           {
             position: "top-center",
             autoClose: 6000,

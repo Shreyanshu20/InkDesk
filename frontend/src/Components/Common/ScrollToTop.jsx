@@ -5,15 +5,13 @@ function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Use setTimeout to ensure DOM is fully rendered
     const timer = setTimeout(() => {
       window.scrollTo({
         top: 0,
         left: 0,
-        behavior: 'instant' // Use 'instant' instead of 'smooth' for immediate scroll
+        behavior: 'instant' 
       });
       
-      // Also reset any document element scroll positions
       if (document.documentElement) {
         document.documentElement.scrollTop = 0;
       }

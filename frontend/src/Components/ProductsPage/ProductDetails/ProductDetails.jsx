@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { AppContent } from "../../../Context/AppContent";
 import { useCart } from "../../../Context/CartContext";
 import axios from "axios";
-
 import Products from "../../HomePage/Products/Products";
 import Newsletter from "../../HomePage/Newsletter/Newsletter";
 import Tabs from "./Tabs";
@@ -14,7 +13,7 @@ import Breadcrumb from "../../Common/Breadcrumb";
 import PageSkeleton from "./PageSkeleton";
 
 function ProductDetails() {
-  const { productId } = useParams(); // This is correct - using productId
+  const { productId } = useParams();
   const navigate = useNavigate();
   const { backendUrl, isLoggedIn } = useContext(AppContent);
   const { addToCart, isLoading: cartLoading } = useCart();
@@ -33,17 +32,14 @@ function ProductDetails() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-
         const productResponse = await axios.get(
-          `${backendUrl}/products/${productId}` // Using productId here
+          `${backendUrl}/products/${productId}`
         );
-
         if (productResponse.data.success) {
           const productData = productResponse.data.product;
-
           const transformedProduct = {
             id: productData._id,
-            _id: productData._id, // This is the MongoDB ObjectId that backend expects
+            _id: productData._id,
             name: productData.product_name,
             author: productData.product_brand || "Unknown Brand",
             price: parseFloat(productData.product_price) || 0,
@@ -103,7 +99,6 @@ function ProductDetails() {
               productData.product_category,
               productData.product_subcategory,
             ].filter(Boolean),
-
             images:
               productData.product_images &&
               productData.product_images.length > 0
@@ -124,11 +119,9 @@ function ProductDetails() {
                       alt_text: "Product placeholder",
                     },
                   ],
-
             product_images: productData.product_images || [],
             product_image:
               productData.product_image || productData.mainImage || "",
-
             placeholderImages: [
               "https://placehold.co/350x450/ff9d8a/ffffff?text=Product+Image",
               "https://placehold.co/100x100/ff9d8a/ffffff?text=Thumb+1",
@@ -136,7 +129,6 @@ function ProductDetails() {
               "https://placehold.co/100x100/ff9d8a/ffffff?text=Thumb+3",
             ],
           };
-
           setProduct(transformedProduct);
         } else {
           setProduct(null);
@@ -177,13 +169,11 @@ function ProductDetails() {
 
   const handleAddToCart = async () => {
     if (!product) return;
-
     if (!isLoggedIn) {
       toast.error("Please login to add items to cart");
       navigate("/login");
       return;
     }
-
     const result = await addToCart(product.id, quantity);
     if (result.success) {
       setQuantity(1);
@@ -192,13 +182,11 @@ function ProductDetails() {
 
   const handleBuyNow = async () => {
     if (!product) return;
-
     if (!isLoggedIn) {
       toast.error("Please login to buy this product");
       navigate("/login");
       return;
     }
-
     navigate("/checkout", {
       state: {
         buyNowMode: true,
@@ -259,7 +247,6 @@ function ProductDetails() {
       <div className="container mx-auto px-6 lg:px-20 py-4">
         <Breadcrumb items={breadcrumbItems} />
       </div>
-
       <Details
         product={product}
         selectedImage={selectedImage}
@@ -272,7 +259,6 @@ function ProductDetails() {
         handleBuyNow={handleBuyNow}
         cartLoading={cartLoading}
       />
-
       <div className="bg-background py-8">
         <div className="container mx-auto px-6 lg:px-20">
           <div className="bg-gray-50 dark:bg-gray-800 shadow-lg rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -285,7 +271,6 @@ function ProductDetails() {
           </div>
         </div>
       </div>
-
       <Newsletter />
     </div>
   );

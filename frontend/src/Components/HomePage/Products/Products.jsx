@@ -15,12 +15,12 @@ const API_BASE_URL =
 
 function Products() {
   const { isLoggedIn } = useContext(AppContent);
-  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart(); // Add loading state
+  const { addToCart, isButtonLoading: isCartButtonLoading } = useCart();
   const {
     isInWishlist,
     addToWishlist,
     removeFromWishlist,
-    isButtonLoading: isWishlistButtonLoading, // Add loading state
+    isButtonLoading: isWishlistButtonLoading,
   } = useWishlist();
 
   const [activeTab, setActiveTab] = useState("featured");
@@ -162,9 +162,7 @@ function Products() {
       } else {
         await addToWishlist(productId);
       }
-    } catch (error) {
-      console.error("Wishlist toggle error:", error);
-    }
+    } catch (error) {}
   };
 
   const calculateDiscount = (price, discountPercentage) => {
@@ -206,12 +204,15 @@ function Products() {
         : product.product_price;
 
     const productInWishlist = isInWishlist(product._id);
-    
-    // Get loading states for this specific product
-    const isWishlistAddLoading = isWishlistButtonLoading(`add-wishlist-${product._id}`);
-    const isWishlistRemoveLoading = isWishlistButtonLoading(`remove-wishlist-${product._id}`);
+
+    const isWishlistAddLoading = isWishlistButtonLoading(
+      `add-wishlist-${product._id}`
+    );
+    const isWishlistRemoveLoading = isWishlistButtonLoading(
+      `remove-wishlist-${product._id}`
+    );
     const wishlistLoading = isWishlistAddLoading || isWishlistRemoveLoading;
-    
+
     const isCartLoading = isCartButtonLoading(`add-${product._id}`);
 
     return (
@@ -232,13 +233,11 @@ function Products() {
                   e.target.src = "https://placehold.co/300x400?text=No+Image";
                 }}
               />
-
               {discount > 0 && (
                 <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                   {discount}% OFF
                 </span>
               )}
-
               {!inStock && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center group-hover:scale-101">
                   <span className="bg-black/80 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -246,8 +245,6 @@ function Products() {
                   </span>
                 </div>
               )}
-
-              {/* Updated Wishlist Button with Loading States */}
               <button
                 onClick={(e) => toggleWishlist(e, product._id)}
                 disabled={wishlistLoading}
@@ -271,13 +268,11 @@ function Products() {
                 )}
               </button>
             </div>
-
             <div className="px-4 py-3 flex-1 flex flex-col justify-between">
               <div className="flex-1">
                 <h3 className="font-medium text-sm md:text-base mb-2 line-clamp-2 h-12 overflow-hidden leading-6">
                   {product.product_name}
                 </h3>
-
                 <div className="h-5 mb-2">
                   {product.product_brand && (
                     <p className="text-xs text-text/70">
@@ -285,7 +280,6 @@ function Products() {
                     </p>
                   )}
                 </div>
-
                 <div className="mb-3 h-4">
                   <StarRating
                     rating={product.product_rating || 0}
@@ -294,7 +288,6 @@ function Products() {
                   />
                 </div>
               </div>
-
               <div className="mt-auto">
                 <PriceDisplay
                   price={discountedPrice}
@@ -307,8 +300,6 @@ function Products() {
             </div>
           </div>
         </Link>
-
-        {/* Updated Add to Cart Button with Loading States */}
         {inStock ? (
           <Button
             className={`absolute bottom-4 right-4 rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 ${
@@ -360,7 +351,6 @@ function Products() {
               Popular Products
             </h2>
           </div>
-
           <Link
             to="/shop"
             className="hidden flex items-center justify-center md:block px-4 md:px-6 py-2 md:py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors duration-200 text-sm md:text-base"
@@ -371,7 +361,6 @@ function Products() {
             </div>
           </Link>
         </div>
-
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 md:px-4 py-2 md:py-3 rounded-lg mb-4 md:mb-6 text-xs md:text-sm">
             <div className="flex items-center">
@@ -380,7 +369,6 @@ function Products() {
             </div>
           </div>
         )}
-
         <div className="flex overflow-x-auto mb-4 md:mb-6 lg:mb-8 border-b border-gray-200 dark:border-gray-700 -mx-2 px-2 md:mx-0 md:px-0">
           {["featured", "bestsellers", "new"].map((tab) => (
             <button
@@ -401,7 +389,6 @@ function Products() {
             </button>
           ))}
         </div>
-
         <div>
           {currentPageProducts.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6 lg:mb-8">
@@ -423,7 +410,6 @@ function Products() {
             </div>
           )}
         </div>
-
         {totalPages > 1 && (
           <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8">
             <div className="text-xs md:text-sm text-text/70 dark:text-gray-400 hidden md:block">
@@ -431,7 +417,6 @@ function Products() {
               {Math.min(endIndex, currentProducts.length)} of{" "}
               {currentProducts.length} products
             </div>
-
             <div className="flex items-center gap-1 md:gap-2">
               <button
                 onClick={prevPage}
@@ -444,7 +429,6 @@ function Products() {
               >
                 <i className="fas fa-chevron-left text-xs md:text-sm"></i>
               </button>
-
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                 let pageNumber = i + 1;
                 if (totalPages > 5) {
@@ -456,7 +440,6 @@ function Products() {
                     pageNumber = currentPage - 2 + i;
                   }
                 }
-
                 return (
                   <button
                     key={pageNumber}
@@ -471,7 +454,6 @@ function Products() {
                   </button>
                 );
               })}
-
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
@@ -486,7 +468,6 @@ function Products() {
             </div>
           </div>
         )}
-
         <div className="text-center md:hidden">
           <Link
             to="/shop"

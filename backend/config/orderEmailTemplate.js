@@ -1,26 +1,26 @@
-const orderConfirmationTemplate = (user, order, orderProducts, shippingAddress, totals) => {
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price || 0);
-  };
+module.exports.orderConfirmationTemplate = (user, order, orderProducts, shippingAddress, totals) => {
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(price || 0);
+    };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
 
-  const deliveryStart = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
-  const deliveryEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const totalItems = orderProducts.reduce((sum, item) => sum + item.quantity, 0);
+    const deliveryStart = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+    const deliveryEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const totalItems = orderProducts.reduce((sum, item) => sum + item.quantity, 0);
 
-  const html = `
+    const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -172,7 +172,7 @@ const orderConfirmationTemplate = (user, order, orderProducts, shippingAddress, 
     </html>
   `;
 
-  const text = `
+    const text = `
 Order Confirmation - InkDesk
 
 Hello ${user.name || user.first_name || 'Customer'},
@@ -206,13 +206,9 @@ Thank you for shopping with InkDesk!
 Support: support@inkdesk.com
   `;
 
-  return {
-    subject: `Order Confirmation - ${order.order_number}`,
-    html,
-    text
-  };
-};
-
-module.exports = {
-  orderConfirmationTemplate
+    return {
+        subject: `Order Confirmation - ${order.order_number}`,
+        html,
+        text
+    };
 };

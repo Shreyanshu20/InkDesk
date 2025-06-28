@@ -16,21 +16,17 @@ function EmailVerify() {
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState("");
 
-  // Check if this is coming from registration
   const isFromRegistration =
     new URLSearchParams(location.search).get("fromRegistration") === "true";
 
-  // Simple ref to prevent duplicate sends
   const hasSentOTP = useRef(false);
 
-  // Create refs for inputs
   const inputRefs = useRef(
     Array(6)
       .fill(0)
       .map(() => React.createRef())
   );
 
-  // Get email from URL params or user data
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const emailFromUrl = urlParams.get("email");
@@ -41,7 +37,6 @@ function EmailVerify() {
       setEmail(userData.email);
     }
 
-    // Handle OTP sending based on registration status
     if (!isFromRegistration && !hasSentOTP.current) {
       sendOTP();
     } else if (isFromRegistration) {
@@ -60,7 +55,6 @@ function EmailVerify() {
     }
   }, [location.search, userData, isFromRegistration]);
 
-  // Simple function to send OTP
   const sendOTP = async () => {
     if (hasSentOTP.current) return;
 
@@ -86,7 +80,6 @@ function EmailVerify() {
         setCountdown(0);
       }
     } catch (error) {
-      console.error("Send OTP error:", error);
       toast.error("Failed to send verification code");
       hasSentOTP.current = false;
       setResendDisabled(false);
@@ -94,7 +87,6 @@ function EmailVerify() {
     }
   };
 
-  // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -104,13 +96,11 @@ function EmailVerify() {
     }
   }, [countdown]);
 
-  // Resend OTP
   const handleResend = () => {
     hasSentOTP.current = false;
     sendOTP();
   };
 
-  // Handle OTP input
   const handleChange = (index, value) => {
     if (value && !/^\d*$/.test(value)) return;
 
@@ -118,20 +108,17 @@ function EmailVerify() {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1].current?.focus();
     }
   };
 
-  // Handle backspace
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1].current?.focus();
     }
   };
 
-  // Handle paste
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text");
@@ -142,7 +129,6 @@ function EmailVerify() {
     }
   };
 
-  // Submit verification
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -163,18 +149,13 @@ function EmailVerify() {
 
       if (response.data.success) {
         toast.success("Email verified successfully!");
-
-        // Set user as logged in after verification
         setIsLoggedIn(true);
-
-        // Update user data to mark as verified
         if (userData) {
           setUserData({
             ...userData,
             isAccountVerified: true,
           });
         }
-
         setTimeout(() => {
           if (userData?.role === "admin") {
             const adminUrl =
@@ -188,7 +169,6 @@ function EmailVerify() {
         toast.error(response.data.message || "Verification failed");
       }
     } catch (error) {
-      console.error("Verification error:", error);
       toast.error(
         error.response?.data?.message || "An error occurred during verification"
       );
@@ -200,9 +180,7 @@ function EmailVerify() {
   return (
     <div className=" bg-background flex flex-col justify-center px-2 md:px-4 py-6 md:py-12">
       <div className="mx-auto w-full max-w-md md:max-w-lg">
-        {/* FIXED: Everything inside single box */}
         <div className="bg-white dark:bg-gray-800 py-8 px-6 md:px-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
@@ -221,8 +199,6 @@ function EmailVerify() {
               </span>
             </p>
           </div>
-
-          {/* Verification Form */}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -248,7 +224,6 @@ function EmailVerify() {
                 Enter the 6-digit code sent to your email
               </p>
             </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -267,8 +242,6 @@ function EmailVerify() {
               )}
             </button>
           </form>
-
-          {/* Resend Section */}
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -280,7 +253,6 @@ function EmailVerify() {
                 </span>
               </div>
             </div>
-
             <div className="mt-6 text-center">
               <button
                 onClick={handleResend}

@@ -13,7 +13,6 @@ function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [cancellingOrder, setCancellingOrder] = useState(false);
 
-  // Format price in INR
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -37,7 +36,6 @@ function OrderDetails() {
           navigate("/orders");
         }
       } catch (error) {
-        console.error("Error fetching order details:", error);
         if (error.response?.status === 401) {
           toast.error("Please login to view order details");
           navigate("/login");
@@ -77,14 +75,12 @@ function OrderDetails() {
         toast.error(response.data.message || "Failed to cancel order");
       }
     } catch (error) {
-      console.error("Error cancelling order:", error);
       toast.error("Failed to cancel order. Please try again.");
     } finally {
       setCancellingOrder(false);
     }
   };
 
-  // Format date function
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -95,7 +91,6 @@ function OrderDetails() {
     });
   };
 
-  // Function to determine badge color based on status
   const getStatusBadgeClass = (status) => {
     switch (status?.toLowerCase()) {
       case "pending":
@@ -130,7 +125,6 @@ function OrderDetails() {
     }
   };
 
-  // Calculate estimated delivery dates
   const getEstimatedDelivery = (orderDate) => {
     const startDate = new Date(orderDate);
     startDate.setDate(startDate.getDate() + 5);
@@ -149,17 +143,13 @@ function OrderDetails() {
     };
   };
 
-  // Calculate order summary
   const calculateSummary = (order) => {
     const subtotal =
       order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
       0;
-    const shipping = subtotal >= 999 ? 0 : 99; // Free shipping over ₹999
-    const tax = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
-    
-    // Use the actual total_amount from order, not calculated total
-    const total = order.total_amount || (subtotal + shipping + tax);
-
+    const shipping = subtotal >= 999 ? 0 : 99;
+    const tax = Math.round(subtotal * 0.18 * 100) / 100;
+    const total = order.total_amount || subtotal + shipping + tax;
     return { subtotal, shipping, tax, total };
   };
 
@@ -201,7 +191,6 @@ function OrderDetails() {
   return (
     <div className="min-h-screen bg-background py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <Link
             to="/orders"
@@ -210,8 +199,6 @@ function OrderDetails() {
             <i className="fas fa-arrow-left mr-2 sm:mr-3"></i>
             Back to My Orders
           </Link>
-
-          {/* Mobile Header */}
           <div className="block sm:hidden">
             <h1 className="text-xl font-bold text-text mb-2">
               <i className="fas fa-receipt mr-2 text-primary"></i>
@@ -232,8 +219,6 @@ function OrderDetails() {
               </span>
             </div>
           </div>
-
-          {/* Desktop Header */}
           <div className="hidden sm:flex sm:flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text mb-2 sm:mb-3">
@@ -258,9 +243,7 @@ function OrderDetails() {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Order Info Section */}
           <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               <div className="text-center sm:text-left">
@@ -272,7 +255,6 @@ function OrderDetails() {
                   #{order.order_number || order._id.slice(-8).toUpperCase()}
                 </p>
               </div>
-
               <div className="text-center">
                 <p className="text-text/60 mb-1 sm:mb-2 font-medium text-xs sm:text-sm">
                   <i className="fas fa-calendar-alt mr-1 sm:mr-2"></i>
@@ -286,7 +268,6 @@ function OrderDetails() {
                   })}
                 </p>
               </div>
-
               <div className="text-center sm:col-span-2 lg:col-span-1 lg:text-right">
                 <p className="text-text/60 mb-1 sm:mb-2 font-medium text-xs sm:text-sm">
                   <i className="fas fa-rupee-sign mr-1 sm:mr-2"></i>
@@ -298,16 +279,12 @@ function OrderDetails() {
               </div>
             </div>
           </div>
-
-          {/* Order Items */}
           <div className="p-4 sm:p-6 lg:p-8">
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 text-text flex items-center">
               <i className="fas fa-shopping-cart mr-2 sm:mr-3 text-primary"></i>
               Order Items ({order.items?.length}{" "}
               {order.items?.length === 1 ? "item" : "items"})
             </h3>
-
-            {/* Mobile: Card Layout */}
             <div className="space-y-4 sm:hidden">
               {order.items?.map((item, index) => (
                 <div
@@ -353,8 +330,6 @@ function OrderDetails() {
                 </div>
               ))}
             </div>
-
-            {/* Desktop: Table Layout */}
             <div className="hidden sm:block overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -432,11 +407,8 @@ function OrderDetails() {
               </div>
             </div>
           </div>
-
-          {/* Order Summary */}
           <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
-              {/* Summary */}
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-text mb-4 sm:mb-6 flex items-center">
                   <i className="fas fa-receipt mr-2 sm:mr-3 text-primary"></i>
@@ -465,7 +437,9 @@ function OrderDetails() {
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
                     <div className="flex justify-between">
-                      <span className="font-bold text-lg sm:text-xl text-text">Total</span>
+                      <span className="font-bold text-lg sm:text-xl text-text">
+                        Total
+                      </span>
                       <span className="font-bold text-lg sm:text-xl lg:text-2xl text-primary">
                         {formatPrice(order.total_amount)}
                       </span>
@@ -473,8 +447,6 @@ function OrderDetails() {
                   </div>
                 </div>
               </div>
-
-              {/* Shipping Address */}
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-text mb-4 sm:mb-6 flex items-center">
                   <i className="fas fa-map-marker-alt mr-2 sm:mr-3 text-primary"></i>
@@ -508,8 +480,6 @@ function OrderDetails() {
               </div>
             </div>
           </div>
-
-          {/* Delivery Information */}
           {order.status !== "cancelled" && (
             <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center mb-4 sm:mb-6">
@@ -544,8 +514,6 @@ function OrderDetails() {
               </div>
             </div>
           )}
-
-          {/* Action Buttons */}
           <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               {(order.status === "pending" ||
@@ -568,12 +536,10 @@ function OrderDetails() {
                   )}
                 </button>
               )}
-
               <button className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg sm:rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base">
                 <i className="fas fa-shipping-fast mr-2 sm:mr-3"></i>
                 Track Order
               </button>
-
               <button className="px-6 sm:px-8 py-3 sm:py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg sm:rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base">
                 <i className="fas fa-file-pdf mr-2 sm:mr-3"></i>
                 Download Invoice

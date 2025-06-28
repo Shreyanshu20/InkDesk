@@ -6,7 +6,6 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 
-// CORS Configuration 
 const getAllowedOrigins = () => {
   const origins = [
     'http://localhost:5000',
@@ -24,12 +23,10 @@ const getAllowedOrigins = () => {
 };
 
 
-// Enhanced CORS configuration for SEPARATE DOMAIN cookies
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = getAllowedOrigins();
 
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) {
       return callback(null, true);
     }
@@ -54,7 +51,6 @@ app.use(cors({
   optionsSuccessStatus: 200 
 }));
 
-// specific middleware to handle cookies properly for SEPARATE DOMAINS
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = getAllowedOrigins();
@@ -71,14 +67,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Database connection
-console.log('🔌 Connecting to MongoDB...');
+console.log('Connecting to MongoDB...');
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
-    console.log('✅ MongoDB connected successfully');
+    console.log('MongoDB ==> connected');
   })
   .catch((err) => {
-    console.error('❌ MongoDB connection error:', err);
+    console.error('MongoDB x=x=x=> error:', err);
     process.exit(1);
   });
 
@@ -190,7 +185,6 @@ try {
   console.error('Admin routes NOT WORKING:', error.message);
 }
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
   res.status(500).json({
@@ -200,7 +194,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler 
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -210,10 +203,9 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on Port: ${PORT}`);
+  console.log(`Server running on Port: ${PORT}`);
 });
 
 module.exports = app;

@@ -10,7 +10,6 @@ function MyAccount() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Profile data from backend
   const [profileData, setProfileData] = useState({
     first_name: "",
     last_name: "",
@@ -19,17 +18,15 @@ function MyAccount() {
     role: "",
     isAccountVerified: false,
     status: "",
-    createdAt: ""
+    createdAt: "",
   });
 
-  // Profile form state (email readonly)
   const [profileForm, setProfileForm] = useState({
     first_name: "",
     last_name: "",
-    phone: ""
+    phone: "",
   });
 
-  // Address form state - ADD THIS
   const [addressForm, setAddressForm] = useState({
     first_name: "",
     last_name: "",
@@ -39,83 +36,62 @@ function MyAccount() {
     city: "",
     state: "",
     postal_code: "",
-    country: "India"
+    country: "India",
   });
 
-  // Password form state
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
 
-  // Delete account form state
   const [deleteForm, setDeleteForm] = useState({
     password: "",
-    confirmText: ""
+    confirmText: "",
   });
 
-  // Load user profile data on component mount
   useEffect(() => {
     fetchUserData();
   }, []);
 
-  // Fetch complete user data from backend
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
-
       const [profileResponse, authResponse] = await Promise.all([
         axios.get(`${backendUrl}/user/profile`, {
           withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         }),
         axios.post(
           `${backendUrl}/auth/is-auth`,
           {},
           {
             withCredentials: true,
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
           }
         ),
       ]);
-
       if (profileResponse.data.success && authResponse.data.success) {
         const user = {
           ...profileResponse.data.user,
           ...authResponse.data.user,
         };
-
         setProfileData(user);
-
-        // Set profile form data
         setProfileForm({
           first_name: user.first_name || "",
           last_name: user.last_name || "",
           phone: user.phone || "",
         });
-
-        // Set address form data with user info - ADD THIS
-        setAddressForm(prev => ({
+        setAddressForm((prev) => ({
           ...prev,
           first_name: user.first_name || "",
           last_name: user.last_name || "",
-          phone: user.phone || ""
+          phone: user.phone || "",
         }));
-
-        // Update context with fresh data
         setUserData(user);
-
-        // Fetch addresses after setting user data
         await fetchUserAddresses();
       }
     } catch (error) {
-      console.error("❌ Error fetching user data:", error);
-
       if (error.response?.status === 401) {
         toast.error("Please login to access your account");
       } else {
@@ -126,20 +102,16 @@ function MyAccount() {
     }
   };
 
-  // Fetch user addresses
   const fetchUserAddresses = async () => {
     try {
       const response = await axios.get(`${backendUrl}/user/addresses`, {
         withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
-
       if (response.data.success && response.data.addresses.length > 0) {
-        // Get the primary address or the first address
-        const primaryAddress = response.data.addresses.find(addr => addr.is_primary) || response.data.addresses[0];
-        
+        const primaryAddress =
+          response.data.addresses.find((addr) => addr.is_primary) ||
+          response.data.addresses[0];
         setAddressForm({
           first_name: primaryAddress.first_name || "",
           last_name: primaryAddress.last_name || "",
@@ -152,90 +124,68 @@ function MyAccount() {
           country: primaryAddress.country || "India",
         });
       }
-    } catch (error) {
-      // Silent fail - no addresses found is OK
-      console.log("No addresses found or error fetching addresses");
-    }
+    } catch (error) {}
   };
 
-  // Handle profile form changes
   const handleProfileChange = (field, value) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle address form changes - ADD THIS FUNCTION
   const handleAddressChange = (field, value) => {
     setAddressForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle password form changes
   const handlePasswordChange = (field, value) => {
     setPasswordForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle delete form changes
   const handleDeleteChange = (field, value) => {
     setDeleteForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Validate phone number
   const validatePhone = (phone) => {
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
     const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
-
     if (cleanPhone.length < 8 || cleanPhone.length > 16) {
       return false;
     }
-
     return phoneRegex.test(cleanPhone);
   };
 
-  // Validate postal code
   const validatePostalCode = (code, country) => {
     if (!code) return false;
-
     if (code.length < 3) return false;
-
     if (country === "India") {
       const indiaPostalRegex = /^[1-9][0-9]{5}$/;
       return indiaPostalRegex.test(code);
     }
-
     if (country === "United States") {
       const usPostalRegex = /^\d{5}(-\d{4})?$/;
       return usPostalRegex.test(code);
     }
-
     return code.length >= 3 && code.length <= 10;
   };
 
-  // Update profile
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-
     if (!profileForm.first_name.trim()) {
       toast.error("First name is required");
       return;
     }
-
     if (!profileForm.last_name.trim()) {
       toast.error("Last name is required");
       return;
     }
-
     if (!profileForm.phone.trim()) {
       toast.error("Phone number is required");
       return;
     }
-
     if (!validatePhone(profileForm.phone)) {
       toast.error("Please enter a valid phone number");
       return;
     }
-
     try {
       setIsLoading(true);
-
       const response = await axios.post(
         `${backendUrl}/user/update-profile`,
         {
@@ -245,22 +195,18 @@ function MyAccount() {
         },
         { withCredentials: true }
       );
-
       if (response.data.success) {
         toast.success("Profile updated successfully!");
-
         const updatedUser = {
           ...profileData,
           first_name: response.data.user.first_name,
           last_name: response.data.user.last_name,
           phone: response.data.user.phone,
         };
-
         setProfileData(updatedUser);
         setUserData(updatedUser);
       }
     } catch (error) {
-      console.error("❌ Error updating profile:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to update profile";
       toast.error(errorMessage);
@@ -269,61 +215,48 @@ function MyAccount() {
     }
   };
 
-  // Handle address submit - ADD THIS FUNCTION
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
     if (!addressForm.first_name.trim()) {
       toast.error("First name is required");
       return;
     }
-    
     if (!addressForm.last_name.trim()) {
       toast.error("Last name is required");
       return;
     }
-    
     if (!addressForm.phone.trim()) {
       toast.error("Phone number is required");
       return;
     }
-    
     if (!validatePhone(addressForm.phone)) {
       toast.error("Please enter a valid phone number");
       return;
     }
-    
     if (!addressForm.address_line_1.trim()) {
       toast.error("Address line 1 is required");
       return;
     }
-    
     if (!addressForm.city.trim()) {
       toast.error("City is required");
       return;
     }
-    
     if (!addressForm.postal_code.trim()) {
       toast.error("Postal code is required");
       return;
     }
-    
     if (!validatePostalCode(addressForm.postal_code, addressForm.country)) {
       toast.error("Please enter a valid postal code");
       return;
     }
-    
     if (!addressForm.country) {
       toast.error("Country is required");
       return;
     }
-
     try {
       setIsLoading(true);
-
       const response = await axios.post(
-        `${backendUrl}/user/addresses`, 
+        `${backendUrl}/user/addresses`,
         {
           first_name: addressForm.first_name.trim(),
           last_name: addressForm.last_name.trim(),
@@ -334,27 +267,24 @@ function MyAccount() {
           state: addressForm.state.trim(),
           postal_code: addressForm.postal_code.trim(),
           country: addressForm.country,
-          is_primary: true
+          is_primary: true,
         },
         { withCredentials: true }
       );
-
       if (response.data.success) {
         toast.success("Address saved successfully!");
       }
     } catch (error) {
-      console.error("❌ Error saving address:", error);
-      const errorMessage = error.response?.data?.message || "Failed to save address";
+      const errorMessage =
+        error.response?.data?.message || "Failed to save address";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Change password
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-
     if (
       !passwordForm.oldPassword ||
       !passwordForm.newPassword ||
@@ -363,17 +293,14 @@ function MyAccount() {
       toast.error("Please fill in all password fields");
       return;
     }
-
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error("New passwords do not match");
       return;
     }
-
     if (passwordForm.newPassword.length < 6) {
       toast.error("New password must be at least 6 characters long");
       return;
     }
-
     try {
       setIsLoading(true);
       const response = await axios.put(
@@ -384,7 +311,6 @@ function MyAccount() {
         },
         { withCredentials: true }
       );
-
       if (response.data.success) {
         toast.success("Password changed successfully!");
         setPasswordForm({
@@ -394,27 +320,22 @@ function MyAccount() {
         });
       }
     } catch (error) {
-      console.error("❌ Error changing password:", error);
       toast.error(error.response?.data?.message || "Failed to change password");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Delete account
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
-
     if (!deleteForm.password) {
       toast.error("Please enter your password to confirm account deletion");
       return;
     }
-
     if (deleteForm.confirmText !== "DELETE") {
       toast.error("Please type 'DELETE' to confirm account deletion");
       return;
     }
-
     if (
       !window.confirm(
         "Are you absolutely sure you want to delete your account? This action cannot be undone."
@@ -422,35 +343,29 @@ function MyAccount() {
     ) {
       return;
     }
-
     try {
       setIsLoading(true);
       const response = await axios.delete(`${backendUrl}/user/delete-account`, {
         data: { password: deleteForm.password },
         withCredentials: true,
       });
-
       if (response.data.success) {
         toast.success(
           "Account deleted successfully. You will be redirected..."
         );
-
         setDeleteForm({ password: "", confirmText: "" });
         setUserData(null);
-
         setTimeout(() => {
           window.location.href = "/";
         }, 2000);
       }
     } catch (error) {
-      console.error("❌ Error deleting account:", error);
       toast.error(error.response?.data?.message || "Failed to delete account");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Send verification email
   const handleSendVerificationEmail = async () => {
     try {
       setIsLoading(true);
@@ -459,12 +374,10 @@ function MyAccount() {
         {},
         { withCredentials: true }
       );
-
       if (response.data.success) {
         toast.success("Verification email sent! Please check your inbox.");
       }
     } catch (error) {
-      console.error("❌ Error sending verification email:", error);
       toast.error(
         error.response?.data?.message || "Failed to send verification email"
       );
@@ -487,16 +400,35 @@ function MyAccount() {
   }
 
   const tabsData = [
-    { key: "profile", icon: "fas fa-user", label: "Profile", mobileLabel: "Info" },
-    { key: "address", icon: "fas fa-map-marker-alt", label: "Address", mobileLabel: "Address" },
-    { key: "security", icon: "fas fa-shield-alt", label: "Security", mobileLabel: "Password" },
-    { key: "account", icon: "fas fa-cog", label: "Account", mobileLabel: "Settings" },
+    {
+      key: "profile",
+      icon: "fas fa-user",
+      label: "Profile",
+      mobileLabel: "Info",
+    },
+    {
+      key: "address",
+      icon: "fas fa-map-marker-alt",
+      label: "Address",
+      mobileLabel: "Address",
+    },
+    {
+      key: "security",
+      icon: "fas fa-shield-alt",
+      label: "Security",
+      mobileLabel: "Password",
+    },
+    {
+      key: "account",
+      icon: "fas fa-cog",
+      label: "Account",
+      mobileLabel: "Settings",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-background text-text py-4 sm:py-8">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">
             My Account
@@ -506,8 +438,6 @@ function MyAccount() {
             settings
           </p>
         </div>
-
-        {/* Navigation Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 sm:mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex overflow-x-auto px-3 sm:px-6">
@@ -529,18 +459,13 @@ function MyAccount() {
             </nav>
           </div>
         </div>
-
-        {/* Tab Content */}
         <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 lg:p-8">
-            {/* Profile Tab */}
             {activeTab === "profile" && (
               <div>
                 <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Personal Information
                 </h2>
-
-                {/* Account Overview */}
                 <div className="bg-gradient-to-r from-primary/5 to-secondary/5 dark:from-primary/10 dark:to-secondary/10 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-primary/10 dark:border-primary/20">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     <div className="text-center sm:text-left">
@@ -588,8 +513,6 @@ function MyAccount() {
                     </div>
                   </div>
                 </div>
-
-                {/* Profile Form */}
                 <form
                   onSubmit={handleProfileSubmit}
                   className="space-y-4 sm:space-y-6"
@@ -626,7 +549,6 @@ function MyAccount() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Email Address
@@ -647,7 +569,6 @@ function MyAccount() {
                       Email address cannot be changed for security reasons
                     </p>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Phone Number <span className="text-red-500">*</span>
@@ -666,7 +587,6 @@ function MyAccount() {
                       Example: +1234567890 or 1234567890
                     </p>
                   </div>
-
                   <div className="flex justify-end pt-4">
                     <button
                       type="submit"
@@ -681,14 +601,11 @@ function MyAccount() {
                 </form>
               </div>
             )}
-
-            {/* Address Tab */}
             {activeTab === "address" && (
               <div>
                 <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Shipping Address
                 </h2>
-
                 <form
                   onSubmit={handleAddressSubmit}
                   className="space-y-4 sm:space-y-6"
@@ -725,7 +642,6 @@ function MyAccount() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Phone Number <span className="text-red-500">*</span>
@@ -741,7 +657,6 @@ function MyAccount() {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Address Line 1 <span className="text-red-500">*</span>
@@ -757,7 +672,6 @@ function MyAccount() {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-text mb-2">
                       Address Line 2
@@ -772,7 +686,6 @@ function MyAccount() {
                       placeholder="Apartment, suite, unit, building, floor, etc."
                     />
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">
@@ -804,7 +717,6 @@ function MyAccount() {
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">
@@ -856,7 +768,6 @@ function MyAccount() {
                       </select>
                     </div>
                   </div>
-
                   <div className="flex justify-end pt-4">
                     <button
                       type="submit"
@@ -871,20 +782,15 @@ function MyAccount() {
                 </form>
               </div>
             )}
-
-            {/* Security Tab */}
             {activeTab === "security" && (
               <div>
                 <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Security Settings
                 </h2>
-
-                {/* Change Password Section */}
                 <div className="mb-6 sm:mb-8">
                   <h3 className="text-lg font-medium text-text mb-4">
                     Change Password
                   </h3>
-
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
                     <div className="flex items-start">
                       <i className="fas fa-shield-alt text-blue-500 mt-0.5 mr-2 sm:mr-3 text-sm sm:text-base"></i>
@@ -903,7 +809,6 @@ function MyAccount() {
                       </div>
                     </div>
                   </div>
-
                   <form
                     onSubmit={handlePasswordSubmit}
                     className="space-y-4 sm:space-y-6"
@@ -923,7 +828,6 @@ function MyAccount() {
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">
                         New Password <span className="text-red-500">*</span>
@@ -940,7 +844,6 @@ function MyAccount() {
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">
                         Confirm New Password{" "}
@@ -970,7 +873,6 @@ function MyAccount() {
                           </p>
                         )}
                     </div>
-
                     <div className="flex justify-end">
                       <button
                         type="submit"
@@ -992,20 +894,15 @@ function MyAccount() {
                 </div>
               </div>
             )}
-
-            {/* Account Tab */}
             {activeTab === "account" && (
               <div>
                 <h2 className="text-xl sm:text-2xl font-semibold text-text mb-4 sm:mb-6">
                   Account Settings
                 </h2>
-
-                {/* Account Status */}
                 <div className="mb-6 sm:mb-8">
                   <h3 className="text-lg font-medium text-text mb-4">
                     Account Status
                   </h3>
-
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-600">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                       <div className="flex items-center">
@@ -1034,7 +931,6 @@ function MyAccount() {
                           : "Inactive Account"}
                       </span>
                     </div>
-
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <span className="text-sm font-medium text-text/70">
@@ -1073,7 +969,6 @@ function MyAccount() {
                       </div>
                     </div>
                   </div>
-
                   {!profileData.isAccountVerified && (
                     <div className="mt-4">
                       <Link
@@ -1086,14 +981,11 @@ function MyAccount() {
                     </div>
                   )}
                 </div>
-
-                {/* Danger Zone - Delete Account */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6 sm:pt-8">
                   <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
                     <i className="fas fa-exclamation-triangle mr-2"></i>
                     Danger Zone
                   </h3>
-
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
                     <div className="flex items-start">
                       <i className="fas fa-trash-alt text-red-500 mt-0.5 mr-2 sm:mr-3 text-sm sm:text-base"></i>
@@ -1117,7 +1009,6 @@ function MyAccount() {
                       </div>
                     </div>
                   </div>
-
                   <form
                     onSubmit={handleDeleteAccount}
                     className="space-y-4 sm:space-y-6"
@@ -1138,7 +1029,6 @@ function MyAccount() {
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-text mb-2">
                         Type "DELETE" to confirm{" "}
@@ -1162,7 +1052,6 @@ function MyAccount() {
                           </p>
                         )}
                     </div>
-
                     <div className="flex justify-end">
                       <button
                         type="submit"

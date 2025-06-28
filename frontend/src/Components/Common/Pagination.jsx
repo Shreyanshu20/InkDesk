@@ -1,14 +1,11 @@
 import React from "react";
 
 const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
-  // Generate array of page numbers to show
   const getPageNumbers = () => {
     const pages = [];
 
-    // Always add first page
     pages.push(1);
 
-    // Add pages around current page
     for (
       let i = Math.max(2, currentPage - 1);
       i <= Math.min(totalPages - 1, currentPage + 1);
@@ -17,7 +14,6 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
       pages.push(i);
     }
 
-    // Always add last page if not already added
     if (totalPages > 1) {
       pages.push(totalPages);
     }
@@ -27,18 +23,16 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
 
   const pageNumbers = getPageNumbers();
 
-  // Helper function to scroll to top when page changes
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
 
-    // Scroll to top with smooth behavior
     setTimeout(() => {
       window.scrollTo({
         top: 0,
         left: 0,
         behavior: "smooth",
       });
-    }, 50); // Small delay to ensure state update happens first
+    }, 50); 
   };
 
   return (
@@ -54,7 +48,6 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
         </button>
 
         {pageNumbers.map((pageNumber, index) => {
-          // Add ellipsis
           if (index > 0 && pageNumber - pageNumbers[index - 1] > 1) {
             return (
               <React.Fragment key={`ellipsis-${pageNumber}`}>

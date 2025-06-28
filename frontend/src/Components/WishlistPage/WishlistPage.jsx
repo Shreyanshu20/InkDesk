@@ -7,17 +7,16 @@ import { toast } from "react-toastify";
 import WishlistItem from "./WishlistItem";
 import WishlistEmpty from "./WishlistEmpty";
 import WishlistSkeleton from "./WishlistSkeleton";
-import PageHeader from "../Common/PageHeader"; // Add this import
+import PageHeader from "../Common/PageHeader";
 
 function WishlistPage() {
-  const { backendUrl, isLoggedIn, userData } = useContext(AppContent);
+  const { backendUrl, isLoggedIn } = useContext(AppContent);
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const hasFetchedWishlist = useRef(false);
 
-  // Fetch wishlist data from backend
   useEffect(() => {
     if (isLoggedIn && !hasFetchedWishlist.current) {
       fetchWishlist();
@@ -30,25 +29,15 @@ function WishlistPage() {
   const fetchWishlist = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching wishlist from:", `${backendUrl}/wishlist`);
-
       const response = await axios.get(`${backendUrl}/wishlist`, {
         withCredentials: true,
       });
-
-      console.log("📊 Wishlist response:", response.data);
-
       if (response.data.success) {
         setWishlistItems(response.data.wishlist || []);
-        console.log(
-          "✅ Wishlist items loaded:",
-          response.data.wishlist?.length || 0
-        );
       } else {
         toast.error(response.data.message || "Failed to fetch wishlist");
       }
     } catch (error) {
-      console.error("❌ Error fetching wishlist:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to view your wishlist");
         navigate("/login");
@@ -62,15 +51,12 @@ function WishlistPage() {
 
   const removeFromWishlist = async (productId) => {
     try {
-      console.log("🗑️ Removing product from wishlist:", productId);
-
       const response = await axios.delete(
         `${backendUrl}/wishlist/remove/${productId}`,
         {
           withCredentials: true,
         }
       );
-
       if (response.data.success) {
         setWishlistItems((prevItems) =>
           prevItems.filter((item) => item.product_id._id !== productId)
@@ -80,24 +66,19 @@ function WishlistPage() {
         toast.error(response.data.message || "Failed to remove item");
       }
     } catch (error) {
-      console.error("❌ Error removing from wishlist:", error);
       toast.error("Failed to remove item from wishlist");
     }
   };
 
   const handleAddToCart = async (product, quantity = 1) => {
     try {
-      // Only call addToCart - it will handle the toast message
       await addToCart(product._id, quantity);
-      // Remove the duplicate toast from here
     } catch (error) {
-      // Only show error toast if addToCart fails
       toast.error("Failed to add item to cart");
     }
   };
 
   const handleBuyNow = (product) => {
-    console.log("⚡ Buy now product:", product);
     navigate(`/shop/product/${product._id}`);
   };
 
@@ -145,9 +126,7 @@ function WishlistPage() {
   return (
     <div className="min-h-screen bg-background text-text">
       <PageHeader title="My Wishlist" breadcrumbs={[{ label: "Wishlist" }]} />
-
       <div className="max-w-6xl mx-auto px-3 md:px-4 lg:px-6 py-4 md:py-8">
-        {/* Sub-header with item count */}
         <div className="mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
             <div>
@@ -161,13 +140,10 @@ function WishlistPage() {
             </div>
           </div>
         </div>
-
-        {/* Wishlist Content */}
         {wishlistItems.length === 0 ? (
           <WishlistEmpty />
         ) : (
           <div className="space-y-4 md:space-y-6">
-            {/* Items Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
               {wishlistItems.map((item) => (
                 <WishlistItem
@@ -180,8 +156,6 @@ function WishlistPage() {
                 />
               ))}
             </div>
-
-            {/* Action Bar */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 md:p-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="flex items-center gap-2 md:gap-3">
@@ -199,7 +173,6 @@ function WishlistPage() {
                   </button>
                   <button
                     onClick={() => {
-                      // Add all items to cart - only one toast per item from CartContext
                       wishlistItems.forEach((item) => {
                         handleAddToCart(item.product_id, 1);
                       });
