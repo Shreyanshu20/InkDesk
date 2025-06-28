@@ -20,7 +20,6 @@ function BannerFormFields({
 
   return (
     <div className="space-y-6">
-      {/* Banner Type Selection */}
       <div className="">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Banner Type
@@ -40,14 +39,12 @@ function BannerFormFields({
         </div>
       </div>
 
-      {/* Basic Information */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Basic Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Title */}
           {shouldShowField("title") && (
             <div className={shouldShowField("subtitle") ? "" : "md:col-span-2"}>
               <label
@@ -79,7 +76,6 @@ function BannerFormFields({
             </div>
           )}
 
-          {/* Subtitle */}
           {shouldShowField("subtitle") && (
             <div>
               <label
@@ -109,14 +105,12 @@ function BannerFormFields({
         </div>
       </div>
 
-      {/* Banner Settings */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Banner Settings
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Position */}
           {shouldShowField("position") && (
             <div>
               <label
@@ -144,7 +138,6 @@ function BannerFormFields({
             </div>
           )}
 
-          {/* Text Position */}
           {shouldShowField("textPosition") && (
             <div>
               <label
@@ -170,7 +163,6 @@ function BannerFormFields({
         </div>
       </div>
 
-      {/* Call to Action */}
       {(shouldShowField("url") || shouldShowField("buttonText")) && (
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -180,7 +172,6 @@ function BannerFormFields({
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* URL */}
             {shouldShowField("url") && (
               <div>
                 <label
@@ -218,7 +209,6 @@ function BannerFormFields({
               </div>
             )}
 
-            {/* Button Text */}
             {shouldShowField("buttonText") && (
               <div>
                 <label
@@ -250,14 +240,12 @@ function BannerFormFields({
         </div>
       )}
 
-      {/* Schedule */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Schedule
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Start Date */}
           <div>
             <label
               htmlFor="startDate"
@@ -292,7 +280,6 @@ function BannerFormFields({
             )}
           </div>
 
-          {/* End Date */}
           <div>
             <label
               htmlFor="endDate"
@@ -329,7 +316,6 @@ function BannerFormFields({
         </div>
       </div>
 
-      {/* Active Status */}
       <div>
         <div className="flex items-center">
           <input

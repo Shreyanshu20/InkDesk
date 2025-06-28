@@ -26,7 +26,6 @@ function ProductImageUpload({
 
     if (files.length === 0) return;
 
-    // Validate file types
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     const invalidFiles = files.filter(
       (file) => !validTypes.includes(file.type)
@@ -37,8 +36,7 @@ function ProductImageUpload({
       return;
     }
 
-    // Validate file sizes (max 5MB each)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     const oversizedFiles = files.filter((file) => file.size > maxSize);
 
     if (oversizedFiles.length > 0) {
@@ -46,7 +44,6 @@ function ProductImageUpload({
       return;
     }
 
-    // Check total images limit (max 6 images)
     const currentImageCount = Array.isArray(uploadedImages)
       ? uploadedImages.length
       : 0;
@@ -62,11 +59,6 @@ function ProductImageUpload({
       files.forEach((file) => {
         formData.append("images", file);
       });
-
-      console.log(
-        "📤 Uploading files:",
-        files.map((f) => f.name)
-      );
 
       const response = await axios.post(
         `${API_BASE_URL}/upload/product-images`,
@@ -86,15 +78,12 @@ function ProductImageUpload({
           ? previewImages
           : [];
 
-        console.log("✅ Upload successful:", newImages);
-
         setUploadedImages([...currentUploaded, ...newImages]);
         setPreviewImages([
           ...currentPreviews,
           ...newImages.map((img) => img.url),
         ]);
 
-        // Notify parent component of successful upload
         if (onUploadSuccess) {
           onUploadSuccess();
         }
@@ -102,7 +91,6 @@ function ProductImageUpload({
         toast.success(`${newImages.length} image(s) uploaded successfully`);
       }
     } catch (error) {
-      console.error("❌ Upload error:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to upload images");
       } else if (error.response?.data?.message) {
@@ -129,19 +117,10 @@ function ProductImageUpload({
 
     const imageToRemove = currentUploaded[index];
 
-    // Set deleting state for this specific image
     setDeleting((prev) => ({ ...prev, [index]: true }));
 
     try {
-      console.log("🗑️ Removing image at index:", index, imageToRemove);
-
-      // Only attempt to delete from Cloudinary if we have a public_id
       if (imageToRemove?.public_id && imageToRemove.public_id.trim() !== "") {
-        console.log(
-          "🗑️ Deleting from Cloudinary with public_id:",
-          imageToRemove.public_id
-        );
-
         try {
           const deleteResponse = await axios.delete(
             `${API_BASE_URL}/upload/product-images/${encodeURIComponent(
@@ -149,23 +128,14 @@ function ProductImageUpload({
             )}`,
             {
               withCredentials: true,
-              timeout: 10000, // 10 second timeout
+              timeout: 10000,
             }
           );
-
-          console.log("✅ Cloudinary deletion response:", deleteResponse.data);
         } catch (deleteError) {
-          console.warn(
-            "⚠️ Failed to delete from Cloudinary (continuing anyway):",
-            deleteError.response?.data || deleteError.message
-          );
           // Continue with local removal even if Cloudinary deletion fails
         }
-      } else {
-        console.log("ℹ️ No public_id found, skipping Cloudinary deletion");
       }
 
-      // Remove from local arrays regardless of Cloudinary deletion result
       const newUploadedImages = currentUploaded.filter((_, i) => i !== index);
       const newPreviewImages = currentPreviews.filter((_, i) => i !== index);
 
@@ -174,10 +144,8 @@ function ProductImageUpload({
 
       toast.success("Image removed successfully");
     } catch (error) {
-      console.error("❌ Error removing image:", error);
       toast.error("Failed to remove image. Please try again.");
     } finally {
-      // Clear deleting state
       setDeleting((prev) => {
         const newState = { ...prev };
         delete newState[index];
@@ -186,7 +154,6 @@ function ProductImageUpload({
     }
   };
 
-  // Safe array handling
   const safeUploadedImages = Array.isArray(uploadedImages)
     ? uploadedImages
     : [];
@@ -196,7 +163,7 @@ function ProductImageUpload({
   const handleFileSelect = (e) => {
     if (!isAdmin) {
       toast.error("Access denied. Admin privileges required to upload images.");
-      e.target.value = ""; // Clear the file input
+      e.target.value = "";
       return;
     }
     handleImageUpload(e);
@@ -284,7 +251,7 @@ function ProductImageUpload({
             accept="image/jpeg,image/jpg,image/png,image/webp"
             onChange={handleFileSelect}
             className="hidden"
-            disabled={uploading || safeUploadedImages.length >= 6 || !isAdmin} // Disable for non-admin
+            disabled={uploading || safeUploadedImages.length >= 6 || !isAdmin}
           />
         </div>
 
@@ -314,7 +281,6 @@ function ProductImageUpload({
                   loading="lazy"
                 />
 
-                {/* Loading overlay for deletion */}
                 {deleting[index] && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
                     <i className="fas fa-spinner fa-spin text-white text-xl"></i>
@@ -341,7 +307,6 @@ function ProductImageUpload({
                   </div>
                 )}
 
-                {/* Debug info in development */}
                 {process.env.NODE_ENV === "development" &&
                   safeUploadedImages[index]?.public_id && (
                     <div
@@ -357,7 +322,6 @@ function ProductImageUpload({
         </div>
       )}
 
-      {/* Image management info */}
       {safeUploadedImages.length > 0 && (
         <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
           <p>• First image will be used as the main product image</p>

@@ -23,12 +23,10 @@ function Navbar({ collapsed, toggleSidebar }) {
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Get breadcrumb navigation based on current route
   const getBreadcrumbs = () => {
     const pathSegments = location.pathname.split("/").filter(Boolean);
     const breadcrumbs = [];
 
-    // Map route segments to breadcrumb items
     const routeMap = {
       products: { label: "Products", icon: "fas fa-box" },
       orders: { label: "Orders", icon: "fas fa-shopping-bag" },
@@ -43,12 +41,10 @@ function Navbar({ collapsed, toggleSidebar }) {
       reports: { label: "Reports", icon: "fas fa-file-chart" },
     };
 
-    // Check if we're on the dashboard page
     const isOnDashboard =
       location.pathname === "/admin" || location.pathname === "/admin/";
 
     if (isOnDashboard) {
-      // If on dashboard, show "Dashboard" as active
       breadcrumbs.push({
         label: "Dashboard",
         path: "/admin",
@@ -56,10 +52,9 @@ function Navbar({ collapsed, toggleSidebar }) {
         isActive: true,
       });
     } else {
-      // Build breadcrumbs from path segments
       let currentPath = "";
       pathSegments.forEach((segment, index) => {
-        if (index === 0 && segment === "admin") return; // Skip 'admin' segment
+        if (index === 0 && segment === "admin") return;
 
         currentPath += `/${segment}`;
         const routeInfo = routeMap[segment];
@@ -72,7 +67,6 @@ function Navbar({ collapsed, toggleSidebar }) {
             isActive: index === pathSegments.length - 1,
           });
         } else {
-          // Handle dynamic routes (like IDs)
           const parentSegment = pathSegments[index - 1];
           if (parentSegment && routeMap[parentSegment]) {
             breadcrumbs.push({
@@ -82,7 +76,6 @@ function Navbar({ collapsed, toggleSidebar }) {
               isActive: true,
             });
           } else {
-            // Handle unknown routes
             breadcrumbs.push({
               label: segment.charAt(0).toUpperCase() + segment.slice(1),
               path: `/admin${currentPath}`,
@@ -97,20 +90,12 @@ function Navbar({ collapsed, toggleSidebar }) {
     return breadcrumbs;
   };
 
-  // Simple fetch admin data - the backend does all the work
   const fetchAdminData = async () => {
     setIsLoadingProfile(true);
     try {
-      // Use the admin context to refresh data
       const isAuth = await refreshAdminData();
-      if (isAuth) {
-        console.log("✅ Admin profile loaded from context");
-      }
     } catch (error) {
-      console.error("❌ Profile fetch failed:", error);
-
       if (error.response?.status === 401 || error.response?.status === 403) {
-        // Token invalid/expired - redirect to login
         const frontendUrl =
           import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
         window.location.href = `${frontendUrl}/login?type=admin`;
@@ -120,10 +105,8 @@ function Navbar({ collapsed, toggleSidebar }) {
     }
   };
 
-  // Fetch notifications from backend
   const fetchNotifications = async () => {
     try {
-      // For now, using mock data - replace with real API endpoint when available
       const mockNotifications = [
         {
           id: 1,
@@ -156,36 +139,24 @@ function Navbar({ collapsed, toggleSidebar }) {
       ];
 
       setNotifications(mockNotifications);
-
-      // TODO: Replace with real API call like this:
-      // const response = await axios.get(`${backendUrl}/admin/notifications`, {
-      //   withCredentials: true,
-      // });
-      // if (response.data.success) {
-      //   setNotifications(response.data.notifications);
-      // }
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
+      // Handle error silently for mock data
     }
   };
 
-  // Handle logout
   const handleLogout = async () => {
     if (isLoggingOut) return;
 
     setIsLoggingOut(true);
     try {
-      // Remove the toast.info here to prevent double toast
-      await logout(); // This will handle the redirect
+      await logout();
     } catch (error) {
-      console.error("Logout failed:", error);
       toast.error("Logout failed. Please try again.");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
-  // Get user initials for avatar
   const getUserInitials = () => {
     if (!adminData) return "A";
 
@@ -206,7 +177,6 @@ function Navbar({ collapsed, toggleSidebar }) {
     return "A";
   };
 
-  // Get user display name
   const getUserDisplayName = () => {
     if (!adminData) return "Admin User";
 
@@ -227,7 +197,6 @@ function Navbar({ collapsed, toggleSidebar }) {
     return "Admin User";
   };
 
-  // Check initial theme state
   useEffect(() => {
     const isDarkMode =
       document.documentElement.classList.contains("dark") ||
@@ -237,7 +206,6 @@ function Navbar({ collapsed, toggleSidebar }) {
     setIsDark(isDarkMode);
   }, []);
 
-  // Fetch data on component mount
   useEffect(() => {
     if (adminData) {
       setIsLoadingProfile(false);
@@ -247,13 +215,11 @@ function Navbar({ collapsed, toggleSidebar }) {
     fetchNotifications();
   }, [adminData]);
 
-  // Handle theme toggle function
   const handleThemeToggle = () => {
     themeToggle();
     setIsDark(!isDark);
   };
 
-  // Handle clicks outside dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -281,7 +247,6 @@ function Navbar({ collapsed, toggleSidebar }) {
       } z-30 transition-all duration-300 shadow-sm`}
       aria-label="Main navigation"
     >
-      {/* Left side with menu toggle and breadcrumbs */}
       <div className="flex items-center min-w-0 flex-1">
         <button
           onClick={toggleSidebar}
@@ -296,10 +261,8 @@ function Navbar({ collapsed, toggleSidebar }) {
           ></i>
         </button>
 
-        {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
           <ol className="flex items-center space-x-1">
-            {/* Home Icon - always show as inactive when not on dashboard */}
             <li className="flex items-center mr-2">
               <Link
                 to="/admin"
@@ -317,7 +280,6 @@ function Navbar({ collapsed, toggleSidebar }) {
 
             {breadcrumbs.map((breadcrumb, index) => (
               <li key={breadcrumb.path} className="flex items-center">
-                {/* Show separator only if not the first item after home or not dashboard */}
                 {!(breadcrumb.label === "Dashboard" && index === 0) && (
                   <span className="text-text/40 mx-2">/</span>
                 )}
@@ -350,9 +312,7 @@ function Navbar({ collapsed, toggleSidebar }) {
         </nav>
       </div>
 
-      {/* Right-side actions */}
       <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
-        {/* Theme toggle */}
         <button
           onClick={handleThemeToggle}
           className="w-9 h-9 flex justify-center items-center text-text hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -361,7 +321,6 @@ function Navbar({ collapsed, toggleSidebar }) {
           <i className={`fas ${isDark ? "fa-sun" : "fa-moon"} text-lg`}></i>
         </button>
 
-        {/* Notifications */}
         <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -450,7 +409,6 @@ function Navbar({ collapsed, toggleSidebar }) {
           )}
         </div>
 
-        {/* Profile */}
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
@@ -472,7 +430,6 @@ function Navbar({ collapsed, toggleSidebar }) {
               className="absolute right-0 mt-2 w-64 bg-background shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 z-50 fade-in"
               role="menu"
             >
-              {/* User Info Section */}
               <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 {isLoadingProfile ? (
                   <div className="animate-pulse">
@@ -509,7 +466,6 @@ function Navbar({ collapsed, toggleSidebar }) {
                 )}
               </div>
 
-              {/* Menu Items */}
               <ul className="py-2">
                 <li role="none">
                   <Link
@@ -534,13 +490,11 @@ function Navbar({ collapsed, toggleSidebar }) {
                   </Link>
                 </li>
 
-                {/* Divider */}
                 <li
                   className="border-t border-gray-200 dark:border-gray-700 my-2"
                   role="none"
                 ></li>
 
-                {/* Back to Frontend */}
                 <li role="none">
                   <a
                     href={`${
@@ -557,7 +511,6 @@ function Navbar({ collapsed, toggleSidebar }) {
                   </a>
                 </li>
 
-                {/* Logout */}
                 <li role="none">
                   <button
                     onClick={handleLogout}

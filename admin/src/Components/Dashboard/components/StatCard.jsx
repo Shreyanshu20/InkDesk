@@ -1,5 +1,3 @@
-import React from "react";
-
 function StatCard({ title, value, change, icon }) {
   return (
     <div className="bg-background p-6 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg border border-gray-200 dark:border-gray-800">

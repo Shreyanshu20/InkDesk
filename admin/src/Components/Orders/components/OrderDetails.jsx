@@ -1,30 +1,21 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import Loader from "../../Common/Loader";
-import Table from "../../Common/Table";
-import Pagination from "../../Common/Pagination";
-import { getOrderTableConfig } from "../../Common/tableConfig";
 import StatusUpdateModal from "./StatusUpdateModal";
 import { getStatusColor } from "./utils";
-import OrderDetailsSkeleton from "./OrderDetailsSkeleton"; // Add this import
+import OrderDetailsSkeleton from "./OrderDetailsSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-function Orders() {
+function OrderDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [orders, setOrders] = useState([]);
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [ordersPerPage] = useState(10);
 
   const orderStatuses = [
     "pending",
@@ -34,37 +25,6 @@ function Orders() {
     "cancelled",
   ];
 
-  // Fetch orders on mount and page change
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${API_BASE_URL}/admin/orders`, {
-          withCredentials: true,
-          params: {
-            page: currentPage,
-            limit: ordersPerPage,
-          },
-        });
-
-        if (response.data.success) {
-          setOrders(response.data.orders);
-          setTotalOrders(response.data.totalOrders);
-        } else {
-          toast.error("Failed to fetch orders");
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        toast.error("Failed to load orders");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [currentPage, ordersPerPage]);
-
-  // Fetch order data on mount
   useEffect(() => {
     if (id) {
       fetchOrderData();
@@ -86,10 +46,9 @@ function Orders() {
           `${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
           "Unknown Customer";
 
-        // Format the order data to match what the StatusUpdateModal expects
         const formattedOrderData = {
           ...order,
-          id: order._id, // Make sure id is available
+          id: order._id,
           customer: {
             name: customerName,
             email: customer.email || "Not provided",
@@ -98,13 +57,11 @@ function Orders() {
         };
 
         setOrderData(formattedOrderData);
-        console.log("📦 Order data loaded:", formattedOrderData);
       } else {
         toast.error("Order not found");
         navigate("/admin/orders");
       }
     } catch (error) {
-      console.error("❌ Error fetching order data:", error);
       toast.error("Failed to load order details");
       navigate("/admin/orders");
     } finally {
@@ -114,8 +71,6 @@ function Orders() {
 
   const handleStatusUpdate = async (newStatus) => {
     try {
-      console.log("🔄 Updating order status to:", newStatus);
-
       const response = await axios.put(
         `${API_BASE_URL}/admin/orders/${id}/status`,
         { status: newStatus },
@@ -126,8 +81,6 @@ function Orders() {
           withCredentials: true,
         }
       );
-
-      console.log("✅ Status update response:", response.data);
 
       if (response.data.success) {
         setOrderData((prev) => ({
@@ -140,7 +93,6 @@ function Orders() {
         toast.error("Failed to update order status");
       }
     } catch (error) {
-      console.error("❌ Error updating order status:", error);
       toast.error(
         error.response?.data?.message || "Failed to update order status"
       );
@@ -170,12 +122,6 @@ function Orders() {
     });
   };
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const tableConfig = useMemo(() => getOrderTableConfig(), []);
-
   if (loading) {
     return <OrderDetailsSkeleton />;
   }
@@ -203,7 +149,6 @@ function Orders() {
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <button
@@ -244,9 +189,7 @@ function Orders() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Order Summary */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Order Info Card */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -304,7 +247,6 @@ function Orders() {
             </div>
           </div>
 
-          {/* Order Items */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Order Items ({orderData.items?.length || 0})
@@ -366,9 +308,7 @@ function Orders() {
           </div>
         </div>
 
-        {/* Customer & Shipping Info */}
         <div className="space-y-6">
-          {/* Customer Info */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Customer Information
@@ -395,7 +335,6 @@ function Orders() {
             </div>
           </div>
 
-          {/* Shipping Address */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Shipping Address
@@ -429,7 +368,6 @@ function Orders() {
             )}
           </div>
 
-          {/* Order Summary */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Order Summary
@@ -476,7 +414,6 @@ function Orders() {
         </div>
       </div>
 
-      {/* Status Update Modal */}
       <StatusUpdateModal
         statusModalOpen={statusModalOpen}
         selectedOrderForStatus={orderData}
@@ -489,4 +426,4 @@ function Orders() {
   );
 }
 
-export default Orders;
+export default OrderDetails;

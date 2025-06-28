@@ -38,9 +38,8 @@ function ProductForm({ mode: propMode }) {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
-  const [touchedFields, setTouchedFields] = useState({}); // Track individual field touches
+  const [touchedFields, setTouchedFields] = useState({});
 
-  // Fetch categories and product data
   useEffect(() => {
     fetchCategories();
     fetchSubcategories();
@@ -51,7 +50,6 @@ function ProductForm({ mode: propMode }) {
     }
   }, [id, propMode, mode]);
 
-  // Filter subcategories when category changes
   useEffect(() => {
     if (formData.category && categories.length > 0) {
       const selectedCategory = categories.find(
@@ -66,7 +64,6 @@ function ProductForm({ mode: propMode }) {
     }
   }, [formData.category, categories]);
 
-  // Real-time validation for touched fields
   useEffect(() => {
     if (Object.keys(touchedFields).length > 0) {
       const newErrors = {};
@@ -80,7 +77,6 @@ function ProductForm({ mode: propMode }) {
         }
       });
 
-      // Special case for images
       if (touchedFields.images && uploadedImages.length === 0) {
         newErrors.images = "At least one product image is required";
       }
@@ -89,12 +85,8 @@ function ProductForm({ mode: propMode }) {
     }
   }, [formData, uploadedImages, touchedFields]);
 
-  // Fetch subcategories for a specific category
   const fetchSubcategoriesByCategory = async (categoryId) => {
     try {
-      console.log("🔍 Fetching subcategories for category ID:", categoryId);
-
-      // FIX: Use public endpoint instead of admin endpoint
       const response = await axios.get(
         `${API_BASE_URL}/categories/subcategories/${categoryId}`,
         {
@@ -103,10 +95,8 @@ function ProductForm({ mode: propMode }) {
       );
 
       if (response.data.success) {
-        console.log("📋 Received subcategories:", response.data.subcategories);
         setFilteredSubcategories(response.data.subcategories);
 
-        // Reset subcategory if it doesn't belong to the selected category
         if (formData.subcategory) {
           const isValidSubcategory = response.data.subcategories.some(
             (sub) => sub.subcategory_name === formData.subcategory
@@ -116,14 +106,11 @@ function ProductForm({ mode: propMode }) {
           }
         }
       } else {
-        console.log("⚠️ No subcategories found for category:", categoryId);
         setFilteredSubcategories([]);
       }
     } catch (error) {
-      console.error("Error fetching subcategories:", error);
       setFilteredSubcategories([]);
       
-      // Filter from all subcategories if endpoint doesn't exist
       if (error.response?.status === 404 && subcategories.length > 0) {
         const filtered = subcategories.filter(sub => sub.category_id === categoryId);
         setFilteredSubcategories(filtered);
@@ -131,7 +118,6 @@ function ProductForm({ mode: propMode }) {
     }
   };
 
-  // Fetch categories from backend
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/categories`);
@@ -145,15 +131,12 @@ function ProductForm({ mode: propMode }) {
         setCategories(transformedCategories);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
     }
   };
 
-  // Fetch subcategories from backend
   const fetchSubcategories = async () => {
     try {
-      // FIX: Use admin endpoint with authentication
       const response = await axios.get(`${API_BASE_URL}/admin/subcategories`, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
@@ -163,12 +146,10 @@ function ProductForm({ mode: propMode }) {
         setSubcategories(response.data.subcategories);
       }
     } catch (error) {
-      console.error("Error fetching subcategories:", error);
       toast.error("Failed to load subcategories");
     }
   };
 
-  // Fetch product for editing
   const fetchProduct = async (productId) => {
     try {
       const response = await axios.get(
@@ -196,7 +177,6 @@ function ProductForm({ mode: propMode }) {
           status: product.product_stock > 0 ? "active" : "out_of_stock",
         });
 
-        // Handle images
         if (
           product.product_images &&
           Array.isArray(product.product_images) &&
@@ -223,7 +203,6 @@ function ProductForm({ mode: propMode }) {
         }
       }
     } catch (error) {
-      console.error("Error fetching product:", error);
       if (error.response?.status === 404) {
         toast.error(
           "Product not found or you don't have permission to edit it"
@@ -237,7 +216,6 @@ function ProductForm({ mode: propMode }) {
     }
   };
 
-  // Enhanced field validation
   const validateField = (name, value) => {
     const trimmedValue = typeof value === "string" ? value.trim() : value;
 
@@ -314,27 +292,19 @@ function ProductForm({ mode: propMode }) {
     }
   };
 
-  // Handle input changes with proper validation
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === "checkbox" ? checked : value;
 
-    // Update form data
     setFormData((prev) => ({ ...prev, [name]: fieldValue }));
-
-    // Mark field as touched
     setTouchedFields((prev) => ({ ...prev, [name]: true }));
-
-    // Mark form as touched
     setFormTouched(true);
   };
 
-  // Handle field blur for immediate validation
   const handleFieldBlur = (fieldName) => {
     setTouchedFields((prev) => ({ ...prev, [fieldName]: true }));
   };
 
-  // Comprehensive form validation
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = [
@@ -347,7 +317,6 @@ function ProductForm({ mode: propMode }) {
       "brand",
     ];
 
-    // Validate all required fields
     requiredFields.forEach((field) => {
       const error = validateField(field, formData[field]);
       if (error) {
@@ -355,7 +324,6 @@ function ProductForm({ mode: propMode }) {
       }
     });
 
-    // Validate optional fields if they have values
     ["discount", "rating"].forEach((field) => {
       if (formData[field] && formData[field] !== "") {
         const error = validateField(field, formData[field]);
@@ -365,12 +333,10 @@ function ProductForm({ mode: propMode }) {
       }
     });
 
-    // Validate images
     if (!uploadedImages || uploadedImages.length === 0) {
       newErrors.images = "At least one product image is required";
     }
 
-    // Additional business logic validations
     if (formData.discount && formData.price) {
       const price = parseFloat(formData.price);
       const discount = parseFloat(formData.discount);
@@ -391,25 +357,15 @@ function ProductForm({ mode: propMode }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check admin access before submission
     if (!isAdmin) {
       toast.error("Access denied. Admin privileges required to save products.");
       return;
     }
 
-    console.log("🚀 Form submission started");
-    console.log("📝 Form data:", formData);
-    console.log("🖼️ Uploaded images:", uploadedImages);
-
-    // Validate entire form
     if (!validateForm()) {
-      console.log("❌ Form validation failed:", errors);
-
-      // Focus on first error field
       const firstErrorField = Object.keys(errors)[0];
       const element =
         document.getElementById(firstErrorField) ||
@@ -426,7 +382,6 @@ function ProductForm({ mode: propMode }) {
     setIsSubmitting(true);
 
     try {
-      // Process images
       const processedImages = uploadedImages.map((img) => ({
         url: img.url || img,
         public_id: img.public_id || "",
@@ -447,17 +402,13 @@ function ProductForm({ mode: propMode }) {
         product_image: processedImages.length > 0 ? processedImages[0].url : "",
       };
 
-      console.log("📤 Sending product data:", productData);
-
       let response;
       if (mode === "add") {
-        // FIX: Use admin endpoint for creating products
         response = await axios.post(`${API_BASE_URL}/admin/products`, productData, {
           withCredentials: true,
           headers: { "Content-Type": "application/json" },
         });
       } else {
-        // FIX: Use admin endpoint for updating products
         response = await axios.put(
           `${API_BASE_URL}/admin/products/${id}`,
           productData,
@@ -475,8 +426,6 @@ function ProductForm({ mode: propMode }) {
         navigate(`/admin/products?t=${Date.now()}`);
       }
     } catch (error) {
-      console.error("❌ Error saving product:", error);
-
       if (error.response?.status === 401) {
         toast.error("Unauthorized. Please login again.");
       } else if (error.response?.status === 403) {
@@ -493,7 +442,6 @@ function ProductForm({ mode: propMode }) {
     }
   };
 
-  // Handle cancel
   const handleCancel = () => {
     if (formTouched) {
       const confirmLeave = window.confirm(
@@ -504,9 +452,7 @@ function ProductForm({ mode: propMode }) {
     navigate("/admin/products");
   };
 
-  // Handle image upload success
   const handleImageUploadSuccess = () => {
-    // Clear image error when images are uploaded
     if (errors.images) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -516,7 +462,6 @@ function ProductForm({ mode: propMode }) {
     }
   };
 
-  // Check for unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (formTouched) {
@@ -546,7 +491,6 @@ function ProductForm({ mode: propMode }) {
         </h1>
       </div>
 
-      {/* Show warning for non-admin users */}
       {!isAdmin && (
         <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <div className="flex">
@@ -564,7 +508,6 @@ function ProductForm({ mode: propMode }) {
         className="bg-background rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700 p-6"
         noValidate
       >
-        {/* Form error summary */}
         {Object.keys(errors).length > 0 && (
           <div
             className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
@@ -612,7 +555,6 @@ function ProductForm({ mode: propMode }) {
         )}
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {/* Left Column */}
           <ProductFormFields
             formData={formData}
             errors={errors}
@@ -623,7 +565,6 @@ function ProductForm({ mode: propMode }) {
             touchedFields={touchedFields}
           />
 
-          {/* Right Column */}
           <ProductImageUpload
             previewImages={previewImages}
             setPreviewImages={setPreviewImages}
@@ -646,7 +587,7 @@ function ProductForm({ mode: propMode }) {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || !isAdmin} // Disable for non-admin
+            disabled={isSubmitting || !isAdmin}
             className={`px-6 py-2 rounded-md flex items-center gap-2 ${
               isAdmin
                 ? "bg-primary hover:bg-primary/90 text-white"

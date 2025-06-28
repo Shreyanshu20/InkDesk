@@ -3,16 +3,17 @@ import React from "react";
 function DashboardSkeleton() {
   return (
     <div className="container mx-auto p-10 py-4 bg-gray-100 dark:bg-gray-900 min-h-screen">
-      {/* Page Header Skeleton */}
       <div className="mb-8">
         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-64 mb-2"></div>
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-96"></div>
       </div>
 
-      {/* Summary Cards Skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
+          <div
+            key={i}
+            className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
               <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
@@ -27,9 +28,7 @@ function DashboardSkeleton() {
         ))}
       </div>
 
-      {/* Charts Row Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Sales Chart Skeleton */}
         <div className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800 lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -38,7 +37,10 @@ function DashboardSkeleton() {
             </div>
             <div className="flex space-x-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16"></div>
+                <div
+                  key={i}
+                  className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16"
+                ></div>
               ))}
             </div>
           </div>
@@ -53,7 +55,6 @@ function DashboardSkeleton() {
           </div>
         </div>
 
-        {/* Top Products Skeleton */}
         <div className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-36 mb-6"></div>
           <div className="space-y-5">
@@ -76,9 +77,7 @@ function DashboardSkeleton() {
         </div>
       </div>
 
-      {/* Second Row Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Low Stock Alerts Skeleton */}
         <div className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
@@ -86,7 +85,10 @@ function DashboardSkeleton() {
           </div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+              <div
+                key={i}
+                className="p-4 rounded-lg border border-gray-100 dark:border-gray-800"
+              >
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32 mb-2"></div>
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
               </div>
@@ -94,7 +96,6 @@ function DashboardSkeleton() {
           </div>
         </div>
 
-        {/* Recent Orders Skeleton */}
         <div className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-28"></div>
@@ -102,7 +103,10 @@ function DashboardSkeleton() {
           </div>
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+              <div
+                key={i}
+                className="p-4 rounded-lg border border-gray-100 dark:border-gray-800"
+              >
                 <div className="flex justify-between mb-2">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
                   <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16"></div>
@@ -119,12 +123,14 @@ function DashboardSkeleton() {
           </div>
         </div>
 
-        {/* Recent Activity Skeleton */}
         <div className="bg-background p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32 mb-6"></div>
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-start space-x-3 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+              <div
+                key={i}
+                className="flex items-start space-x-3 p-4 rounded-lg border border-gray-100 dark:border-gray-800"
+              >
                 <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-0.5"></div>
                 <div className="flex-1">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-full mb-2"></div>

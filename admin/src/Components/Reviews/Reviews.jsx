@@ -5,16 +5,16 @@ import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getReviewsTableConfig } from "../Common/tableConfig";
-import { useAdmin } from '../../Context/AdminContext';
-import ReviewModal from './components/ReviewModal';
-import ReviewsSkeleton from './components/ReviewsSkeleton';
+import { useAdmin } from "../../Context/AdminContext";
+import ReviewModal from "./components/ReviewModal";
+import ReviewsSkeleton from "./components/ReviewsSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Reviews() {
   const { adminData } = useAdmin();
-  const isAdmin = adminData?.role === 'admin';
+  const isAdmin = adminData?.role === "admin";
 
   const checkAdminAccess = (action) => {
     if (isAdmin) {
@@ -41,7 +41,7 @@ function Reviews() {
     rating3: 0,
     rating2: 0,
     rating1: 0,
-    averageRating: 0
+    averageRating: 0,
   });
 
   const [sortConfig, setSortConfig] = useState({
@@ -54,18 +54,15 @@ function Reviews() {
 
   const fetchReviewStats = async () => {
     try {
-      console.log("📊 Fetching review statistics...");
-
       const response = await axios.get(`${API_BASE_URL}/admin/reviews/stats`, {
         withCredentials: true,
       });
 
       if (response.data.success) {
         setReviewStats(response.data.stats);
-        console.log("📊 Review stats loaded:", response.data.stats);
       }
     } catch (error) {
-      console.error("❌ Error fetching review stats:", error);
+      // Silently handle stats error to avoid cluttering UI
     }
   };
 
@@ -93,8 +90,6 @@ function Reviews() {
         );
       }
 
-      console.log("🔍 Fetching reviews with params:", params.toString());
-
       const response = await axios.get(
         `${API_BASE_URL}/admin/reviews?${params.toString()}`,
         {
@@ -103,8 +98,6 @@ function Reviews() {
       );
 
       if (response.data.success) {
-        console.log("📝 Reviews response:", response.data);
-
         const transformedReviews = response.data.reviews.map((review) => ({
           id: review._id,
           content: review.comment,
@@ -132,13 +125,8 @@ function Reviews() {
         setTotalReviews(
           response.data.pagination?.totalReviews || transformedReviews.length
         );
-
-        console.log(
-          `📊 Loaded ${transformedReviews.length} reviews of ${response.data.pagination?.totalReviews} total`
-        );
       }
     } catch (error) {
-      console.error("❌ Error fetching reviews:", error);
       toast.error("Failed to load reviews");
       setReviews([]);
       setTotalReviews(0);
@@ -156,8 +144,8 @@ function Reviews() {
   }, [page, rowsPerPage, searchQuery, ratingFilter, sortConfig]);
 
   const deleteReview = async (reviewId) => {
-    if (!checkAdminAccess('delete reviews')) return false;
-    
+    if (!checkAdminAccess("delete reviews")) return false;
+
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/admin/reviews/${reviewId}`,
@@ -173,10 +161,10 @@ function Reviews() {
         return true;
       }
     } catch (error) {
-      console.error("❌ Error deleting review:", error);
-      
       if (error.response?.status === 403) {
-        toast.error("Access denied. Admin privileges required to delete reviews.");
+        toast.error(
+          "Access denied. Admin privileges required to delete reviews."
+        );
       } else {
         toast.error("Failed to delete review");
       }
@@ -185,7 +173,6 @@ function Reviews() {
   };
 
   const handleViewReview = (review) => {
-    console.log("👁️ Viewing review:", review);
     setActiveReview(review);
     setShowModal(true);
   };
@@ -205,8 +192,8 @@ function Reviews() {
         `Delete ${ids.length > 1 ? "these reviews" : "this review"}?`
       )
     ) {
-      if (!checkAdminAccess('delete reviews')) return;
-      
+      if (!checkAdminAccess("delete reviews")) return;
+
       let successCount = 0;
       for (const id of ids) {
         const success = await deleteReview(id);
@@ -222,33 +209,21 @@ function Reviews() {
   };
 
   const handleSelectReview = (id, selected) => {
-    console.log("📝 Review selection:", { id, selected });
-    console.log("📋 Current selectedReviews before:", selectedReviews);
-
     if (selected) {
       const newSelected = [...selectedReviews, id];
       setSelectedReviews(newSelected);
-      console.log("📋 New selectedReviews after adding:", newSelected);
     } else {
       const newSelected = selectedReviews.filter((reviewId) => reviewId !== id);
       setSelectedReviews(newSelected);
-      console.log("📋 New selectedReviews after removing:", newSelected);
     }
   };
 
   const handleSelectAllReviews = (selected) => {
-    console.log("📝 Select all reviews:", {
-      selected,
-      reviewCount: sortedReviews.length,
-    });
-
     if (selected) {
       const allReviewIds = sortedReviews.map((review) => review.id);
       setSelectedReviews(allReviewIds);
-      console.log("📋 Selected all reviews:", allReviewIds);
     } else {
       setSelectedReviews([]);
-      console.log("📋 Cleared all selections");
     }
   };
 
@@ -290,14 +265,12 @@ function Reviews() {
     };
   }, [reviewStats]);
 
-  // Add this condition at the beginning of the return statement
   if (isLoading && reviews.length === 0) {
     return <ReviewsSkeleton />;
   }
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Product Reviews
@@ -305,12 +278,15 @@ function Reviews() {
         <p className="text-gray-600 dark:text-gray-400">
           Manage customer reviews ({reviewStats.total} total reviews)
           {reviewStats.averageRating > 0 && (
-            <> • Average Rating: {Number(reviewStats.averageRating).toFixed(1)}/5.0</>
+            <>
+              {" "}
+              • Average Rating: {Number(reviewStats.averageRating).toFixed(1)}
+              /5.0
+            </>
           )}
         </p>
       </div>
 
-      {/* Stats Cards - Static, no click handlers */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         {Object.entries(reviewCounts).map(([rating, count]) => (
           <div
@@ -350,11 +326,9 @@ function Reviews() {
         ))}
       </div>
 
-      {/* Search and Filter Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <input
                 type="text"
@@ -366,7 +340,6 @@ function Reviews() {
               <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
             </div>
 
-            {/* Rating Filter */}
             <select
               value={ratingFilter}
               onChange={(e) => setRatingFilter(e.target.value)}
@@ -394,7 +367,6 @@ function Reviews() {
         </div>
       </div>
 
-      {/* Bulk Actions */}
       {selectedReviews.length > 0 && (
         <BulkActions
           selectedItems={selectedReviews}
@@ -413,7 +385,6 @@ function Reviews() {
         />
       )}
 
-      {/* Reviews Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <Table
@@ -439,14 +410,12 @@ function Reviews() {
           />
         </div>
 
-        {/* Pagination */}
         <Pagination
           page={page}
           rowsPerPage={rowsPerPage}
           totalItems={totalReviews}
           handlePageChange={setPage}
           handleRowsPerPageChange={(newRowsPerPage) => {
-            console.log('📝 Reviews: Changing rows per page to:', newRowsPerPage);
             setRowsPerPage(parseInt(newRowsPerPage, 10));
             setPage(0);
           }}
@@ -454,7 +423,6 @@ function Reviews() {
         />
       </div>
 
-      {/* Review Modal Component */}
       <ReviewModal
         showModal={showModal}
         activeReview={activeReview}

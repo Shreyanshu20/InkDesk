@@ -4,14 +4,12 @@ import StatusBadge from "../../Common/StatusBadge";
 function ProductDetails({ product, onBack, onEdit, onDelete }) {
   const [activeImage, setActiveImage] = useState(0);
 
-  // Format price in INR
   const formatPrice = (price) => {
     return `₹${parseFloat(price).toLocaleString("en-IN")}`;
   };
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <button
@@ -30,7 +28,6 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* Action Buttons - Top Right */}
         <div className="flex items-center space-x-3">
           <button
             onClick={onEdit}
@@ -49,14 +46,11 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
-          {/* Product Images */}
           <div className="lg:col-span-1">
             {product.images && product.images.length > 0 ? (
               <div className="space-y-4">
-                {/* Main Image */}
                 <div className="relative">
                   <img
                     src={product.images[activeImage]}
@@ -65,7 +59,6 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
                   />
                 </div>
 
-                {/* Thumbnail Images */}
                 {product.images.length > 1 && (
                   <div className="flex space-x-2 overflow-x-auto pb-2">
                     {product.images.map((img, idx) => (
@@ -98,9 +91,7 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
             )}
           </div>
 
-          {/* Product Information */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Basic Info */}
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
                 {product.name}
@@ -118,7 +109,6 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
               </div>
             </div>
 
-            {/* Price and Stock Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div>
@@ -151,7 +141,6 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
                 </div>
               </div>
 
-              {/* Additional Info */}
               <div className="space-y-4">
                 {product.brand && (
                   <div className="flex items-center space-x-3">
@@ -201,7 +190,6 @@ function ProductDetails({ product, onBack, onEdit, onDelete }) {
               </div>
             </div>
 
-            {/* Description */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                 <i className="fas fa-align-left mr-2 text-gray-600 dark:text-gray-400"></i>

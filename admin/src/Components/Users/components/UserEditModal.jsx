@@ -20,7 +20,6 @@ const UserEditModal = ({
   const userRoles = ["user", "admin"];
   const userStatuses = ["active", "inactive", "suspended"];
 
-  // Update form data when selected user changes
   useEffect(() => {
     if (selectedUserForEdit) {
       const nameParts = selectedUserForEdit.name.split(" ");
@@ -28,7 +27,8 @@ const UserEditModal = ({
         first_name: nameParts[0] || "",
         last_name: nameParts.slice(1).join(" ") || "",
         email: selectedUserForEdit.email,
-        phone: selectedUserForEdit.phone !== "N/A" ? selectedUserForEdit.phone : "",
+        phone:
+          selectedUserForEdit.phone !== "N/A" ? selectedUserForEdit.phone : "",
         role: selectedUserForEdit.role,
         status: selectedUserForEdit.status,
       });
@@ -37,9 +37,9 @@ const UserEditModal = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -50,7 +50,7 @@ const UserEditModal = ({
     setLoading(true);
     const success = await handleUserUpdate(selectedUserForEdit.id, formData);
     setLoading(false);
-    
+
     if (success) {
       closeEditModal();
     }
@@ -93,7 +93,6 @@ const UserEditModal = ({
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4 border border-gray-200 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
             Edit User
@@ -106,7 +105,6 @@ const UserEditModal = ({
           </button>
         </div>
 
-        {/* User Info Card */}
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
           <div className="flex items-center">
             <div className="h-12 w-12 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
@@ -118,7 +116,7 @@ const UserEditModal = ({
                 />
               ) : (
                 <span className="text-primary font-semibold">
-                  {selectedUserForEdit.name?.charAt(0)?.toUpperCase() || 'U'}
+                  {selectedUserForEdit.name?.charAt(0)?.toUpperCase() || "U"}
                 </span>
               )}
             </div>
@@ -133,9 +131,7 @@ const UserEditModal = ({
           </div>
         </div>
 
-        {/* Edit Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Name Fields */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -164,7 +160,6 @@ const UserEditModal = ({
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email<span className="text-red-500 ml-1">*</span>
@@ -179,7 +174,6 @@ const UserEditModal = ({
             />
           </div>
 
-          {/* Phone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Phone
@@ -193,7 +187,6 @@ const UserEditModal = ({
             />
           </div>
 
-          {/* Role */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Role
@@ -211,13 +204,16 @@ const UserEditModal = ({
               ))}
             </select>
             <div className="mt-2">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(formData.role)}`}>
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(
+                  formData.role
+                )}`}
+              >
                 {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
               </span>
             </div>
           </div>
 
-          {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Status
@@ -235,13 +231,17 @@ const UserEditModal = ({
               ))}
             </select>
             <div className="mt-2">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(formData.status)}`}>
-                {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                  formData.status
+                )}`}
+              >
+                {formData.status.charAt(0).toUpperCase() +
+                  formData.status.slice(1)}
               </span>
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"

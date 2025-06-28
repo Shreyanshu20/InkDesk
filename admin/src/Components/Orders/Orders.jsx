@@ -9,9 +9,8 @@ import BulkActions from "../Common/BulkActions";
 import { getOrderTableConfig } from "../Common/tableConfig";
 import StatusUpdateModal from "./components/StatusUpdateModal";
 import { getStatusColor } from "./components/utils";
-import OrdersSkeleton from "./OrdersSkeleton"; // Add this import
+import OrdersSkeleton from "./OrdersSkeleton";
 
-// Update the API calls to use the correct base URL
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -49,7 +48,6 @@ function Orders() {
     "cancelled",
   ];
 
-  // Fetch orders from backend with pagination and filters
   const fetchOrders = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -68,7 +66,6 @@ function Orders() {
 
       if (sortConfig.key) {
         let sortBy = sortConfig.key;
-        // Map frontend sort keys to backend fields
         if (sortBy === "customer") sortBy = "user_id";
         else if (sortBy === "date") sortBy = "createdAt";
         else if (sortBy === "total") sortBy = "total_amount";
@@ -81,10 +78,8 @@ function Orders() {
         );
       }
 
-      console.log("🔍 Fetching orders with params:", params.toString());
-
       const response = await axios.get(
-        `${API_BASE_URL}/admin/orders?${params.toString()}`, // Removed /api prefix
+        `${API_BASE_URL}/admin/orders?${params.toString()}`,
         {
           withCredentials: true,
           headers: {
@@ -94,9 +89,6 @@ function Orders() {
       );
 
       if (response.data.success) {
-        console.log("📦 Orders response:", response.data);
-
-        // Transform backend data to frontend format
         const transformedOrders = response.data.orders.map((order) => {
           let customer = {
             name: "Unknown Customer",
@@ -104,16 +96,15 @@ function Orders() {
             id: order.user_id?._id || order.user_id || "unknown",
           };
 
-          // Try to get customer info from populated user data
           if (order.user_id && typeof order.user_id === "object") {
             const firstName = order.user_id.first_name || "";
             const lastName = order.user_id.last_name || "";
-            customer.name = `${firstName} ${lastName}`.trim() || "Unknown Customer";
+            customer.name =
+              `${firstName} ${lastName}`.trim() || "Unknown Customer";
             customer.email = order.user_id.email || "no-email@example.com";
             customer.id = order.user_id._id;
           }
 
-          // Fallback to shipping address if user data not populated
           if (order.shipping_address && order.shipping_address.name) {
             if (customer.name === "Unknown Customer") {
               customer.name = order.shipping_address.name;
@@ -137,13 +128,8 @@ function Orders() {
         setTotalOrders(
           response.data.pagination?.totalOrders || transformedOrders.length
         );
-
-        console.log(
-          `📊 Loaded ${transformedOrders.length} orders of ${response.data.pagination?.totalOrders} total`
-        );
       }
     } catch (error) {
-      console.error("❌ Error fetching orders:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to access orders");
         navigate("/admin/login");
@@ -157,11 +143,8 @@ function Orders() {
     }
   }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig, navigate]);
 
-  // Update the fetchOrderStats function to use the new endpoint
   const fetchOrderStats = useCallback(async () => {
     try {
-      console.log('📊 Fetching order statistics...');
-      
       const response = await axios.get(`${API_BASE_URL}/admin/orders/stats`, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
@@ -169,11 +152,8 @@ function Orders() {
 
       if (response.data.success) {
         setStats(response.data.stats);
-        console.log('📊 Order stats loaded:', response.data.stats);
       }
     } catch (error) {
-      console.error("❌ Error fetching order stats:", error);
-      // Keep default empty stats on error
       setStats({
         total: 0,
         pending: 0,
@@ -184,52 +164,45 @@ function Orders() {
         totalRevenue: 0,
         averageOrderValue: 0,
         todaysOrders: 0,
-        thisWeekOrders: 0
+        thisWeekOrders: 0,
       });
     }
-  }, []); // Remove orders dependency
+  }, []);
 
-  // Initial data load
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // MODIFY: Load stats once on mount, not dependent on orders
   useEffect(() => {
-    fetchOrderStats(); // Load stats once
-  }, []); // Only run once on mount
+    fetchOrderStats();
+  }, []);
 
-  // Event handlers
   const handleSearchChange = useCallback((e) => {
     setSearchQuery(e.target.value);
-    setPage(0); // Reset to first page when searching
+    setPage(0);
   }, []);
 
   const handleStatusFilterChange = useCallback((e) => {
     setStatusFilter(e.target.value);
-    setPage(0); // Reset to first page when filtering
+    setPage(0);
   }, []);
 
   const handlePageChange = useCallback((newPage) => {
     setPage(newPage);
   }, []);
 
-  // MODIFY: Update the handleRowsPerPageChange function
   const handleRowsPerPageChange = useCallback((newRowsPerPage) => {
-    console.log('📦 Orders: Changing rows per page to:', newRowsPerPage);
     setRowsPerPage(parseInt(newRowsPerPage, 10));
     setPage(0);
   }, []);
 
   const handleSortChange = useCallback((newSortConfig) => {
     setSortConfig(newSortConfig);
-    setPage(0); // Reset to first page when sorting
+    setPage(0);
   }, []);
 
-  // CRUD Operations
   const handleViewOrder = useCallback(
     (orderId) => {
-      console.log("👁️ Viewing order:", orderId);
       navigate(`/admin/orders/view/${orderId}`);
     },
     [navigate]
@@ -261,7 +234,6 @@ function Orders() {
         );
 
         if (response.data.success) {
-          // Update local state
           setOrders((prevOrders) =>
             prevOrders.map((order) =>
               order.id === selectedOrderForStatus.id
@@ -271,11 +243,9 @@ function Orders() {
           );
           toast.success("Order status updated successfully");
 
-          // Refresh stats
           fetchOrderStats();
         }
       } catch (error) {
-        console.error("Error updating order status:", error);
         toast.error(
           error.response?.data?.message || "Failed to update order status"
         );
@@ -303,12 +273,10 @@ function Orders() {
               prevOrders.filter((order) => order.id !== orderId)
             );
             toast.success("Order deleted successfully");
-            
-            // Refresh stats
+
             fetchOrderStats();
           }
         } catch (error) {
-          console.error("Error deleting order:", error);
           toast.error(
             error.response?.data?.message || "Failed to delete order"
           );
@@ -334,7 +302,6 @@ function Orders() {
             (result) => result.status === "fulfilled"
           ).length;
 
-          // Remove deleted orders from state
           setOrders((prevOrders) =>
             prevOrders.filter((order) => !ids.includes(order.id))
           );
@@ -346,10 +313,8 @@ function Orders() {
             toast.warning(`Deleted ${successful} of ${ids.length} orders`);
           }
 
-          // Refresh stats
           fetchOrderStats();
         } catch (error) {
-          console.error("Error bulk deleting orders:", error);
           toast.error("Failed to delete orders");
         }
       }
@@ -357,7 +322,6 @@ function Orders() {
     [fetchOrderStats]
   );
 
-  // Selection handlers
   const handleSelectOrder = useCallback((orderId, selected) => {
     setSelectedOrders((prev) =>
       selected ? [...prev, orderId] : prev.filter((id) => id !== orderId)
@@ -379,21 +343,18 @@ function Orders() {
     [orders]
   );
 
-  // Get table configuration
   const tableConfig = useMemo(
     () =>
       getOrderTableConfig(handleViewOrder, handleDeleteOrder, openStatusModal),
     [handleViewOrder, handleDeleteOrder, openStatusModal]
   );
 
-  // Show full page skeleton when loading initially
   if (isLoading && orders.length === 0) {
     return <OrdersSkeleton />;
   }
 
   return (
     <div className="p-6 bg-background">
-      {/* Header with Stats */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
           <div>
@@ -403,7 +364,10 @@ function Orders() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Manage and track all customer orders ({stats.total} total orders)
               {stats.totalRevenue > 0 && (
-                <> • ₹{stats.totalRevenue.toLocaleString('en-IN')} total revenue</>
+                <>
+                  {" "}
+                  • ₹{stats.totalRevenue.toLocaleString("en-IN")} total revenue
+                </>
               )}
               {stats.todaysOrders > 0 && (
                 <> • {stats.todaysOrders} orders today</>
@@ -422,9 +386,7 @@ function Orders() {
           </button>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          {/* Total Orders */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -446,7 +408,6 @@ function Orders() {
             </div>
           </div>
 
-          {/* Rest of the stats cards remain the same but will now show correct totals */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
@@ -529,9 +490,7 @@ function Orders() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Search */}
         <div>
           <label
             htmlFor="search"
@@ -554,7 +513,6 @@ function Orders() {
           </div>
         </div>
 
-        {/* Status Filter */}
         <div>
           <label
             htmlFor="status-filter"
@@ -578,10 +536,8 @@ function Orders() {
         </div>
       </div>
 
-      {/* Orders Table */}
       <div className="bg-white dark:bg-gray-800 rounded-md shadow-sm">
         {isLoading ? (
-          // Show loading spinner for subsequent loads
           <div className="flex justify-center items-center h-64">
             <Loader />
           </div>
@@ -614,7 +570,6 @@ function Orders() {
         )}
       </div>
 
-      {/* Bulk Actions */}
       {selectedOrders.length > 0 && (
         <BulkActions
           selectedItems={selectedOrders}
@@ -633,7 +588,6 @@ function Orders() {
         />
       )}
 
-      {/* Status Update Modal */}
       <StatusUpdateModal
         statusModalOpen={statusModalOpen}
         selectedOrderForStatus={selectedOrderForStatus}

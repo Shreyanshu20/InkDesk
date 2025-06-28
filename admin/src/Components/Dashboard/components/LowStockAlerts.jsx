@@ -1,6 +1,3 @@
-import React from "react";
-import { Link } from "react-router-dom";
-
 function LowStockAlerts({ items }) {
   return (
     <div className="bg-background p-6 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg border border-gray-200 dark:border-gray-800">

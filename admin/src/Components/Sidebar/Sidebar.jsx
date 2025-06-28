@@ -8,7 +8,6 @@ function Sidebar({ collapsed, toggleSidebar }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const location = useLocation();
 
-  // Expand the menu based on current path when component mounts
   useEffect(() => {
     const currentPath = location.pathname;
     navItems.forEach((item) => {
@@ -25,7 +24,6 @@ function Sidebar({ collapsed, toggleSidebar }) {
     });
   }, [location.pathname]);
 
-  // Close submenus when sidebar collapses
   useEffect(() => {
     if (collapsed) {
       setExpandedMenus({});
@@ -39,7 +37,6 @@ function Sidebar({ collapsed, toggleSidebar }) {
     }));
   };
 
-  // Navigation items structure with FontAwesome icons
   const navItems = [
     {
       key: "dashboard",
@@ -99,7 +96,6 @@ function Sidebar({ collapsed, toggleSidebar }) {
     >
       <SidebarHeader collapsed={collapsed} />
 
-      {/* Navigation */}
       <nav
         className="flex-1 overflow-y-auto py-4 px-3"
         aria-label="Admin Navigation"

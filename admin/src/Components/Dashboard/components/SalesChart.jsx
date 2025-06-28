@@ -7,22 +7,19 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Format currency for INR
   const formatCurrency = (amount) => {
     if (amount >= 100000) {
-      return `₹${(amount / 100000).toFixed(1)}L`; // Lakhs
+      return `₹${(amount / 100000).toFixed(1)}L`;
     } else if (amount >= 1000) {
-      return `₹${(amount / 1000).toFixed(0)}K`; // Thousands
+      return `₹${(amount / 1000).toFixed(0)}K`;
     }
     return `₹${amount}`;
   };
 
-  // Format full currency amount
   const formatFullCurrency = (amount) => {
     return `₹${amount.toLocaleString("en-IN")}`;
   };
 
-  // Check if dark mode is active
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains("dark");
@@ -31,7 +28,6 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
 
     checkDarkMode();
 
-    // Re-check dark mode when theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === "class") {
@@ -46,7 +42,6 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
   }, []);
 
   useEffect(() => {
-    // Simulate loading
     setIsLoading(true);
 
     const timer = setTimeout(() => {
@@ -55,10 +50,8 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
       }
 
       const ctx = chartRef.current.getContext("2d");
-      
-      // Check if all data is zero
-      const hasData = salesData[timeRange].data.some(value => value > 0);
-      
+      const hasData = salesData[timeRange].data.some((value) => value > 0);
+
       chartInstance.current = new Chart(ctx, {
         type: "line",
         data: {
@@ -75,11 +68,13 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
                 ? "rgba(59, 130, 246, 1)"
                 : "rgb(59, 130, 246)",
               tension: 0.4,
-              pointBackgroundColor: isDarkMode ? "#ffffff" : "rgb(59, 130, 246)",
+              pointBackgroundColor: isDarkMode
+                ? "#ffffff"
+                : "rgb(59, 130, 246)",
               pointBorderColor: isDarkMode ? "rgba(59, 130, 246, 1)" : "#fff",
               pointHoverBackgroundColor: "#ffffff",
               pointHoverBorderColor: "rgb(59, 130, 246)",
-              pointRadius: hasData ? 6 : 4, // Smaller points if no data
+              pointRadius: hasData ? 6 : 4,
               pointHoverRadius: hasData ? 8 : 6,
               borderWidth: isDarkMode ? 3 : 2.5,
             },
@@ -134,7 +129,6 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
           scales: {
             y: {
               beginAtZero: true,
-              // Set a minimum range even if all values are 0
               suggestedMax: hasData ? undefined : 1000,
               grid: {
                 display: true,
@@ -195,14 +189,12 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
     };
   }, [timeRange, salesData, isDarkMode]);
 
-  // Update the sales summary calculations
   const currentData = salesData[timeRange].data;
   const totalSales = currentData.reduce((sum, value) => sum + value, 0);
-  const averageSales = currentData.length > 0 ? Math.round(totalSales / currentData.length) : 0;
+  const averageSales =
+    currentData.length > 0 ? Math.round(totalSales / currentData.length) : 0;
   const highestSales = currentData.length > 0 ? Math.max(...currentData) : 0;
   const lowestSales = currentData.length > 0 ? Math.min(...currentData) : 0;
-
-  // Add a "No Data" message when there are no sales
   const hasAnySales = totalSales > 0;
 
   return (
@@ -265,7 +257,7 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
           </div>
         ) : null}
-        
+
         {!hasAnySales && !isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <i className="fas fa-chart-line text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
@@ -277,22 +269,21 @@ function SalesChart({ salesData, timeRange, setTimeRange }) {
             </p>
           </div>
         )}
-        
+
         <canvas
           ref={chartRef}
           className={`
             ${
               isLoading
                 ? "opacity-0"
-                : hasAnySales 
-                  ? "opacity-100 transition-opacity duration-500"
-                  : "opacity-20 transition-opacity duration-500"
+                : hasAnySales
+                ? "opacity-100 transition-opacity duration-500"
+                : "opacity-20 transition-opacity duration-500"
             }
           `}
         ></canvas>
       </div>
 
-      {/* Sales Summary - show even with zero data */}
       <div className="mt-6 grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center">
           <p className="text-xs text-text/70 uppercase tracking-wide font-medium">

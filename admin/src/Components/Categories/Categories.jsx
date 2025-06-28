@@ -6,8 +6,8 @@ import Table from "../Common/Table";
 import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import CategoryDetails from "./components/CategoryDetails";
-import CategoriesSkeleton from "./CategoriesSkeleton"; // Add this import
-import { useAdmin } from "../../Context/AdminContext"; // Add this import
+import CategoriesSkeleton from "./CategoriesSkeleton";
+import { useAdmin } from "../../Context/AdminContext";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -17,11 +17,9 @@ function Categories({ view: propView }) {
   const navigate = useNavigate();
   const view = propView || (id ? "view" : "list");
 
-  // Add admin context
   const { user, adminData, isAuthenticated } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
-  // 🔥 ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -33,14 +31,12 @@ function Categories({ view: propView }) {
     direction: "ascending",
   });
 
-  // Fetch categories with product counts
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
 
-      // Use admin route to get categories with full data
       const response = await axios.get(
-        `${API_BASE_URL}/admin/categories?limit=100`, // Get more categories and use admin route
+        `${API_BASE_URL}/admin/categories?limit=100`,
         { withCredentials: true }
       );
 
@@ -48,7 +44,6 @@ function Categories({ view: propView }) {
         const categoriesWithCounts = await Promise.all(
           response.data.categories.map(async (category) => {
             try {
-              // Try to get product count for this category
               const productResponse = await axios.get(
                 `${API_BASE_URL}/products?category=${encodeURIComponent(
                   category.category_name
@@ -62,7 +57,7 @@ function Categories({ view: propView }) {
                 id: category._id,
                 name: category.category_name,
                 description: category.description || "No description provided",
-                image: category.category_image || "", // This should now have the image
+                image: category.category_image || "",
                 subcategories: category.subcategories || [],
                 subcategoryCount: category.subcategories
                   ? category.subcategories.length
@@ -72,11 +67,6 @@ function Categories({ view: propView }) {
                 updatedAt: category.updatedAt,
               };
             } catch (error) {
-              console.warn(
-                `Failed to get product count for category ${category.category_name}:`,
-                error
-              );
-              // Return category without product count if failed
               return {
                 id: category._id,
                 name: category.category_name,
@@ -94,11 +84,9 @@ function Categories({ view: propView }) {
           })
         );
 
-        console.log("📊 Categories with images:", categoriesWithCounts);
         setCategories(categoriesWithCounts);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
     } finally {
       setIsLoading(false);
@@ -109,11 +97,10 @@ function Categories({ view: propView }) {
     fetchCategories();
   }, []);
 
-  // Delete category
   const deleteCategory = async (categoryId) => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/admin/categories/${categoryId}`, // Add /admin prefix
+        `${API_BASE_URL}/admin/categories/${categoryId}`,
         {
           withCredentials: true,
         }
@@ -124,7 +111,6 @@ function Categories({ view: propView }) {
         return true;
       }
     } catch (error) {
-      console.error("Error deleting category:", error);
       if (error.response?.status === 400) {
         toast.error(
           error.response.data.message ||
@@ -137,17 +123,15 @@ function Categories({ view: propView }) {
     }
   };
 
-  // Check admin access - same as Products
   const checkAdminAccess = (action) => {
     if (isAdmin) {
-      return true; // Admin can do everything
+      return true;
     } else {
       toast.error(`Access denied. Admin privileges required to ${action}.`);
-      return false; // User is restricted
+      return false;
     }
   };
 
-  // Navigation handlers with admin checks
   const handleAddCategory = () => {
     navigate("/admin/categories/add");
   };
@@ -191,7 +175,6 @@ function Categories({ view: propView }) {
     }
   };
 
-  // Filter and sort logic
   const filteredCategories = useMemo(() => {
     return categories.filter(
       (category) =>
@@ -231,7 +214,6 @@ function Categories({ view: propView }) {
     );
   }, [sortedFilteredCategories, page, rowsPerPage]);
 
-  // Selection handlers
   const handleSelectCategory = (id, selected) => {
     setSelectedCategories(
       selected
@@ -258,10 +240,8 @@ function Categories({ view: propView }) {
     setPage(0);
   };
 
-  // Check if any category has product count data
   const hasProductCounts = categories.some((cat) => cat.productCount > 0);
 
-  // Table columns - conditionally include product count
   const tableColumns = [
     {
       key: "name",
@@ -278,7 +258,6 @@ function Categories({ view: propView }) {
                 className="h-full w-full object-cover"
                 loading="lazy"
                 onError={(e) => {
-                  console.log("Image failed to load:", category.image);
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "flex";
                 }}
@@ -317,7 +296,6 @@ function Categories({ view: propView }) {
         </div>
       ),
     },
-    // Only include product count column if we have product count data
     ...(hasProductCounts
       ? [
           {
@@ -389,7 +367,6 @@ function Categories({ view: propView }) {
     },
   ];
 
-  // Calculate summary stats
   const totalSubcategories = categories.reduce(
     (sum, cat) => sum + (cat.subcategoryCount || 0),
     0
@@ -398,19 +375,16 @@ function Categories({ view: propView }) {
     ? categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0)
     : null;
 
-  // Show skeleton while loading and no categories
   if (isLoading && categories.length === 0) {
     return <CategoriesSkeleton />;
   }
 
-  // 🔥 NOW WE CAN SAFELY DO CONDITIONAL RETURNS AFTER ALL HOOKS
   if (view === "view" && id) {
-    return <CategoryDetails categoryId={id} />; // Pass the ID as prop
+    return <CategoryDetails categoryId={id} />;
   }
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -420,7 +394,6 @@ function Categories({ view: propView }) {
             Manage your product categories and subcategories
           </p>
 
-          {/* Summary Stats */}
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
             <span className="flex items-center gap-1">
               <i className="fas fa-folder text-primary"></i>
@@ -448,7 +421,6 @@ function Categories({ view: propView }) {
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className="mb-6">
         <div className="relative">
           <input
@@ -470,7 +442,6 @@ function Categories({ view: propView }) {
         </div>
       </div>
 
-      {/* Categories Table */}
       <div className="bg-white dark:bg-gray-800 rounded-md shadow-md hover:shadow-lg transition-shadow duration-300">
         <Table
           data={paginatedCategories}
@@ -501,7 +472,6 @@ function Categories({ view: propView }) {
         />
       </div>
 
-      {/* Bulk Actions - show for admin only */}
       {isAdmin && selectedCategories.length > 0 && (
         <BulkActions
           selectedItems={selectedCategories}

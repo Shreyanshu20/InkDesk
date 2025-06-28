@@ -11,7 +11,6 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Get current theme based on the toggle logic
   const getCurrentTheme = () => {
     if (typeof window === 'undefined') return 'light';
     
@@ -22,9 +21,7 @@ export const ThemeProvider = ({ children }) => {
 
   const [theme, setTheme] = useState(getCurrentTheme);
 
-  // Apply theme on mount and when theme changes
   useEffect(() => {
-    // On page load or when changing themes
     document.documentElement.classList.toggle(
       "dark",
       localStorage.theme === "dark" ||
@@ -36,14 +33,11 @@ export const ThemeProvider = ({ children }) => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     
     if (newTheme === 'light') {
-      // Whenever the user explicitly chooses light mode
       localStorage.theme = "light";
     } else {
-      // Whenever the user explicitly chooses dark mode
       localStorage.theme = "dark";
     }
 
-    // Apply the toggle logic immediately
     document.documentElement.classList.toggle(
       "dark",
       localStorage.theme === "dark" ||

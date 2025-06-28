@@ -8,39 +8,21 @@ function Pagination({
   handleRowsPerPageChange,
   entityName = "items",
 }) {
-  console.log('📄 Pagination render:', {
-    page,
-    rowsPerPage,
-    totalItems,
-    entityName
-  });
-
   const totalPages = Math.ceil(totalItems / rowsPerPage);
   const startItem = page * rowsPerPage + 1;
   const endItem = Math.min((page + 1) * rowsPerPage, totalItems);
 
-  // Add validation to prevent NaN
   const validStartItem = isNaN(startItem) ? 0 : startItem;
   const validEndItem = isNaN(endItem) ? 0 : endItem;
   const validTotalItems = isNaN(totalItems) ? 0 : totalItems;
 
-  console.log('📊 Pagination calculations:', {
-    validStartItem,
-    validEndItem,
-    validTotalItems,
-    totalPages
-  });
-
-  // Generate page numbers to display
   const getPageNumbers = () => {
-    const delta = 2; // Number of pages to show on each side of current page
+    const delta = 2;
     const range = [];
 
-    // Calculate range around current page
     const start = Math.max(0, page - delta);
     const end = Math.min(totalPages - 1, page + delta);
 
-    // Always include first page
     if (start > 0) {
       range.push(0);
       if (start > 1) {
@@ -48,12 +30,10 @@ function Pagination({
       }
     }
 
-    // Add pages around current page
     for (let i = start; i <= end; i++) {
       range.push(i);
     }
 
-    // Always include last page
     if (end < totalPages - 1) {
       if (end < totalPages - 2) {
         range.push("...");
@@ -67,23 +47,17 @@ function Pagination({
   const pageNumbers = getPageNumbers();
 
   if (totalPages <= 1) {
-    return null; // Don't show pagination if only one page
+    return null;
   }
 
-  // Handle rows per page change with better error handling
   const handleRowsChange = (e) => {
     const newValue = e.target.value;
-    console.log('📄 Pagination: Rows per page changed to:', newValue);
-    
+
     if (handleRowsPerPageChange) {
-      // Check if the handler expects an event or a value
-      if (typeof handleRowsPerPageChange === 'function') {
+      if (typeof handleRowsPerPageChange === "function") {
         try {
-          // Try passing the value directly first
           handleRowsPerPageChange(parseInt(newValue, 10));
         } catch (error) {
-          console.warn('📄 Falling back to event-based handler');
-          // Fallback to event if that fails
           handleRowsPerPageChange(e);
         }
       }
@@ -93,7 +67,6 @@ function Pagination({
   return (
     <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Results info */}
         <div className="flex-1 flex justify-between sm:hidden">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             Showing <span className="font-medium">{validStartItem}</span> to{" "}
@@ -107,13 +80,12 @@ function Pagination({
             <p className="text-sm text-gray-700 dark:text-gray-300">
               Showing <span className="font-medium">{validStartItem}</span> to{" "}
               <span className="font-medium">{validEndItem}</span> of{" "}
-              <span className="font-medium">{validTotalItems}</span> {entityName}
+              <span className="font-medium">{validTotalItems}</span>{" "}
+              {entityName}
             </p>
           </div>
 
-          {/* Page navigation */}
           <div className="flex items-center space-x-2">
-            {/* Previous button */}
             <button
               onClick={() => handlePageChange(page - 1)}
               disabled={page === 0}
@@ -127,7 +99,6 @@ function Pagination({
               <i className="fas fa-chevron-left"></i>
             </button>
 
-            {/* Page numbers */}
             <nav
               className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
               aria-label="Pagination"
@@ -164,7 +135,6 @@ function Pagination({
               })}
             </nav>
 
-            {/* Next button */}
             <button
               onClick={() => handlePageChange(page + 1)}
               disabled={page >= totalPages - 1}
@@ -180,7 +150,6 @@ function Pagination({
           </div>
         </div>
 
-        {/* Mobile pagination */}
         <div className="flex justify-between sm:hidden w-full">
           <button
             onClick={() => handlePageChange(page - 1)}
@@ -213,7 +182,6 @@ function Pagination({
           </button>
         </div>
 
-        {/* Rows per page selector */}
         <div className="flex items-center space-x-2">
           <label
             htmlFor="rows-per-page"
@@ -224,7 +192,7 @@ function Pagination({
           <select
             id="rows-per-page"
             value={rowsPerPage}
-            onChange={handleRowsChange} // ✅ Use the improved handler
+            onChange={handleRowsChange}
             className="block w-auto px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
           >
             <option value={5}>5</option>

@@ -12,22 +12,21 @@ const API_BASE_URL =
 
 function Banners() {
   const navigate = useNavigate();
-  const { adminData } = useAdmin(); // Get current user from context
+  const { adminData } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
-  // Add role check function
   const checkAdminAccess = (action) => {
     if (isAdmin) {
-      return true; // Admin can do everything
+      return true;
     } else {
       toast.error(`Access denied. Admin privileges required to ${action}.`);
-      return false; // User is restricted
+      return false;
     }
   };
 
   const [banners, setBanners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // For initial page load (skeleton)
-  const [isRefreshing, setIsRefreshing] = useState(false); // For table data refresh
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedBanners, setSelectedBanners] = useState([]);
@@ -37,12 +36,11 @@ function Banners() {
     direction: "ascending",
   });
 
-  // Fetch banners from API
   const fetchBanners = async (showSuccessToast = false, isRefresh = false) => {
     if (isRefresh) {
-      setIsRefreshing(true); // Use refresh loading for manual refreshes
+      setIsRefreshing(true);
     } else {
-      setIsLoading(true); // Use main loading for initial load
+      setIsLoading(true);
     }
 
     try {
@@ -69,11 +67,9 @@ function Banners() {
           toast.success("Banners refreshed successfully!");
         }
       } else {
-        console.error("Failed to fetch banners:", data.message);
         toast.error("Failed to load banners");
       }
     } catch (error) {
-      console.error("Error fetching banners:", error);
       toast.error("Error loading banners");
     } finally {
       setIsLoading(false);
@@ -81,18 +77,15 @@ function Banners() {
     }
   };
 
-  // Load banners on component mount
   useEffect(() => {
     fetchBanners();
   }, []);
 
-  // Filter banners based on location
   const filteredBanners =
     locationFilter === "all"
       ? banners
       : banners.filter((banner) => banner.location === locationFilter);
 
-  // Sort banners based on the current sort configuration
   const sortedBanners = React.useMemo(() => {
     let bannersToSort = [...filteredBanners];
     if (sortConfig.key) {
@@ -114,7 +107,6 @@ function Banners() {
             ? dateA - dateB
             : dateB - dateA;
         }
-        // Default string sort
         const aValue = a[sortConfig.key]?.toString().toLowerCase() || "";
         const bValue = b[sortConfig.key]?.toString().toLowerCase() || "";
         if (aValue < bValue) {
@@ -129,23 +121,19 @@ function Banners() {
     return bannersToSort;
   }, [filteredBanners, sortConfig]);
 
-  // Simple pagination
   const paginatedBanners = sortedBanners.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
   const handleEditBanner = (id) => {
-    // Remove the role check here - let users access the form
     navigate(`/admin/banners/edit/${id}`);
   };
 
   const handleAddBanner = () => {
-    // Remove the role check here - let users access the form
     navigate("/admin/banners/add");
   };
 
-  // Toggle banner active status
   const handleToggleStatus = async (id) => {
     if (!checkAdminAccess("change banner status")) return;
 
@@ -190,19 +178,16 @@ function Banners() {
         }
       }
     } catch (error) {
-      console.error("Error toggling banner status:", error);
       toast.error("Error updating banner status");
     }
   };
 
-  // Delete banner
   const handleDeleteBanner = async (id) => {
     const banner = banners.find((b) => b._id === id);
     const bannerTitle = banner?.title || "banner";
 
-    // Don't check role here - let user see confirm dialog first
     if (window.confirm(`Are you sure you want to delete "${bannerTitle}"?`)) {
-      if (!checkAdminAccess("delete banners")) return; // Check here after confirmation
+      if (!checkAdminAccess("delete banners")) return;
 
       try {
         const token =
@@ -240,21 +225,17 @@ function Banners() {
           }
         }
       } catch (error) {
-        console.error("Error deleting banner:", error);
         toast.error("Error deleting banner");
       }
     }
   };
 
-  // Bulk operations
   const handleBulkDelete = async (ids) => {
-    // Don't check role here - let user see confirm dialog first
     if (
       window.confirm(`Are you sure you want to delete ${ids.length} banners?`)
     ) {
-      if (!checkAdminAccess("delete banners")) return; // Check here after confirmation
+      if (!checkAdminAccess("delete banners")) return;
 
-      // Show loading toast
       const toastId = toast.loading(`Deleting ${ids.length} banners...`);
 
       try {
@@ -265,7 +246,6 @@ function Banners() {
             "$1"
           );
 
-        // Delete each banner
         const results = await Promise.allSettled(
           ids.map((id) =>
             fetch(`${API_BASE_URL}/banners/admin/${id}`, {
@@ -289,7 +269,6 @@ function Banners() {
         await fetchBanners();
         setSelectedBanners([]);
 
-        // Update the loading toast
         toast.dismiss(toastId);
 
         if (failureCount === 0) {
@@ -304,16 +283,14 @@ function Banners() {
           );
         }
       } catch (error) {
-        console.error("Error deleting banners:", error);
         toast.dismiss(toastId);
         toast.error("Error deleting banners");
       }
     }
   };
 
-  // Bulk activate
   const handleBulkActivate = async (ids) => {
-    if (!checkAdminAccess("activate banners")) return; // Check role immediately
+    if (!checkAdminAccess("activate banners")) return;
 
     const inactiveBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
@@ -337,7 +314,6 @@ function Banners() {
           "$1"
         );
 
-      // Update each banner to active
       await Promise.all(
         inactiveBanners.map((id) => {
           const banner = banners.find((b) => b._id === id);
@@ -364,15 +340,13 @@ function Banners() {
         }
       );
     } catch (error) {
-      console.error("Error activating banners:", error);
       toast.dismiss(toastId);
       toast.error("Error activating banners");
     }
   };
 
-  // Bulk deactivate
   const handleBulkDeactivate = async (ids) => {
-    if (!checkAdminAccess("deactivate banners")) return; // Check role immediately
+    if (!checkAdminAccess("deactivate banners")) return;
 
     const activeBanners = ids.filter((id) => {
       const banner = banners.find((b) => b._id === id);
@@ -396,7 +370,6 @@ function Banners() {
           "$1"
         );
 
-      // Update each banner to inactive
       await Promise.all(
         activeBanners.map((id) => {
           const banner = banners.find((b) => b._id === id);
@@ -423,13 +396,11 @@ function Banners() {
         }
       );
     } catch (error) {
-      console.error("Error deactivating banners:", error);
       toast.dismiss(toastId);
       toast.error("Error deactivating banners");
     }
   };
 
-  // Pagination handlers
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
@@ -439,7 +410,6 @@ function Banners() {
     setPage(0);
   };
 
-  // Selection handlers
   const handleSelectBanner = (id, selected) => {
     setSelectedBanners(
       selected
@@ -454,33 +424,10 @@ function Banners() {
     );
   };
 
-  // Handle sort change
   const handleSortChange = (newSortConfig) => {
     setSortConfig(newSortConfig);
   };
 
-  // Get current status of banner
-  const getBannerStatus = (banner) => {
-    const now = new Date();
-    const startDate = new Date(banner.startDate);
-    const endDate = new Date(banner.endDate);
-
-    if (!banner.isActive) {
-      return { status: "inactive", label: "Inactive", color: "gray" };
-    }
-
-    if (now < startDate) {
-      return { status: "scheduled", label: "Scheduled", color: "blue" };
-    }
-
-    if (now > endDate) {
-      return { status: "expired", label: "Expired", color: "red" };
-    }
-
-    return { status: "active", label: "Active", color: "green" };
-  };
-
-  // Format location display
   const formatLocation = (location) => {
     const locationMap = {
       "homepage-carousel": "Homepage Carousel",
@@ -490,19 +437,15 @@ function Banners() {
     return locationMap[location] || location;
   };
 
-  // Table configuration with proper column definitions
   const tableConfig = {
     columns: [
       {
         key: "banner",
         label: "Banner",
         sortable: false,
-        width: "280px", // Increased from 200px to match Products table
+        width: "280px",
         customRenderer: (banner) => (
           <div className="flex items-start gap-3 py-3 w-full">
-            {" "}
-            {/* Removed max-width constraint */}
-            {/* Thumbnail */}
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 border border-gray-200 dark:border-gray-600">
               {banner.image ? (
                 <img
@@ -520,9 +463,7 @@ function Banners() {
                 </div>
               )}
             </div>
-            {/* Content - Better text layout */}
             <div className="flex-1 min-w-0 space-y-1.5 overflow-hidden">
-              {/* Title */}
               <div className="text-sm font-medium text-gray-900 dark:text-white">
                 <div
                   className="text-wrap leading-relaxed"
@@ -530,7 +471,7 @@ function Banners() {
                     whiteSpace: "normal",
                     wordWrap: "break-word",
                     wordBreak: "break-word",
-                    maxWidth: "200px", // Increased from 140px
+                    maxWidth: "200px",
                   }}
                   title={banner.title}
                 >
@@ -538,7 +479,6 @@ function Banners() {
                 </div>
               </div>
 
-              {/* Subtitle */}
               {banner.subtitle && (
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   <div
@@ -547,7 +487,7 @@ function Banners() {
                       whiteSpace: "normal",
                       wordWrap: "break-word",
                       wordBreak: "break-word",
-                      maxWidth: "200px", // Increased from 140px
+                      maxWidth: "200px",
                     }}
                     title={banner.subtitle}
                   >
@@ -556,7 +496,6 @@ function Banners() {
                 </div>
               )}
 
-              {/* URL */}
               {banner.url && (
                 <div className="text-sm text-blue-600 dark:text-blue-400">
                   <div className="flex items-start gap-1">
@@ -567,7 +506,7 @@ function Banners() {
                         whiteSpace: "normal",
                         wordBreak: "break-all",
                         overflowWrap: "anywhere",
-                        maxWidth: "180px", // Increased from 120px
+                        maxWidth: "180px",
                       }}
                       title={banner.url}
                     >
@@ -577,7 +516,6 @@ function Banners() {
                 </div>
               )}
 
-              {/* Button Text */}
               {banner.buttonText && (
                 <div className="text-sm text-gray-400 dark:text-gray-500">
                   <span
@@ -586,7 +524,7 @@ function Banners() {
                       whiteSpace: "normal",
                       wordWrap: "break-word",
                       wordBreak: "break-word",
-                      maxWidth: "200px", // Increased from 140px
+                      maxWidth: "200px",
                     }}
                   >
                     CTA: "{banner.buttonText}"
@@ -657,23 +595,19 @@ function Banners() {
           const endDate = new Date(banner.endDate);
           const now = new Date();
 
-          // Calculate days left
           let daysLeft = 0;
           let status = "";
           let color = "";
 
           if (now < startDate) {
-            // Scheduled - days until start
             daysLeft = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
             status = "starts";
             color = "text-blue-600 dark:text-blue-400";
           } else if (now > endDate) {
-            // Expired - days since end
             daysLeft = Math.ceil((now - endDate) / (1000 * 60 * 60 * 24));
             status = "expired";
             color = "text-red-600 dark:text-red-400";
           } else {
-            // Active - days until end
             daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
             status = "left";
             color = "text-green-600 dark:text-green-400";
@@ -692,13 +626,10 @@ function Banners() {
         key: "status",
         label: "Status",
         sortable: false,
-        width: "90px", // Slightly increased width
+        width: "90px",
         customRenderer: (banner) => {
           return (
             <div className="flex flex-col items-center space-y-1">
-              {" "}
-              {/* Increased spacing back to 1 */}
-              {/* Status Dropdown with better dark theme support */}
               <select
                 value={banner.isActive ? "active" : "inactive"}
                 onChange={(e) => {
@@ -787,12 +718,10 @@ function Banners() {
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Show skeleton for initial loading only */}
       {isLoading ? (
         <BannersSkeleton />
       ) : (
         <>
-          {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -803,17 +732,17 @@ function Banners() {
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Refresh button with loading state */}
               <button
                 onClick={() => fetchBanners(true, true)}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="Refresh banners"
                 disabled={isRefreshing}
               >
-                <i className={`fas fa-sync-alt ${isRefreshing ? "fa-spin" : ""}`}></i>
+                <i
+                  className={`fas fa-sync-alt ${isRefreshing ? "fa-spin" : ""}`}
+                ></i>
               </button>
 
-              {/* Filter dropdown */}
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
@@ -825,7 +754,6 @@ function Banners() {
                 <option value="advertisement">Advertisement Banner</option>
               </select>
 
-              {/* Add button */}
               <button
                 onClick={handleAddBanner}
                 className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md flex items-center transition-colors"
@@ -836,7 +764,6 @@ function Banners() {
             </div>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
               <div className="flex items-center gap-1">
@@ -922,11 +849,9 @@ function Banners() {
             </div>
           </div>
 
-          {/* Banners table with separate loading state */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               {isRefreshing ? (
-                // Table loading spinner
                 <div className="flex justify-center items-center py-12">
                   <div className="flex flex-col items-center">
                     <i className="fas fa-spinner fa-spin text-primary text-2xl mb-2"></i>
@@ -952,7 +877,6 @@ function Banners() {
               )}
             </div>
 
-            {/* Pagination - only show when not refreshing */}
             {!isRefreshing && filteredBanners.length > 0 && (
               <Pagination
                 page={page}
@@ -965,7 +889,6 @@ function Banners() {
             )}
           </div>
 
-          {/* Bulk Actions */}
           {selectedBanners.length > 0 && (
             <BulkActions
               selectedItems={selectedBanners}

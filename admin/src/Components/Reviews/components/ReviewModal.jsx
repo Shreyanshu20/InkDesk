@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const ReviewModal = ({ showModal, activeReview, onClose }) => {
   const renderRatingStars = (rating) => {
@@ -26,22 +26,19 @@ const ReviewModal = ({ showModal, activeReview, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Modal Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Review Details
           </h3>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex justify-center items-center  hover:bg-gray-600 text-gray-400 rounded-md focus:outline-none transition-colors duration-200"
+            className="w-6 h-6 flex justify-center items-center hover:bg-gray-600 text-gray-400 rounded-md focus:outline-none transition-colors duration-200"
           >
             <i className="fas fa-times"></i>
           </button>
         </div>
 
-        {/* Modal Content - Scrollable */}
         <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Customer Info */}
           <div className="flex items-center mb-4">
             <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
               {activeReview.customer.avatar ? (
@@ -71,7 +68,6 @@ const ReviewModal = ({ showModal, activeReview, onClose }) => {
             </div>
           </div>
 
-          {/* Product Info */}
           <div className="flex items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md mb-4">
             <div className="h-10 w-10 flex-shrink-0">
               {activeReview.product.image ? (
@@ -96,7 +92,6 @@ const ReviewModal = ({ showModal, activeReview, onClose }) => {
             </div>
           </div>
 
-          {/* Review Content */}
           <div className="mb-4">
             <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
               Review Comment
@@ -108,7 +103,6 @@ const ReviewModal = ({ showModal, activeReview, onClose }) => {
             </div>
           </div>
 
-          {/* Date */}
           <div className="text-xs text-gray-500 dark:text-gray-400">
             Submitted on{" "}
             {new Date(activeReview.date).toLocaleDateString("en-US", {
@@ -121,8 +115,6 @@ const ReviewModal = ({ showModal, activeReview, onClose }) => {
             })}
           </div>
         </div>
-
-        
       </div>
     </div>
   );

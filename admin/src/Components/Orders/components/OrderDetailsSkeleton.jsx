@@ -3,7 +3,6 @@ import React from "react";
 function OrderDetailsSkeleton() {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Header Skeleton */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mr-4"></div>
@@ -19,10 +18,7 @@ function OrderDetailsSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Order Summary */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Order Info Card Skeleton */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-40"></div>
@@ -38,12 +34,14 @@ function OrderDetailsSkeleton() {
             </div>
           </div>
 
-          {/* Order Items Card Skeleton */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48 mb-4"></div>
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
                     <div>
@@ -59,10 +57,7 @@ function OrderDetailsSkeleton() {
           </div>
         </div>
 
-        {/* Right Column - Customer & Shipping */}
         <div className="space-y-6">
-          
-          {/* Customer Info Skeleton */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-44 mb-4"></div>
             <div className="space-y-3">
@@ -75,7 +70,6 @@ function OrderDetailsSkeleton() {
             </div>
           </div>
 
-          {/* Shipping Address Skeleton */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-36 mb-4"></div>
             <div className="space-y-2">
@@ -87,7 +81,6 @@ function OrderDetailsSkeleton() {
             </div>
           </div>
 
-          {/* Order Summary Skeleton */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32 mb-4"></div>
             <div className="space-y-2">

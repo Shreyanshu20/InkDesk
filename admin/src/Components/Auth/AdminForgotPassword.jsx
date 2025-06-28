@@ -7,12 +7,10 @@ import { ThemeContext } from "../../Context/ThemeContext";
 function AdminForgotPassword() {
   const navigate = useNavigate();
   const { themeToggle } = useContext(ThemeContext);
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Track the current step of the password reset flow
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
-
-  // Form data for all steps
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [passwords, setPasswords] = useState({
@@ -20,28 +18,22 @@ function AdminForgotPassword() {
     confirmPassword: "",
   });
 
-  // Password visibility toggles
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Loading states for each step
   const [sendingEmail, setSendingEmail] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
 
-  // OTP resend cooldown
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Theme state
   const [isDark, setIsDark] = useState(false);
 
-  // References for OTP inputs
   const inputRefs = Array(6)
     .fill(0)
     .map(() => useRef(null));
 
-  // Check initial theme state
   useEffect(() => {
     const isDarkMode =
       document.documentElement.classList.contains("dark") ||
@@ -51,13 +43,11 @@ function AdminForgotPassword() {
     setIsDark(isDarkMode);
   }, []);
 
-  // Handle theme toggle
   const handleThemeToggle = () => {
     themeToggle();
     setIsDark(!isDark);
   };
 
-  // Handle email submission (Step 1)
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
 
@@ -98,7 +88,6 @@ function AdminForgotPassword() {
         toast.error(response.data.message || "Failed to send OTP");
       }
     } catch (error) {
-      console.error("Send OTP error:", error);
       toast.error(
         error.response?.data?.message || "Failed to send OTP. Please try again."
       );
@@ -107,7 +96,6 @@ function AdminForgotPassword() {
     }
   };
 
-  // Handle OTP input changes
   const handleOtpChange = (index, value) => {
     if (value && !/^\d*$/.test(value)) return;
 
@@ -120,14 +108,12 @@ function AdminForgotPassword() {
     }
   };
 
-  // Handle backspace in OTP fields
   const handleOtpKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs[index - 1].current.focus();
     }
   };
 
-  // Handle OTP paste
   const handleOtpPaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text");
@@ -139,7 +125,6 @@ function AdminForgotPassword() {
     }
   };
 
-  // Resend OTP
   const handleResendOtp = async () => {
     if (resendDisabled) return;
 
@@ -169,13 +154,11 @@ function AdminForgotPassword() {
         setResendDisabled(false);
       }
     } catch (error) {
-      console.error("Resend OTP error:", error);
       toast.error(error.response?.data?.message || "Failed to resend OTP");
       setResendDisabled(false);
     }
   };
 
-  // Verify OTP (Step 2)
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
 
@@ -188,7 +171,6 @@ function AdminForgotPassword() {
     setStep(3);
   };
 
-  // Handle password change
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswords({
@@ -197,7 +179,6 @@ function AdminForgotPassword() {
     });
   };
 
-  // Reset password (Step 3)
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
@@ -234,7 +215,6 @@ function AdminForgotPassword() {
         toast.error(response.data.message || "Failed to reset password");
       }
     } catch (error) {
-      console.error("Password reset error:", error);
       if (error.response?.data?.message === "Invalid OTP") {
         toast.error("Invalid verification code. Please check and try again.");
         setStep(2);
@@ -251,7 +231,6 @@ function AdminForgotPassword() {
     }
   };
 
-  // Render different form based on current step
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -420,7 +399,11 @@ function AdminForgotPassword() {
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
-                  <i className={`fas ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  <i
+                    className={`fas ${
+                      showNewPassword ? "fa-eye-slash" : "fa-eye"
+                    }`}
+                  ></i>
                 </button>
               </div>
             </div>
@@ -451,7 +434,11 @@ function AdminForgotPassword() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
-                  <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  <i
+                    className={`fas ${
+                      showConfirmPassword ? "fa-eye-slash" : "fa-eye"
+                    }`}
+                  ></i>
                 </button>
               </div>
             </div>
@@ -485,7 +472,6 @@ function AdminForgotPassword() {
 
   return (
     <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 md:py-12 relative">
-      {/* Theme Toggle - Top Left */}
       <div className="absolute top-4 right-4 z-10">
         <button
           onClick={handleThemeToggle}
@@ -499,7 +485,6 @@ function AdminForgotPassword() {
 
       <div className="mx-auto w-full max-w-md md:max-w-lg">
         <div className="bg-white dark:bg-gray-800 py-8 px-6 md:px-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
@@ -516,10 +501,8 @@ function AdminForgotPassword() {
             </p>
           </div>
 
-          {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex items-center">
-              {/* Step 1 */}
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -535,14 +518,12 @@ function AdminForgotPassword() {
                 </span>
               </div>
 
-              {/* Line 1 */}
               <div
                 className={`flex-1 h-1 mb-5 ${
                   step > 1 ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 } transition-all duration-200`}
               ></div>
 
-              {/* Step 2 */}
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -558,14 +539,12 @@ function AdminForgotPassword() {
                 </span>
               </div>
 
-              {/* Line 2 */}
               <div
                 className={`flex-1 h-1 mb-5 ${
                   step > 2 ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 } transition-all duration-200`}
               ></div>
 
-              {/* Step 3 */}
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
@@ -583,10 +562,8 @@ function AdminForgotPassword() {
             </div>
           </div>
 
-          {/* Step Content */}
           {renderStepContent()}
 
-          {/* Back to Login */}
           <div className="mt-6 text-center">
             <Link
               to="/admin/login"

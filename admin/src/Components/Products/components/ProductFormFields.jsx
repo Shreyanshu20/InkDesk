@@ -30,7 +30,6 @@ function ProductFormFields({
         Product Information
       </h2>
 
-      {/* Product Name */}
       <div>
         <label
           htmlFor="name"
@@ -62,7 +61,6 @@ function ProductFormFields({
         )}
       </div>
 
-      {/* Description */}
       <div>
         <label
           htmlFor="description"
@@ -99,7 +97,6 @@ function ProductFormFields({
         )}
       </div>
 
-      {/* Price and Stock Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
@@ -170,7 +167,6 @@ function ProductFormFields({
         </div>
       </div>
 
-      {/* Category */}
       <div>
         <label
           htmlFor="category"
@@ -207,7 +203,6 @@ function ProductFormFields({
         )}
       </div>
 
-      {/* Subcategory */}
       <div>
         <label
           htmlFor="subcategory"
@@ -262,7 +257,6 @@ function ProductFormFields({
           )}
       </div>
 
-      {/* Brand */}
       <div>
         <label
           htmlFor="brand"
@@ -294,7 +288,6 @@ function ProductFormFields({
         )}
       </div>
 
-      {/* Discount and Rating Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label
@@ -367,7 +360,6 @@ function ProductFormFields({
         </div>
       </div>
 
-      {/* Status */}
       <div>
         <label
           htmlFor="status"

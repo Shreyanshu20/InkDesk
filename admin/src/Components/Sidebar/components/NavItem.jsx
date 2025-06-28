@@ -6,7 +6,6 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
   const buttonRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0 });
 
-  // Update dropdown position when it's toggled
   useEffect(() => {
     if (collapsed && expandedMenus[item.key] && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -16,7 +15,6 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
     }
   }, [expandedMenus, item.key, collapsed]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -36,11 +34,9 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
     };
   }, [collapsed, expandedMenus, item.key, toggleMenu]);
 
-  // Handle submenu item rendering
   const renderSubmenuItems = (children) => {
     if (!expandedMenus[item.key]) return null;
 
-    // Regular submenu when sidebar is expanded
     if (!collapsed) {
       return (
         <ul className="pl-10 mt-1 space-y-1 fade-in" role="menu">
@@ -66,13 +62,12 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
       );
     }
 
-    // Floating dropdown when sidebar is collapsed
     return (
       <div
         ref={dropdownRef}
         className="fixed z-50 w-40 rounded-md shadow-lg py-1 bg-background border border-gray-300 dark:border-gray-800 fade-in"
         style={{
-          left: "70px", // Adjust based on sidebar width
+          left: "70px",
           top: `${dropdownPosition.top}px`,
         }}
         role="menu"
@@ -99,7 +94,6 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
     );
   };
 
-  // Handle menu item with children
   if (item.children) {
     return (
       <li role="none" className="relative">
@@ -139,7 +133,6 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
           )}
         </button>
 
-        {/* Submenu - either inline or floating dropdown */}
         <div id={`submenu-${item.key}`} className="submenu-container">
           {renderSubmenuItems(item.children)}
         </div>
@@ -147,7 +140,6 @@ function NavItem({ item, collapsed, expandedMenus, toggleMenu, location }) {
     );
   }
 
-  // Handle regular menu item
   return (
     <li role="none">
       <NavLink

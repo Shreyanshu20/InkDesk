@@ -9,12 +9,11 @@ const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function SubcategoryTable({ categoryId, categoryName, onClose }) {
-  // Add admin context
   const { user, adminData } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
   const [subcategories, setSubcategories] = useState([]);
-  const [categoryCreatedAt, setCategoryCreatedAt] = useState(null); // Add this state
+  const [categoryCreatedAt, setCategoryCreatedAt] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubcategories, setSelectedSubcategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,13 +33,11 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
     try {
       setIsLoading(true);
 
-      // Fetch subcategories
       const subcategoriesResponse = await axios.get(
         `${API_BASE_URL}/admin/categories/${categoryId}/subcategories`,
         { withCredentials: true }
       );
 
-      // Fetch category details to get creation date
       const categoryResponse = await axios.get(
         `${API_BASE_URL}/admin/categories/${categoryId}`,
         { withCredentials: true }
@@ -52,20 +49,14 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
 
       if (categoryResponse.data.success && categoryResponse.data.category) {
         setCategoryCreatedAt(categoryResponse.data.category.createdAt);
-        console.log(
-          "📅 Category created at:",
-          categoryResponse.data.category.createdAt
-        );
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
       toast.error("Failed to load subcategories");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Check admin access
   const checkAdminAccess = (action) => {
     if (isAdmin) {
       return true;
@@ -100,7 +91,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
         fetchSubcategoriesAndCategoryDate();
       }
     } catch (error) {
-      console.error("Error creating subcategory:", error);
       const message =
         error.response?.data?.message || "Failed to create subcategory";
       toast.error(message);
@@ -136,10 +126,9 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       if (response.data.success) {
         toast.success("Subcategory updated successfully");
         setEditingSubcategory(null);
-        fetchSubcategoriesAndCategoryDate(); // This is correct
+        fetchSubcategoriesAndCategoryDate();
       }
     } catch (error) {
-      console.error("Error updating subcategory:", error);
       const message =
         error.response?.data?.message || "Failed to update subcategory";
       toast.error(message);
@@ -149,10 +138,8 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
   const handleImageUpload = (subcategoryId) => {
     if (!checkAdminAccess("upload images")) return;
 
-    // Simply trigger the file input click and handle the change event
     fileInputRef.current.click();
 
-    // Set up the file change handler for this specific subcategory
     fileInputRef.current.onchange = (e) => {
       if (e.target.files[0]) {
         uploadImageFile(subcategoryId, e.target.files[0]);
@@ -163,14 +150,12 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
   const uploadImageFile = async (subcategoryId, file) => {
     if (!file) return;
 
-    // Validate file type
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
       toast.error("Please upload only JPG, PNG, or WebP images");
       return;
     }
 
-    // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error("Image must be smaller than 5MB");
@@ -195,7 +180,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       if (response.data.success && response.data.images.length > 0) {
         const uploadedImg = response.data.images[0];
 
-        // Update subcategory with new image
         await updateSubcategory(
           subcategoryId,
           subcategories.find((sub) => sub._id === subcategoryId)
@@ -206,7 +190,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
         toast.success("Image uploaded successfully");
       }
     } catch (error) {
-      console.error("Upload error:", error);
       toast.error("Failed to upload image");
     } finally {
       setUploadingImage(null);
@@ -223,12 +206,9 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
     if (!subcategory?.subcategory_image) return;
 
     try {
-      // Update subcategory to remove image
       await updateSubcategory(subcategoryId, subcategory.subcategory_name, "");
-
       toast.success("Image removed successfully");
     } catch (error) {
-      console.error("Error removing image:", error);
       toast.error("Failed to remove image");
     }
   };
@@ -251,7 +231,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
         fetchSubcategoriesAndCategoryDate();
       }
     } catch (error) {
-      console.error("Error deleting subcategory:", error);
       const message =
         error.response?.data?.message || "Failed to delete subcategory";
       toast.error(message);
@@ -275,7 +254,7 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
         });
         successCount++;
       } catch (error) {
-        console.error(`Error deleting subcategory ${id}:`, error);
+        // Continue with next deletion
       }
     }
 
@@ -294,12 +273,10 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
     setSelectedSubcategories([]);
   };
 
-  // Filter subcategories based on search
   const filteredSubcategories = subcategories.filter((sub) =>
     sub.subcategory_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Paginate filtered subcategories
   const paginatedSubcategories = filteredSubcategories.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -313,7 +290,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       className: "px-6 py-4 whitespace-nowrap",
       customRenderer: (subcategory) => (
         <div className="flex items-center">
-          {/* Image */}
           <div className="h-12 w-12 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-3">
             {subcategory.subcategory_image ? (
               <img
@@ -326,7 +302,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
             )}
           </div>
 
-          {/* Info */}
           <div className="flex-1">
             {editingSubcategory === subcategory._id ? (
               <div className="flex items-center gap-2">
@@ -432,7 +407,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
       sortable: true,
       className: "px-6 py-4 whitespace-nowrap",
       customRenderer: (subcategory) => {
-        // Use subcategory's createdAt if available, otherwise fall back to category's createdAt
         const dateToUse = subcategory.createdAt || categoryCreatedAt;
 
         return (
@@ -487,7 +461,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/80 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div>
             <h2 className="text-xl font-semibold text-text">
@@ -515,7 +488,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           </div>
         </div>
 
-        {/* Show warning for non-admin users */}
         {!isAdmin && (
           <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
             <div className="flex">
@@ -528,7 +500,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           </div>
         )}
 
-        {/* Add Form */}
         {showAddForm && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -565,7 +536,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           </div>
         )}
 
-        {/* Search */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="relative">
             <input
@@ -579,7 +549,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           </div>
         </div>
 
-        {/* Table Container - This is the scrollable area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <Table
             data={paginatedSubcategories}
@@ -604,7 +573,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           />
         </div>
 
-        {/* Pagination */}
         <div className="border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <Pagination
             page={page}
@@ -619,7 +587,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           />
         </div>
 
-        {/* Bulk Actions - show for admin only */}
         {isAdmin && selectedSubcategories.length > 0 && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -637,7 +604,6 @@ function SubcategoryTable({ categoryId, categoryName, onClose }) {
           </div>
         )}
 
-        {/* Hidden file input for image uploads */}
         <input
           ref={fileInputRef}
           type="file"

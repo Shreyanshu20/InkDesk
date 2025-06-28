@@ -90,7 +90,6 @@ function App() {
       />
 
       <Routes>
-        {/* Login Route - With Mobile Restriction */}
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
         <Route
           path="/admin/login"
@@ -108,11 +107,7 @@ function App() {
             </MobileAwareLogin>
           }
         />
-
-        {/* Root redirect */}
         <Route path="/" element={<RedirectToAdmin />} />
-
-        {/* Protected admin routes with mobile restriction */}
         <Route
           path="/admin"
           element={
@@ -122,50 +117,34 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-
-          {/* Products routes */}
           <Route path="products">
             <Route index element={<Products />} />
             <Route path="add" element={<ProductForm mode="add" />} />
             <Route path="edit/:id" element={<ProductForm mode="edit" />} />
             <Route path="view/:id" element={<Products view="view" />} />
           </Route>
-
-          {/* Orders routes */}
           <Route path="orders">
             <Route index element={<Orders />} />
             <Route path="view/:id" element={<OrderDetails />} />
           </Route>
-
-          {/* Users routes */}
           <Route path="users">
             <Route index element={<Users />} />
             <Route path="view/:id" element={<UserDetails />} />
           </Route>
-
-          {/* Categories routes */}
           <Route path="categories">
             <Route index element={<Categories />} />
             <Route path="add" element={<CategoryForm mode="add" />} />
             <Route path="edit/:id" element={<CategoryForm mode="edit" />} />
             <Route path="view/:id" element={<Categories view="view" />} />
           </Route>
-
-          {/* Banners routes */}
           <Route path="banners">
             <Route index element={<Banners />} />
             <Route path="add" element={<BannerForm mode="add" />} />
             <Route path="edit/:id" element={<BannerForm mode="edit" />} />
           </Route>
-
-          {/* Reviews routes */}
           <Route path="reviews" element={<Reviews />} />
-
-          {/* Settings routes */}
           <Route path="settings" element={<Settings />} />
         </Route>
-
-        {/* Catch all - redirect to admin */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminContextProvider>

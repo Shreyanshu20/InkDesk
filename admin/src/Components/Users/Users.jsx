@@ -8,16 +8,16 @@ import BulkActions from "../Common/BulkActions";
 import UserDetails from "./components/UserDetails";
 import UserEditModal from "./components/UserEditModal";
 import { getUserTableConfig } from "../Common/tableConfig";
-import { useAdmin } from '../../Context/AdminContext';
-import UsersSkeleton from "./UsersSkeleton"; // Add this import
+import { useAdmin } from "../../Context/AdminContext";
+import UsersSkeleton from "./UsersSkeleton";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Users() {
   const { adminData } = useAdmin();
-  const isAdmin = adminData?.role === 'admin';
+  const isAdmin = adminData?.role === "admin";
 
-  // Simple role check function that shows toast and returns boolean
   const checkAdminAccess = (action) => {
     if (isAdmin) {
       return true;
@@ -37,8 +37,7 @@ function Users() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
-  
-  // ADD: Separate state for user stats
+
   const [userStats, setUserStats] = useState({
     total: 0,
     active: 0,
@@ -47,9 +46,9 @@ function Users() {
     admins: 0,
     users: 0,
     verifiedUsers: 0,
-    recentUsers: 0
+    recentUsers: 0,
   });
-  
+
   const [sortConfig, setSortConfig] = useState({
     key: "createdAt",
     direction: "descending",
@@ -61,34 +60,24 @@ function Users() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ADD: Fetch user statistics (separate from paginated users)
   const fetchUserStats = async () => {
     try {
-      console.log("📊 Fetching user statistics...");
-      
-      const response = await axios.get(
-        `${API_BASE_URL}/admin/users/stats`,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await axios.get(`${API_BASE_URL}/admin/users/stats`, {
+        withCredentials: true,
+      });
 
       if (response.data.success) {
         setUserStats(response.data.stats);
-        console.log("📊 User stats loaded:", response.data.stats);
       }
     } catch (error) {
-      console.error("❌ Error fetching user stats:", error);
       // Keep default empty stats on error
     }
   };
 
-  // MODIFY: Load both stats and users on mount
   useEffect(() => {
-    fetchUserStats(); // Load stats once
-  }, []); // Only run once on mount
+    fetchUserStats();
+  }, []);
 
-  // Fetch users from backend
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
@@ -107,10 +96,11 @@ function Users() {
 
       if (sortConfig.key) {
         params.append("sortBy", sortConfig.key);
-        params.append("sortOrder", sortConfig.direction === "ascending" ? "asc" : "desc");
+        params.append(
+          "sortOrder",
+          sortConfig.direction === "ascending" ? "asc" : "desc"
+        );
       }
-
-      console.log('🔍 Fetching users with params:', params.toString());
 
       const response = await axios.get(
         `${API_BASE_URL}/admin/users?${params.toString()}`,
@@ -120,11 +110,11 @@ function Users() {
       );
 
       if (response.data.success) {
-        console.log('👥 Users response:', response.data);
-
         const transformedUsers = response.data.users.map((user) => ({
           id: user._id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
+          name:
+            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+            "Unknown User",
           email: user.email,
           role: user.role || "customer",
           status: user.status || "active",
@@ -139,12 +129,11 @@ function Users() {
         }));
 
         setUsers(transformedUsers);
-        setTotalUsers(response.data.pagination?.total || transformedUsers.length);
-
-        console.log(`📊 Loaded ${transformedUsers.length} users of ${response.data.pagination?.total} total`);
+        setTotalUsers(
+          response.data.pagination?.total || transformedUsers.length
+        );
       }
     } catch (error) {
-      console.error("❌ Error fetching users:", error);
       toast.error("Failed to load users");
       setUsers([]);
       setTotalUsers(0);
@@ -153,7 +142,6 @@ function Users() {
     }
   };
 
-  // Fetch single user by ID
   const fetchUserById = async (userId) => {
     try {
       const response = await axios.get(
@@ -166,7 +154,9 @@ function Users() {
         const user = response.data.user;
         const transformedUser = {
           id: user._id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unknown User",
+          name:
+            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+            "Unknown User",
           email: user.email,
           role: user.role || "customer",
           status: user.status || "active",
@@ -186,13 +176,11 @@ function Users() {
         setCurrentUser(transformedUser);
       }
     } catch (error) {
-      console.error("❌ Error fetching user:", error);
       toast.error("Failed to load user details");
       navigate("/admin/users");
     }
   };
 
-  // MODIFY: Delete user function to refresh stats after deletion
   const deleteUser = async (userId) => {
     try {
       const response = await axios.delete(
@@ -204,21 +192,18 @@ function Users() {
 
       if (response.data.success) {
         toast.success("User deleted successfully");
-        
-        // Refresh both users and stats
+
         fetchUsers();
         fetchUserStats();
-        
+
         return true;
       }
     } catch (error) {
-      console.error("❌ Error deleting user:", error);
       toast.error("Failed to delete user");
       return false;
     }
   };
 
-  // MODIFY: Update user status function to refresh stats
   const updateUserStatus = async (userId, newStatus) => {
     try {
       const response = await axios.put(
@@ -229,26 +214,22 @@ function Users() {
 
       if (response.data.success) {
         toast.success("User status updated successfully");
-        
-        // Refresh both users and stats
+
         fetchUsers();
         fetchUserStats();
-        
+
         return true;
       }
     } catch (error) {
-      console.error("❌ Error updating user status:", error);
       toast.error("Failed to update user status");
       return false;
     }
   };
 
-  // Load initial data
   useEffect(() => {
     fetchUsers();
   }, [page, rowsPerPage, searchQuery, statusFilter, sortConfig]);
 
-  // Handle URL parameter for viewing specific user
   useEffect(() => {
     if (id) {
       fetchUserById(id);
@@ -256,25 +237,19 @@ function Users() {
     }
   }, [id]);
 
-  // ADD: useEffect to handle view route (around line 80)
   useEffect(() => {
-    const pathParts = location.pathname.split('/');
-    if (pathParts[3] === 'view' && pathParts[4]) {
+    const pathParts = location.pathname.split("/");
+    if (pathParts[3] === "view" && pathParts[4]) {
       const userId = pathParts[4];
-      console.log("🔍 Loading user for view:", userId);
       fetchUserById(userId);
     }
   }, [location.pathname]);
 
-  // Handle user actions
   const handleViewUser = (userId) => {
-    console.log("👁️ Viewing user:", userId);
-    // Navigate to user details route instead of setting local state
     navigate(`/admin/users/view/${userId}`);
   };
 
   const handleEditUser = (userId) => {
-    // Remove the role check here - let the user click, check on form submission
     const user = users.find((u) => u.id === userId);
     if (user) {
       setSelectedUserForEdit(user);
@@ -283,10 +258,9 @@ function Users() {
   };
 
   const handleDeleteUser = async (userId) => {
-    // Remove the role check here - check when they confirm delete
     if (window.confirm("Are you sure you want to delete this user?")) {
-      if (!checkAdminAccess('delete users')) return; // Check here instead
-      
+      if (!checkAdminAccess("delete users")) return;
+
       const success = await deleteUser(userId);
       if (success) {
         fetchUsers();
@@ -294,21 +268,21 @@ function Users() {
     }
   };
 
-  // Update the handleUpdateStatus function (remove the role check guard):
   const handleUpdateStatus = async (userId, newStatus) => {
-    if (!checkAdminAccess('update user status')) return; // Keep this check
-    
+    if (!checkAdminAccess("update user status")) return;
+
     const success = await updateUserStatus(userId, newStatus);
     if (success) {
       fetchUsers();
     }
   };
 
-  // Update the handleDelete function (bulk delete):
   const handleDelete = async (ids) => {
-    if (window.confirm(`Delete ${ids.length > 1 ? "these users" : "this user"}?`)) {
-      if (!checkAdminAccess('delete users')) return; // Check here instead
-      
+    if (
+      window.confirm(`Delete ${ids.length > 1 ? "these users" : "this user"}?`)
+    ) {
+      if (!checkAdminAccess("delete users")) return;
+
       let successCount = 0;
       for (const id of ids) {
         const success = await deleteUser(id);
@@ -323,10 +297,9 @@ function Users() {
     }
   };
 
-  // Update the handleUserUpdate function:
   const handleUserUpdate = async (userId, userData) => {
-    if (!checkAdminAccess('update users')) return false; // Check when form is submitted
-    
+    if (!checkAdminAccess("update users")) return false;
+
     try {
       const response = await axios.put(
         `${API_BASE_URL}/admin/users/${userId}`,
@@ -340,10 +313,10 @@ function Users() {
         return true;
       }
     } catch (error) {
-      console.error("❌ Error updating user:", error);
-      
       if (error.response?.status === 403) {
-        toast.error("Access denied. Admin privileges required to update users.");
+        toast.error(
+          "Access denied. Admin privileges required to update users."
+        );
       } else {
         toast.error("Failed to update user");
       }
@@ -351,49 +324,44 @@ function Users() {
     }
   };
 
-  // Handle user selection
   const handleSelectUser = (userId) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
         : [...prev, userId]
     );
   };
 
-  // Handle select all users
   const handleSelectAllUsers = (checked) => {
     if (checked) {
-      setSelectedUsers(users.map(user => user.id));
+      setSelectedUsers(users.map((user) => user.id));
     } else {
       setSelectedUsers([]);
     }
   };
 
-  // Handle edit modal close
   const closeEditModal = () => {
     setEditModalOpen(false);
     setSelectedUserForEdit(null);
   };
 
-  // Sort users based on sortConfig
   const sortedUsers = useMemo(() => {
     if (!sortConfig.key) return users;
-    
+
     return [...users].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-      
+
       if (aValue < bValue) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
+        return sortConfig.direction === "ascending" ? -1 : 1;
       }
       if (aValue > bValue) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
+        return sortConfig.direction === "ascending" ? 1 : -1;
       }
       return 0;
     });
   }, [users, sortConfig]);
 
-  // Show full page skeleton when loading initially
   if (isLoading && users.length === 0) {
     return <UsersSkeleton />;
   }
@@ -428,13 +396,32 @@ function Users() {
         </p>
       </div>
 
-      {/* User Stats Cards - Static display only */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {Object.entries({
-          all: { count: userStats.total, label: "Total Users", icon: "fa-users", color: "blue" },
-          active: { count: userStats.active, label: "Active Users", icon: "fa-user-check", color: "green" },
-          inactive: { count: userStats.inactive, label: "Inactive Users", icon: "fa-user-slash", color: "gray" },
-          suspended: { count: userStats.suspended, label: "Suspended Users", icon: "fa-user-times", color: "red" }
+          all: {
+            count: userStats.total,
+            label: "Total Users",
+            icon: "fa-users",
+            color: "blue",
+          },
+          active: {
+            count: userStats.active,
+            label: "Active Users",
+            icon: "fa-user-check",
+            color: "green",
+          },
+          inactive: {
+            count: userStats.inactive,
+            label: "Inactive Users",
+            icon: "fa-user-slash",
+            color: "gray",
+          },
+          suspended: {
+            count: userStats.suspended,
+            label: "Suspended Users",
+            icon: "fa-user-times",
+            color: "red",
+          },
         }).map(([key, { count, label, icon, color }]) => (
           <div
             key={key}
@@ -449,12 +436,17 @@ function Users() {
                   {count}
                 </p>
               </div>
-              <div className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                color === "blue" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" :
-                color === "green" ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" :
-                color === "gray" ? "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400" :
-                "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-              }`}>
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full ${
+                  color === "blue"
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                    : color === "green"
+                    ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                    : color === "gray"
+                    ? "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400"
+                    : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                }`}
+              >
                 <i className={`fas ${icon}`}></i>
               </div>
             </div>
@@ -462,12 +454,9 @@ function Users() {
         ))}
       </div>
 
-      {/* ADD: Refresh button to update stats */}
-      {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <input
                 type="text"
@@ -479,7 +468,6 @@ function Users() {
               <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
             </div>
 
-            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -488,7 +476,9 @@ function Users() {
               <option value="all">All Status ({userStats.total})</option>
               <option value="active">Active ({userStats.active})</option>
               <option value="inactive">Inactive ({userStats.inactive})</option>
-              <option value="suspended">Suspended ({userStats.suspended})</option>
+              <option value="suspended">
+                Suspended ({userStats.suspended})
+              </option>
             </select>
           </div>
 
@@ -505,7 +495,6 @@ function Users() {
         </div>
       </div>
 
-      {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
         <BulkActions
           selectedItems={selectedUsers}
@@ -513,19 +502,19 @@ function Users() {
             {
               label: "Delete Selected",
               icon: "fas fa-trash",
-              onClick: (selectedIds) => handleDelete(selectedIds), // Role check happens inside
-              className: "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
-              title: "Delete selected users"
-            }
+              onClick: (selectedIds) => handleDelete(selectedIds),
+              className:
+                "bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-md",
+              title: "Delete selected users",
+            },
           ]}
           entityName="users"
           position="bottom-right"
         />
       )}
-      {/* Users Table with Pagination */}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         {isLoading ? (
-          // Show loading spinner for subsequent loads
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
@@ -555,7 +544,6 @@ function Users() {
               itemKey="id"
             />
 
-            {/* Add Pagination Component */}
             <Pagination
               page={page}
               rowsPerPage={rowsPerPage}
@@ -563,7 +551,7 @@ function Users() {
               handlePageChange={(newPage) => setPage(newPage)}
               handleRowsPerPageChange={(newRowsPerPage) => {
                 setRowsPerPage(newRowsPerPage);
-                setPage(0); // Reset to first page when changing page size
+                setPage(0);
               }}
               entityName="users"
             />
@@ -571,12 +559,11 @@ function Users() {
         )}
       </div>
 
-      {/* Edit User Modal */}
       <UserEditModal
         editModalOpen={editModalOpen}
         selectedUserForEdit={selectedUserForEdit}
         closeEditModal={closeEditModal}
-        handleUserUpdate={handleUserUpdate} 
+        handleUserUpdate={handleUserUpdate}
       />
     </div>
   );

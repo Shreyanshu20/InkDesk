@@ -9,7 +9,6 @@ function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Profile data from backend
   const [profileData, setProfileData] = useState({
     first_name: "",
     last_name: "",
@@ -21,14 +20,12 @@ function Settings() {
     createdAt: "",
   });
 
-  // Profile form state (email readonly)
   const [profileForm, setProfileForm] = useState({
     first_name: "",
     last_name: "",
     phone: "",
   });
 
-  // Address form state
   const [addressForm, setAddressForm] = useState({
     first_name: "",
     last_name: "",
@@ -41,20 +38,17 @@ function Settings() {
     country: "India",
   });
 
-  // Password form state
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // Delete account form state
   const [deleteForm, setDeleteForm] = useState({
     password: "",
     confirmText: "",
   });
 
-  // Notification settings (simple toggles)
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     orderUpdates: true,
@@ -65,12 +59,10 @@ function Settings() {
     webNotifications: true,
   });
 
-  // Load user profile data on component mount
   useEffect(() => {
     fetchUserData();
   }, []);
 
-  // Fetch complete user data from backend
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
@@ -88,14 +80,12 @@ function Settings() {
 
         setProfileData(user);
 
-        // Set profile form data
         setProfileForm({
           first_name: user.first_name || "",
           last_name: user.last_name || "",
           phone: user.phone || "",
         });
 
-        // Set address form data with user info
         setAddressForm((prev) => ({
           ...prev,
           first_name: user.first_name || "",
@@ -103,12 +93,9 @@ function Settings() {
           phone: user.phone || "",
         }));
 
-        // Fetch addresses after setting user data
         await fetchUserAddresses();
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
-
       if (error.response?.status === 401 || error.response?.status === 403) {
         const frontendUrl =
           import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
@@ -121,7 +108,6 @@ function Settings() {
     }
   };
 
-  // Fetch user addresses
   const fetchUserAddresses = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/user/addresses`, {
@@ -129,7 +115,6 @@ function Settings() {
       });
 
       if (response.data.success && response.data.addresses.length > 0) {
-        // Get the primary address or the first address
         const primaryAddress =
           response.data.addresses.find((addr) => addr.is_primary) ||
           response.data.addresses[0];
@@ -148,36 +133,29 @@ function Settings() {
       }
     } catch (error) {
       // Silent fail - no addresses found is OK
-      console.log("No addresses found or error fetching addresses");
     }
   };
 
-  // Handle profile form changes
   const handleProfileChange = (field, value) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle address form changes
   const handleAddressChange = (field, value) => {
     setAddressForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle password form changes
   const handlePasswordChange = (field, value) => {
     setPasswordForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle delete form changes
   const handleDeleteChange = (field, value) => {
     setDeleteForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle notification changes
   const handleNotificationChange = (field, value) => {
     setNotificationSettings((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Validate phone number
   const validatePhone = (phone) => {
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
     const phoneRegex = /^[\+]?[1-9][\d]{7,15}$/;
@@ -189,7 +167,6 @@ function Settings() {
     return phoneRegex.test(cleanPhone);
   };
 
-  // Validate postal code
   const validatePostalCode = (code, country) => {
     if (!code) return false;
 
@@ -208,7 +185,6 @@ function Settings() {
     return code.length >= 3 && code.length <= 10;
   };
 
-  // Update profile
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
 
@@ -255,7 +231,6 @@ function Settings() {
         }));
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to update profile";
       toast.error(errorMessage);
@@ -264,11 +239,9 @@ function Settings() {
     }
   };
 
-  // Handle address submit
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!addressForm.first_name.trim()) {
       toast.error("First name is required");
       return;
@@ -338,7 +311,6 @@ function Settings() {
         toast.success("Address saved successfully!");
       }
     } catch (error) {
-      console.error("Error saving address:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to save address";
       toast.error(errorMessage);
@@ -347,7 +319,6 @@ function Settings() {
     }
   };
 
-  // Change password
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
@@ -390,14 +361,12 @@ function Settings() {
         });
       }
     } catch (error) {
-      console.error("Error changing password:", error);
       toast.error(error.response?.data?.message || "Failed to change password");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Delete account
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
 
@@ -441,19 +410,15 @@ function Settings() {
         }, 2000);
       }
     } catch (error) {
-      console.error("Error deleting account:", error);
       toast.error(error.response?.data?.message || "Failed to delete account");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Save notification settings
   const handleNotificationSubmit = async (e) => {
     e.preventDefault();
-
     toast.success("Notification preferences saved!");
-    console.log("Notification settings:", notificationSettings);
   };
 
   const formatDate = (dateString) => {
@@ -479,7 +444,6 @@ function Settings() {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Admin Settings
@@ -489,7 +453,6 @@ function Settings() {
           </p>
         </div>
 
-        {/* Navigation Tabs */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex space-x-8 px-6">
@@ -528,17 +491,14 @@ function Settings() {
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
           <div className="p-6">
-            {/* Profile Tab */}
             {activeTab === "profile" && (
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
                   Profile Information
                 </h2>
 
-                {/* Account Overview */}
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -585,7 +545,6 @@ function Settings() {
                   </div>
                 </div>
 
-                {/* Profile Form */}
                 <form onSubmit={handleProfileSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -670,7 +629,6 @@ function Settings() {
               </div>
             )}
 
-            {/* Address Tab */}
             {activeTab === "address" && (
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
@@ -856,14 +814,12 @@ function Settings() {
               </div>
             )}
 
-            {/* Security Tab */}
             {activeTab === "security" && (
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
                   Security Settings
                 </h2>
 
-                {/* Change Password Section */}
                 <div className="mb-8">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                     Change Password
@@ -970,7 +926,6 @@ function Settings() {
                   </form>
                 </div>
 
-                {/* Delete Account Section */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
                   <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
                     Delete Account
@@ -1058,7 +1013,6 @@ function Settings() {
               </div>
             )}
 
-            {/* Notifications Tab */}
             {activeTab === "notifications" && (
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">

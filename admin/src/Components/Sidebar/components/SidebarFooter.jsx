@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import ThemeContext from "../../../Context/ThemeContext.jsx"; // Default import
+import ThemeContext from "../../../Context/ThemeContext.jsx";
 
 function SidebarFooter({ collapsed }) {
   const { themeToggle } = useContext(ThemeContext);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAdmin } from '../../../Context/AdminContext';
+import { useAdmin } from "../../../Context/AdminContext";
 import BannerFormFields from "./BannerFormFields";
 import BannerImageUpload from "./BannerImageUpload";
 
@@ -13,9 +13,8 @@ function BannerForm() {
   const { id } = useParams();
   const isEditing = Boolean(id);
   const { adminData } = useAdmin();
-  const isAdmin = adminData?.role === 'admin';
+  const isAdmin = adminData?.role === "admin";
 
-  // Check admin access function
   const checkAdminAccess = (action) => {
     if (isAdmin) {
       return true;
@@ -25,7 +24,6 @@ function BannerForm() {
     }
   };
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
@@ -41,21 +39,18 @@ function BannerForm() {
     isActive: true,
   });
 
-  // Image handling state
   const [imageOption, setImageOption] = useState("url");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
-  
+
   const [mobileImageOption, setMobileImageOption] = useState("url");
   const [mobileImageFile, setMobileImageFile] = useState(null);
   const [mobileImagePreview, setMobileImagePreview] = useState("");
-  
-  // Form status state
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Banner type configurations
   const bannerTypes = {
     "homepage-carousel": {
       name: "Homepage Carousel",
@@ -68,34 +63,39 @@ function BannerForm() {
         buttonText: { required: false, label: "Button Text" },
         textPosition: { required: true, label: "Text Position" },
         position: { required: true, label: "Display Order" },
-      }
+      },
     },
-    "homepage": {
+    homepage: {
       name: "Discount Banner",
-      description: "Email collection banner with discount offer (no CTA needed - email input is built-in)",
+      description:
+        "Email collection banner with discount offer (no CTA needed - email input is built-in)",
       fields: {
         title: { required: true, label: "Discount Title" },
         subtitle: { required: false, label: "Discount Description" },
         image: { required: false, label: "Background Image (optional)" },
         position: { required: true, label: "Display Order" },
-      }
+      },
     },
-    "advertisement": {
+    advertisement: {
       name: "Advertisement Banner",
-      description: "Image-only advertisement that redirects to shop page (supports responsive images)",
+      description:
+        "Image-only advertisement that redirects to shop page (supports responsive images)",
       fields: {
-        title: { required: false, label: "Advertisement Name (internal use only)" },
+        title: {
+          required: false,
+          label: "Advertisement Name (internal use only)",
+        },
         image: { required: true, label: "Desktop Image (≥1024px)" },
         mobileImage: { required: true, label: "Mobile Image (<1024px)" },
         url: { required: true, label: "Redirect URL" },
         position: { required: true, label: "Display Order" },
-      }
-    }
+      },
+    },
   };
 
-  const currentBannerType = bannerTypes[formData.location] || bannerTypes["homepage-carousel"];
+  const currentBannerType =
+    bannerTypes[formData.location] || bannerTypes["homepage-carousel"];
 
-  // Helper functions
   const shouldShowField = (fieldName) => {
     return currentBannerType.fields.hasOwnProperty(fieldName);
   };
@@ -108,7 +108,6 @@ function BannerForm() {
     return currentBannerType.fields[fieldName]?.label || fieldName;
   };
 
-  // Initialize form data
   useEffect(() => {
     if (isEditing) {
       fetchBanner();
@@ -124,7 +123,6 @@ function BannerForm() {
     }
   }, [id, isEditing]);
 
-  // Handle image previews
   useEffect(() => {
     if (imageOption === "url" && formData.image) {
       setImagePreview(formData.image);
@@ -149,32 +147,30 @@ function BannerForm() {
     }
   }, [formData.mobileImage, mobileImageFile, mobileImageOption]);
 
-  // Reset fields when banner type changes
   useEffect(() => {
-    if (!shouldShowField('subtitle')) {
-      setFormData(prev => ({ ...prev, subtitle: "" }));
+    if (!shouldShowField("subtitle")) {
+      setFormData((prev) => ({ ...prev, subtitle: "" }));
     }
-    if (!shouldShowField('url')) {
-      setFormData(prev => ({ ...prev, url: "" }));
+    if (!shouldShowField("url")) {
+      setFormData((prev) => ({ ...prev, url: "" }));
     }
-    if (!shouldShowField('buttonText')) {
-      setFormData(prev => ({ ...prev, buttonText: "" }));
+    if (!shouldShowField("buttonText")) {
+      setFormData((prev) => ({ ...prev, buttonText: "" }));
     }
-    if (!shouldShowField('textPosition')) {
-      setFormData(prev => ({ ...prev, textPosition: "center" }));
+    if (!shouldShowField("textPosition")) {
+      setFormData((prev) => ({ ...prev, textPosition: "center" }));
     }
-    if (!shouldShowField('mobileImage')) {
-      setFormData(prev => ({ ...prev, mobileImage: "" }));
+    if (!shouldShowField("mobileImage")) {
+      setFormData((prev) => ({ ...prev, mobileImage: "" }));
       setMobileImageFile(null);
       setMobileImagePreview("");
     }
-    
-    if (formData.location === 'advertisement' && !formData.url) {
-      setFormData(prev => ({ ...prev, url: "/shop" }));
+
+    if (formData.location === "advertisement" && !formData.url) {
+      setFormData((prev) => ({ ...prev, url: "/shop" }));
     }
   }, [formData.location]);
 
-  // Fetch banner for editing
   const fetchBanner = async () => {
     setIsLoading(true);
     try {
@@ -230,7 +226,6 @@ function BannerForm() {
     }
   };
 
-  // Handle form changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -238,13 +233,11 @@ function BannerForm() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear errors when field changes
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  // Image upload handlers
   const uploadImage = async (file) => {
     const uploadFormData = new FormData();
     uploadFormData.append("images", file);
@@ -269,7 +262,9 @@ function BannerForm() {
       const data = await response.json();
 
       if (data.success) {
-        return data.images && data.images.length > 0 ? data.images[0].url : data.image?.url;
+        return data.images && data.images.length > 0
+          ? data.images[0].url
+          : data.image?.url;
       } else {
         throw new Error(data.message || "Upload failed");
       }
@@ -278,7 +273,6 @@ function BannerForm() {
     }
   };
 
-  // Image option handlers
   const handleImageOptionChange = (option) => {
     setImageOption(option);
     if (option === "url") {
@@ -299,7 +293,6 @@ function BannerForm() {
     setErrors((prev) => ({ ...prev, mobileImage: "" }));
   };
 
-  // File change handlers
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -348,31 +341,41 @@ function BannerForm() {
     }
   };
 
-  // Form validation
   const validateForm = () => {
     const newErrors = {};
 
     Object.entries(currentBannerType.fields).forEach(([fieldName, config]) => {
       if (config.required) {
-        if (fieldName === 'image') {
+        if (fieldName === "image") {
           if (imageOption === "url" && !formData.image.trim()) {
             newErrors.image = `${config.label} is required`;
-          } else if (imageOption === "upload" && !imageFile && !formData.image) {
+          } else if (
+            imageOption === "upload" &&
+            !imageFile &&
+            !formData.image
+          ) {
             newErrors.image = "Please select an image file";
           }
-        } else if (fieldName === 'mobileImage') {
+        } else if (fieldName === "mobileImage") {
           if (mobileImageOption === "url" && !formData.mobileImage.trim()) {
             newErrors.mobileImage = `${config.label} is required`;
-          } else if (mobileImageOption === "upload" && !mobileImageFile && !formData.mobileImage) {
+          } else if (
+            mobileImageOption === "upload" &&
+            !mobileImageFile &&
+            !formData.mobileImage
+          ) {
             newErrors.mobileImage = "Please select a mobile image file";
           }
-        } else if (!formData[fieldName] || formData[fieldName].toString().trim() === "") {
+        } else if (
+          !formData[fieldName] ||
+          formData[fieldName].toString().trim() === ""
+        ) {
           newErrors[fieldName] = `${config.label} is required`;
         }
       }
     });
 
-    if (formData.location === 'advertisement') {
+    if (formData.location === "advertisement") {
       if (!formData.url || !formData.url.trim()) {
         newErrors.url = "Redirect URL is required for advertisement banners";
       }
@@ -398,11 +401,10 @@ function BannerForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const action = isEditing ? 'update banners' : 'create banners';
+    const action = isEditing ? "update banners" : "create banners";
     if (!checkAdminAccess(action)) return;
 
     if (!validateForm()) {
@@ -436,20 +438,19 @@ function BannerForm() {
         isActive: formData.isActive,
       };
 
-      // Add optional fields if they exist
-      if (shouldShowField('subtitle') && formData.subtitle) {
+      if (shouldShowField("subtitle") && formData.subtitle) {
         bannerData.subtitle = formData.subtitle;
       }
-      if (shouldShowField('url') && formData.url) {
+      if (shouldShowField("url") && formData.url) {
         bannerData.url = formData.url;
       }
-      if (shouldShowField('buttonText') && formData.buttonText) {
+      if (shouldShowField("buttonText") && formData.buttonText) {
         bannerData.buttonText = formData.buttonText;
       }
-      if (shouldShowField('textPosition')) {
+      if (shouldShowField("textPosition")) {
         bannerData.textPosition = formData.textPosition;
       }
-      if (shouldShowField('mobileImage') && mobileImageUrl) {
+      if (shouldShowField("mobileImage") && mobileImageUrl) {
         bannerData.mobileImage = mobileImageUrl;
       }
 
@@ -497,7 +498,7 @@ function BannerForm() {
       }
     } catch (error) {
       console.error("Error saving banner:", error);
-      
+
       if (error.response?.status === 403) {
         toast.error(`Access denied. Admin privileges required to ${action}.`);
       } else {
@@ -509,12 +510,10 @@ function BannerForm() {
     }
   };
 
-  // Handle cancel
   const handleCancel = () => {
     navigate("/admin/banners");
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="p-6 bg-background min-h-screen">
@@ -530,10 +529,8 @@ function BannerForm() {
     );
   }
 
-  // Render main form
   return (
     <div className="container mx-auto px-4 py-6 bg-background">
-      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={handleCancel}
@@ -547,7 +544,6 @@ function BannerForm() {
         </h1>
       </div>
 
-      {/* Admin warning for non-admin users */}
       {!isAdmin && (
         <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <div className="flex">
@@ -560,13 +556,11 @@ function BannerForm() {
         </div>
       )}
 
-      {/* Main Form */}
       <form
         onSubmit={handleSubmit}
         className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700 p-6"
         noValidate
       >
-        {/* Error summary */}
         {Object.keys(errors).length > 0 && (
           <div
             className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
@@ -595,7 +589,6 @@ function BannerForm() {
         )}
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {/* Left Column - Form Fields */}
           <BannerFormFields
             formData={formData}
             errors={errors}
@@ -606,15 +599,15 @@ function BannerForm() {
             currentBannerType={currentBannerType}
           />
 
-          {/* Right Column - Images */}
           <div className="space-y-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {formData.location === 'advertisement' ? 'Advertisement Images' : 'Banner Images'}
+              {formData.location === "advertisement"
+                ? "Advertisement Images"
+                : "Banner Images"}
             </h2>
 
-            {formData.location === 'advertisement' ? (
+            {formData.location === "advertisement" ? (
               <div className="space-y-6">
-                {/* Desktop Image */}
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                   <div className="flex items-center mb-3">
                     <i className="fas fa-desktop text-blue-500 mr-2"></i>
@@ -624,8 +617,8 @@ function BannerForm() {
                   </div>
                   <BannerImageUpload
                     fieldName="image"
-                    label={getFieldLabel('image')}
-                    required={isFieldRequired('image')}
+                    label={getFieldLabel("image")}
+                    required={isFieldRequired("image")}
                     currentOption={imageOption}
                     currentFile={imageFile}
                     currentFormValue={formData.image}
@@ -638,7 +631,6 @@ function BannerForm() {
                   />
                 </div>
 
-                {/* Mobile Image */}
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                   <div className="flex items-center mb-3">
                     <i className="fas fa-mobile-alt text-green-500 mr-2"></i>
@@ -648,8 +640,8 @@ function BannerForm() {
                   </div>
                   <BannerImageUpload
                     fieldName="mobileImage"
-                    label={getFieldLabel('mobileImage')}
-                    required={isFieldRequired('mobileImage')}
+                    label={getFieldLabel("mobileImage")}
+                    required={isFieldRequired("mobileImage")}
                     currentOption={mobileImageOption}
                     currentFile={mobileImageFile}
                     currentFormValue={formData.mobileImage}
@@ -663,11 +655,11 @@ function BannerForm() {
                 </div>
               </div>
             ) : (
-              shouldShowField('image') && (
+              shouldShowField("image") && (
                 <BannerImageUpload
                   fieldName="image"
-                  label={getFieldLabel('image')}
-                  required={isFieldRequired('image')}
+                  label={getFieldLabel("image")}
+                  required={isFieldRequired("image")}
                   currentOption={imageOption}
                   currentFile={imageFile}
                   currentFormValue={formData.image}
@@ -683,7 +675,6 @@ function BannerForm() {
           </div>
         </div>
 
-        {/* Submit buttons */}
         <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6 flex justify-end gap-4">
           <button
             type="button"

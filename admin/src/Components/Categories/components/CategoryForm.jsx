@@ -14,7 +14,6 @@ function CategoryForm({ mode: propMode }) {
   const navigate = useNavigate();
   const mode = propMode || (id ? "edit" : "add");
 
-  // Add admin context
   const { user, adminData } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
@@ -32,7 +31,6 @@ function CategoryForm({ mode: propMode }) {
   const [showSubcategoryTable, setShowSubcategoryTable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch category for editing
   useEffect(() => {
     if (mode === "edit" && id) {
       fetchCategory(id);
@@ -42,10 +40,9 @@ function CategoryForm({ mode: propMode }) {
   const fetchCategory = async (categoryId) => {
     try {
       setIsLoading(true);
-      console.log("🔍 Fetching category for edit:", categoryId);
 
       const response = await axios.get(
-        `${API_BASE_URL}/admin/categories/${categoryId}`, // Add /admin prefix
+        `${API_BASE_URL}/admin/categories/${categoryId}`,
         { withCredentials: true }
       );
 
@@ -63,7 +60,6 @@ function CategoryForm({ mode: propMode }) {
         setCategory(category);
       }
     } catch (error) {
-      console.error("Error fetching category:", error);
       toast.error("Failed to load category for editing");
       navigate("/admin/categories");
     } finally {
@@ -111,7 +107,6 @@ function CategoryForm({ mode: propMode }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check admin access before submission
     if (!isAdmin) {
       toast.error(
         "Access denied. Admin privileges required to save categories."
@@ -134,16 +129,14 @@ function CategoryForm({ mode: propMode }) {
 
       let response;
       if (mode === "edit" && id) {
-        console.log("✏️ Updating category:", id);
         response = await axios.put(
-          `${API_BASE_URL}/admin/categories/${id}`, // Add /admin prefix
+          `${API_BASE_URL}/admin/categories/${id}`,
           submitData,
           { withCredentials: true }
         );
       } else {
-        console.log("➕ Creating new category");
         response = await axios.post(
-          `${API_BASE_URL}/admin/categories`, // Add /admin prefix
+          `${API_BASE_URL}/admin/categories`,
           submitData,
           { withCredentials: true }
         );
@@ -158,7 +151,6 @@ function CategoryForm({ mode: propMode }) {
         navigate("/admin/categories");
       }
     } catch (error) {
-      console.error("Error submitting category:", error);
       const message =
         error.response?.data?.message ||
         `Failed to ${mode === "edit" ? "update" : "create"} category`;
@@ -170,7 +162,6 @@ function CategoryForm({ mode: propMode }) {
 
   const handleCloseSubcategoryModal = () => {
     setShowSubcategoryTable(false);
-    // Refresh category data to get updated subcategories
     if (mode === "edit" && id) {
       fetchCategory(id);
     }
@@ -178,7 +169,6 @@ function CategoryForm({ mode: propMode }) {
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="flex items-center mb-8">
         <button
           onClick={() => navigate("/admin/categories")}
@@ -198,7 +188,6 @@ function CategoryForm({ mode: propMode }) {
         </div>
       </div>
 
-      {/* Show warning for non-admin users */}
       {!isAdmin && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <div className="flex">
@@ -211,13 +200,10 @@ function CategoryForm({ mode: propMode }) {
         </div>
       )}
 
-      {/* Form */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <form onSubmit={handleSubmit} className="p-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            {/* Left Column - Form Fields */}
             <div className="space-y-6">
-              {/* Category Name */}
               <div>
                 <label
                   htmlFor="name"
@@ -246,7 +232,6 @@ function CategoryForm({ mode: propMode }) {
                 )}
               </div>
 
-              {/* Subcategories Section */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -268,7 +253,6 @@ function CategoryForm({ mode: propMode }) {
                 </div>
 
                 {mode === "edit" && category?.subcategories ? (
-                  // Show existing subcategories for edit mode
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     {category.subcategories.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -304,9 +288,7 @@ function CategoryForm({ mode: propMode }) {
                     </p>
                   </div>
                 ) : (
-                  // Show add subcategories interface for add mode
                   <div className="space-y-4">
-                    {/* Existing subcategories */}
                     {formData.subcategories.length > 0 && (
                       <div className="space-y-2">
                         {formData.subcategories.map((sub, index) => (
@@ -333,7 +315,6 @@ function CategoryForm({ mode: propMode }) {
                       </div>
                     )}
 
-                    {/* Add new subcategory */}
                     <div className="flex gap-3">
                       <input
                         type="text"
@@ -363,9 +344,7 @@ function CategoryForm({ mode: propMode }) {
               </div>
             </div>
 
-            {/* Right Column - Image Upload */}
             <div className="space-y-4">
-              {/* Image Upload Component - it will handle the full display itself */}
               <CategoryImageUpload
                 previewImage={previewImage}
                 setPreviewImage={setPreviewImage}
@@ -377,7 +356,6 @@ function CategoryForm({ mode: propMode }) {
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
@@ -414,7 +392,6 @@ function CategoryForm({ mode: propMode }) {
         </form>
       </div>
 
-      {/* Subcategory Management Modal */}
       {showSubcategoryTable && mode === "edit" && category && (
         <SubcategoryTable
           categoryId={category._id}

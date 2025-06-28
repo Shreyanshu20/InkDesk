@@ -1,7 +1,4 @@
-import React from "react";
-
 function RecentActivity({ activities }) {
-  // Helper function for activity icon styling
   const getActivityStyle = (type) => {
     switch (type) {
       case "order":

@@ -1,8 +1,6 @@
-import React from "react";
 import { Link } from "react-router-dom";
 
 function RecentOrders({ orders }) {
-  // Helper function to get status styling
   const getStatusStyle = (status) => {
     switch (status) {
       case "Delivered":

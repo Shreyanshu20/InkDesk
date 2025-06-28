@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import {  useAdmin } from "../../Context/AdminContext";
+import { useAdmin } from "../../Context/AdminContext";
 import { ThemeContext } from "../../Context/ThemeContext";
 
 function AdminLogin() {
@@ -12,20 +17,17 @@ function AdminLogin() {
   const { themeToggle } = useContext(ThemeContext);
   const [searchParams] = useSearchParams();
 
-  // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
-  // Initialize form data for login only
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: true,
   });
 
-  // Check initial theme state
   useEffect(() => {
     const isDarkMode =
       document.documentElement.classList.contains("dark") ||
@@ -35,14 +37,12 @@ function AdminLogin() {
     setIsDark(isDarkMode);
   }, []);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       navigate("/admin");
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Handle theme toggle
   const handleThemeToggle = () => {
     themeToggle();
     setIsDark(!isDark);
@@ -63,7 +63,6 @@ function AdminLogin() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Common validations
     if (!formData.email?.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -86,7 +85,7 @@ function AdminLogin() {
 
       try {
         const result = await login(formData.email, formData.password);
-        
+
         if (result.success) {
           toast.success("Login successful! Redirecting to dashboard...");
           setTimeout(() => {
@@ -96,10 +95,8 @@ function AdminLogin() {
           setErrors({ form: result.message || "Login failed" });
         }
       } catch (error) {
-        console.error("Auth error:", error);
         const errorMessage =
-          error.response?.data?.message ||
-          "Login failed. Please try again.";
+          error.response?.data?.message || "Login failed. Please try again.";
         toast.error(errorMessage);
 
         setErrors({ form: "Invalid email or password" });
@@ -111,7 +108,6 @@ function AdminLogin() {
     }
   };
 
-  // Show loading while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -123,44 +119,52 @@ function AdminLogin() {
     );
   }
 
-  // Don't render form if already authenticated
   if (isAuthenticated) {
     return null;
   }
 
   return (
     <div className="font-['Red_Rose'] min-h-screen bg-background text-text flex flex-col justify-center px-4 py-6 relative">
-      {/* Info Bar - Top Right */}
       <div className="absolute top-4 right-4 z-10 flex space-x-3">
-        {/* Access Information */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 shadow-lg max-w-xs">
-          {/* Header */}
           <div className="flex items-center space-x-2 mb-3">
             <i className="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
               Access Information
             </span>
           </div>
-          
-          {/* Access Details */}
+
           <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
             <div className="flex items-center space-x-2">
               <i className="fas fa-user-shield text-red-600 w-3"></i>
-              <span><strong className="text-gray-800 dark:text-gray-200">Admin:</strong> Full access to all features</span>
+              <span>
+                <strong className="text-gray-800 dark:text-gray-200">
+                  Admin:
+                </strong>{" "}
+                Full access to all features
+              </span>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <i className="fas fa-eye text-blue-600 w-3"></i>
-              <span><strong className="text-gray-800 dark:text-gray-200">User:</strong> Read-only access only</span>
+              <span>
+                <strong className="text-gray-800 dark:text-gray-200">
+                  User:
+                </strong>{" "}
+                Read-only access only
+              </span>
             </div>
-            
+
             <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
               <div className="flex items-start space-x-2">
                 <i className="fas fa-plus-circle text-green-600 w-3 mt-0.5"></i>
                 <span>
-                  New user? 
-                  <a 
-                    href={import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173"}
+                  New user?
+                  <a
+                    href={
+                      import.meta.env.VITE_FRONTEND_URL ||
+                      "http://localhost:5173"
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
@@ -173,7 +177,6 @@ function AdminLogin() {
           </div>
         </div>
 
-        {/* Theme Toggle */}
         <button
           onClick={handleThemeToggle}
           className="text-text w-12 h-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-300 shadow-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
@@ -186,7 +189,6 @@ function AdminLogin() {
 
       <div className="mx-auto w-full max-w-md md:max-w-lg">
         <div className="bg-white dark:bg-gray-800 p-6 md:p-8 lg:p-10 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700">
-          {/* Header */}
           <div className="mb-6 md:mb-8">
             <div className="flex justify-center mb-4">
               <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-gradient-to-r from-red-600/80 to-red-700/80 flex items-center justify-center">
@@ -201,7 +203,6 @@ function AdminLogin() {
             </p>
           </div>
 
-          {/* Error message */}
           {errors.form && (
             <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/30 p-3 md:p-4 text-sm text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
               <div className="flex items-center">
@@ -212,7 +213,6 @@ function AdminLogin() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-            {/* Email field */}
             <div>
               <label
                 htmlFor="email"
@@ -247,7 +247,6 @@ function AdminLogin() {
               )}
             </div>
 
-            {/* Password field with toggle */}
             <div>
               <label
                 htmlFor="password"
@@ -293,7 +292,6 @@ function AdminLogin() {
               )}
             </div>
 
-            {/* Login options */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -322,7 +320,6 @@ function AdminLogin() {
               </div>
             </div>
 
-            {/* Submit button */}
             <div className="pt-2">
               <button
                 type="submit"
@@ -344,14 +341,14 @@ function AdminLogin() {
             </div>
           </form>
 
-          {/* Footer links */}
           <div className="mt-6 md:mt-8 space-y-4">
-            {/* Customer Site Link */}
             <div className="text-center text-sm border-t border-gray-200 dark:border-gray-600 pt-4">
               <p className="text-gray-600 dark:text-gray-400">
                 Need a customer account?{" "}
                 <a
-                  href={import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173"}
+                  href={
+                    import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173"
+                  }
                   className="font-medium text-accent hover:text-accent/80 inline-flex items-center gap-1 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -363,13 +360,13 @@ function AdminLogin() {
             </div>
           </div>
 
-          {/* Security Notice */}
           <div className="mt-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-md p-3">
               <div className="flex items-center justify-center">
                 <i className="fas fa-shield-alt text-yellow-600 dark:text-yellow-400 mr-2"></i>
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  This is a secure admin area. Only authorized personnel should access this portal.
+                  This is a secure admin area. Only authorized personnel should
+                  access this portal.
                 </p>
               </div>
             </div>

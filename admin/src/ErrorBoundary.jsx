@@ -11,8 +11,6 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error Boundary caught an error:', error, errorInfo);
-    
     this.setState({
       error: error,
       errorInfo: errorInfo
@@ -54,7 +52,6 @@ class ErrorBoundary extends React.Component {
               </button>
             </div>
 
-            {/* Development error details */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-8 text-left">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">

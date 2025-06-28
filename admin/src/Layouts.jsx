@@ -7,7 +7,6 @@ import Footer from "./Components/Footer/Footer";
 function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Check for stored preference or use default (expanded)
   useEffect(() => {
     const storedState = localStorage.getItem("sidebarCollapsed");
     if (storedState !== null) {

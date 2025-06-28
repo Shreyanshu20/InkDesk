@@ -3,13 +3,11 @@ import React from "react";
 function UserDetailsSkeleton() {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Header Skeleton */}
       <div className="flex items-center mb-6">
         <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mr-4"></div>
         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-40"></div>
       </div>
 
-      {/* User Info Header Skeleton */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6">
         <div className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row justify-between">
@@ -30,7 +28,6 @@ function UserDetailsSkeleton() {
           </div>
         </div>
 
-        {/* Tabs Skeleton */}
         <div className="border-t border-gray-200 dark:border-gray-700">
           <nav className="flex">
             {[1, 2, 3, 4].map((i) => (
@@ -42,12 +39,9 @@ function UserDetailsSkeleton() {
         </div>
       </div>
 
-      {/* Tab Content Skeleton */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        {/* Section Title */}
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-56 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"></div>
 
-        {/* Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i}>
@@ -57,10 +51,8 @@ function UserDetailsSkeleton() {
           ))}
         </div>
 
-        {/* Another Section */}
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-44 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"></div>
 
-        {/* Address Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i}>
@@ -70,7 +62,6 @@ function UserDetailsSkeleton() {
           ))}
         </div>
 
-        {/* Notes Section */}
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2"></div>
         <div className="space-y-2">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-full"></div>

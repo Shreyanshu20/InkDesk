@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { useAdmin } from "../../../Context/AdminContext"; // Add this import
+import { useAdmin } from "../../../Context/AdminContext";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -17,7 +17,6 @@ function CategoryImageUpload({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
-  // Add admin context
   const { user, adminData } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
@@ -26,18 +25,15 @@ function CategoryImageUpload({
 
     if (files.length === 0) return;
 
-    // Only allow one image for categories
     const file = files[0];
 
-    // Validate file type
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
       toast.error("Please upload only JPG, PNG, or WebP images");
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error("Image must be smaller than 5MB");
       return;
@@ -65,7 +61,6 @@ function CategoryImageUpload({
         toast.success("Image uploaded successfully");
       }
     } catch (error) {
-      console.error("Upload error:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to upload images");
       } else {
@@ -97,7 +92,6 @@ function CategoryImageUpload({
       setPreviewImage("");
       toast.success("Image removed successfully");
     } catch (error) {
-      console.error("Error removing image:", error);
       toast.error("Failed to remove image");
     }
   };
@@ -105,7 +99,7 @@ function CategoryImageUpload({
   const handleFileSelect = (e) => {
     if (!isAdmin) {
       toast.error("Access denied. Admin privileges required to upload images.");
-      e.target.value = ""; // Clear the file input
+      e.target.value = "";
       return;
     }
     handleImageUpload(e);
@@ -128,7 +122,6 @@ function CategoryImageUpload({
         </label>
 
         {!previewImage ? (
-          // Upload area
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               uploading
@@ -167,11 +160,10 @@ function CategoryImageUpload({
               accept="image/jpeg,image/jpg,image/png,image/webp"
               onChange={handleFileSelect}
               className="hidden"
-              disabled={uploading || !isAdmin} // Disable for non-admin
+              disabled={uploading || !isAdmin}
             />
           </div>
         ) : (
-          // Show larger preview image
           <div className="relative group">
             <img
               src={previewImage}

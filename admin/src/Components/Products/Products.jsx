@@ -8,13 +8,12 @@ import Pagination from "../Common/Pagination";
 import BulkActions from "../Common/BulkActions";
 import { getProductTableConfig } from "../Common/tableConfig.jsx";
 import ProductDetails from "./components/ProductDetails";
-import { useAdmin } from "../../Context/AdminContext"; // Adjust path as needed
-import ProductsSkeleton from "./ProductsSkeleton"; // Add this import
+import { useAdmin } from "../../Context/AdminContext";
+import ProductsSkeleton from "./ProductsSkeleton";
 
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-// Custom debounce hook
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -32,33 +31,19 @@ function useDebounce(value, delay) {
 }
 
 function Products() {
-  const { user, adminData, isAuthenticated } = useAdmin(); // Get all context values
+  const { user, adminData, isAuthenticated } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
-  // TEMPORARY: Override the role check
-  // const isAdmin = true; // Force admin to true
-
-  // ADD DETAILED DEBUG LOGGING
-  useEffect(() => {
-    console.log("🐛 Products Debug Info:");
-    console.log("  - user object:", user);
-    console.log("  - adminData object:", adminData);
-    console.log("  - adminData.role:", adminData?.role);
-    console.log("  - isAuthenticated:", isAuthenticated);
-    console.log("  - isAdmin calculated:", isAdmin);
-  }, [user, adminData, isAuthenticated, isAdmin]);
-
   const [products, setProducts] = useState([]);
-  const [allProducts, setAllProducts] = useState([]); // Store all products for stats calculation
+  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [view, setView] = useState("list");
 
-  // Separate state for input values (immediate) and applied filters (debounced)
-  const [searchInput, setSearchInput] = useState(""); // What user types
-  const [searchQuery, setSearchQuery] = useState(""); // What gets applied
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -74,16 +59,13 @@ function Products() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Debounce search input (500ms delay)
   const debouncedSearchInput = useDebounce(searchInput, 500);
 
-  // Update searchQuery when debounced input changes
   useEffect(() => {
     setSearchQuery(debouncedSearchInput);
-    setPage(0); // Reset to first page when search changes
+    setPage(0);
   }, [debouncedSearchInput]);
 
-  // Memoize filter parameters to prevent unnecessary re-renders
   const filterParams = useMemo(
     () => ({
       searchQuery: searchQuery.trim(),
@@ -96,7 +78,6 @@ function Products() {
     [searchQuery, categoryFilter, statusFilter, page, rowsPerPage, sortConfig]
   );
 
-  // Calculate stats from all products data
   const stats = useMemo(() => {
     if (!allProducts || allProducts.length === 0) {
       return {
@@ -113,19 +94,11 @@ function Products() {
       (p) => p.inventory === 0
     ).length;
 
-    // Calculate total inventory value: price × stock for each product
     const totalInventoryValue = allProducts.reduce((total, product) => {
       const price = parseFloat(product.price) || 0;
       const stock = parseInt(product.inventory) || 0;
       return total + price * stock;
     }, 0);
-
-    console.log("📊 Calculated stats:", {
-      totalProducts,
-      activeProducts,
-      outOfStockProducts,
-      totalInventoryValue: totalInventoryValue.toFixed(2),
-    });
 
     return {
       totalProducts,
@@ -135,13 +108,10 @@ function Products() {
     };
   }, [allProducts]);
 
-  // Fetch ALL admin products for stats calculation (separate from paginated products)
   const fetchAllProducts = useCallback(async () => {
     try {
-      console.log("📊 Fetching all products for stats calculation...");
-
       const response = await axios.get(
-        `${API_BASE_URL}/admin/products?limit=1000&page=1`, // Get a large number of products
+        `${API_BASE_URL}/admin/products?limit=1000&page=1`,
         {
           withCredentials: true,
           headers: {
@@ -174,18 +144,13 @@ function Products() {
           owner: product.owner,
         }));
 
-        console.log(
-          `📊 Loaded ${transformedProducts.length} products for stats`
-        );
         setAllProducts(transformedProducts);
       }
     } catch (error) {
-      console.error("❌ Error fetching all products for stats:", error);
       setAllProducts([]);
     }
   }, []);
 
-  // Fetch admin products with enhanced filtering (paginated)
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -225,8 +190,6 @@ function Products() {
         );
       }
 
-      console.log("🔍 Fetching admin products with params:", params.toString());
-
       const response = await axios.get(
         `${API_BASE_URL}/admin/products?${params.toString()}`,
         {
@@ -236,8 +199,6 @@ function Products() {
           },
         }
       );
-
-      console.log("📦 Backend response:", response.data);
 
       if (response.data.success) {
         const transformedProducts = response.data.products.map((product) => ({
@@ -263,15 +224,10 @@ function Products() {
           owner: product.owner,
         }));
 
-        console.log(
-          `📊 Found ${transformedProducts.length} products of ${response.data.pagination?.totalProducts} total`
-        );
-
         setProducts(transformedProducts);
         setTotalProducts(response.data.pagination?.totalProducts || 0);
       }
     } catch (error) {
-      console.error("❌ Error fetching admin products:", error);
       if (error.response?.status === 401) {
         toast.error("Please login to access admin products");
         navigate("/admin/login");
@@ -285,7 +241,6 @@ function Products() {
     }
   }, [filterParams, categories, navigate]);
 
-  // Fetch categories (only once)
   const fetchCategories = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/categories`);
@@ -293,12 +248,10 @@ function Products() {
         setCategories(response.data.categories);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
       toast.error("Failed to load categories");
     }
   }, []);
 
-  // Fetch single product by ID
   const fetchProductById = useCallback(
     async (productId) => {
       try {
@@ -336,7 +289,6 @@ function Products() {
           setCurrentProduct(transformedProduct);
         }
       } catch (error) {
-        console.error("Error fetching product:", error);
         if (error.response?.status === 404) {
           toast.error(
             "Product not found or you don't have permission to view it"
@@ -350,10 +302,8 @@ function Products() {
     [navigate]
   );
 
-  // Delete single product
   const deleteProduct = useCallback(async (productId) => {
     try {
-      // FIX: Use admin endpoint for deleting products
       const response = await axios.delete(
         `${API_BASE_URL}/admin/products/${productId}`,
         {
@@ -367,7 +317,6 @@ function Products() {
         return true;
       }
     } catch (error) {
-      console.error("Error deleting product:", error);
       if (error.response?.status === 401) {
         toast.error("Unauthorized to delete this product");
       } else if (error.response?.status === 403) {
@@ -379,10 +328,8 @@ function Products() {
     }
   }, []);
 
-  // Bulk delete products
   const bulkDeleteProducts = useCallback(async (productIds) => {
     try {
-      // FIX: Use admin endpoint for bulk deleting products
       const response = await axios.post(
         `${API_BASE_URL}/admin/products/bulk-delete`,
         { productIds },
@@ -399,7 +346,6 @@ function Products() {
         return true;
       }
     } catch (error) {
-      console.error("Error bulk deleting products:", error);
       if (error.response?.status === 403) {
         toast.error("You can only delete your own products");
       } else {
@@ -409,52 +355,43 @@ function Products() {
     }
   }, []);
 
-  // Load initial data (only once)
   useEffect(() => {
     fetchCategories();
-    fetchAllProducts(); // Fetch all products for stats
+    fetchAllProducts();
   }, [fetchCategories, fetchAllProducts]);
 
-  // Fetch products when filter parameters change (debounced)
   useEffect(() => {
     if (categories.length > 0) {
       fetchProducts();
     }
   }, [fetchProducts, categories]);
 
-  // Handle URL parameters
   useEffect(() => {
     const pathParts = location.pathname.split("/");
     if (pathParts[3] === "view" && pathParts[4]) {
       const productId = pathParts[4];
-      console.log("🔍 Loading product for view:", productId);
       fetchProductById(productId);
       setView("view");
     } else if (pathParts[3] === "edit" && pathParts[4]) {
-      // Don't handle edit here - let ProductForm handle it
       return;
     } else {
       setView("list");
     }
   }, [location.pathname, fetchProductById]);
 
-  // Handle refresh from navigation state
   useEffect(() => {
     if (location.state?.refresh) {
-      console.log("🔄 Refreshing products due to navigation state");
       fetchProducts();
-      fetchAllProducts(); // Also refresh stats
+      fetchAllProducts();
       window.history.replaceState({}, document.title);
     }
   }, [location.state, fetchProducts, fetchAllProducts]);
 
-  // Handle URL timestamp refresh
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const timestamp = urlParams.get("t");
 
     if (timestamp) {
-      console.log("🔄 Timestamp detected - forcing refresh");
       window.history.replaceState({}, document.title, window.location.pathname);
 
       setPage(0);
@@ -465,30 +402,25 @@ function Products() {
 
       if (categories.length > 0) {
         fetchProducts();
-        fetchAllProducts(); // Also refresh stats
+        fetchAllProducts();
       }
     }
   }, [location.search, categories, fetchProducts, fetchAllProducts]);
 
-  // Event handlers with proper state management
   const handleSearchInputChange = useCallback((e) => {
     setSearchInput(e.target.value);
-    // Don't call fetchProducts here - let debouncing handle it
   }, []);
 
   const handleCategoryFilterChange = useCallback((e) => {
     setCategoryFilter(e.target.value);
-    setPage(0); // Reset to first page
-    // fetchProducts will be called automatically via useEffect
+    setPage(0);
   }, []);
 
   const handleStatusFilterChange = useCallback((e) => {
     setStatusFilter(e.target.value);
-    setPage(0); // Reset to first page
-    // fetchProducts will be called automatically via useEffect
+    setPage(0);
   }, []);
 
-  // Product action handlers
   const handleViewProduct = useCallback(
     (productId) => {
       navigate(`/admin/products/view/${productId}`);
@@ -515,7 +447,7 @@ function Products() {
       const success = await deleteProduct(productId);
       if (success) {
         fetchProducts();
-        fetchAllProducts(); // Refresh stats after deletion
+        fetchAllProducts();
       }
     }
   };
@@ -544,7 +476,7 @@ function Products() {
         if (success) {
           setSelectedProducts([]);
           fetchProducts();
-          fetchAllProducts(); // Refresh stats after deletion
+          fetchAllProducts();
 
           if (
             view === "view" &&
@@ -559,17 +491,15 @@ function Products() {
     }
   };
 
-  // Check admin access - FIXED LOGIC
   const checkAdminAccess = (action) => {
     if (isAdmin) {
-      return true; // Admin can do everything
+      return true;
     } else {
       toast.error(`Access denied. Admin privileges required to ${action}.`);
-      return false; // User is restricted
+      return false;
     }
   };
 
-  // Selection handlers
   const handleSelectProduct = useCallback((id, selected) => {
     setSelectedProducts((prev) =>
       selected ? [...prev, id] : prev.filter((productId) => productId !== id)
@@ -593,10 +523,8 @@ function Products() {
     [products]
   );
 
-  // Pagination handlers
   const handlePageChange = useCallback(
     (newPage) => {
-      console.log("📄 Changing page from", page, "to", newPage);
       setPage(newPage);
     },
     [page]
@@ -605,37 +533,28 @@ function Products() {
   const handleRowsPerPageChange = useCallback(
     (e) => {
       const newRowsPerPage = parseInt(e.target.value, 10);
-      console.log(
-        "📊 Changing rows per page from",
-        rowsPerPage,
-        "to",
-        newRowsPerPage
-      );
       setRowsPerPage(newRowsPerPage);
       setPage(0);
     },
     [rowsPerPage]
   );
 
-  // Sort handler
   const handleSortChange = useCallback((newSortConfig) => {
     setSortConfig(newSortConfig);
-    setPage(0); // Reset to first page when sorting changes
+    setPage(0);
   }, []);
 
-  // Get table configuration with admin status
   const tableConfig = useMemo(
     () =>
       getProductTableConfig(
         handleViewProduct,
         handleEditProduct,
         handleDeleteProduct,
-        isAdmin // Pass admin status
+        isAdmin
       ),
-    [handleViewProduct, handleEditProduct, handleDeleteProduct, isAdmin] // Add isAdmin to dependencies
+    [handleViewProduct, handleEditProduct, handleDeleteProduct, isAdmin]
   );
 
-  // Render product details view
   if (view === "view" && currentProduct) {
     return (
       <div className="p-6 bg-background">
@@ -652,15 +571,12 @@ function Products() {
     );
   }
 
-  // Show skeleton while loading
   if (isLoading && products.length === 0) {
     return <ProductsSkeleton />;
   }
 
-  // Render product list view
   return (
     <div className="p-6 bg-background">
-      {/* Header with Stats */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
           <div>
@@ -671,7 +587,7 @@ function Products() {
               Manage your product inventory
             </p>
           </div>
-    
+
           <button
             onClick={handleCreateProduct}
             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2"
@@ -681,7 +597,6 @@ function Products() {
           </button>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
@@ -747,7 +662,6 @@ function Products() {
                     maximumFractionDigits: 0,
                   })}
                 </p>
-                {/* Debug info in development */}
                 {process.env.NODE_ENV === "development" && (
                   <p className="text-xs text-gray-400 mt-1 truncate">
                     From {allProducts.length} products
@@ -759,9 +673,7 @@ function Products() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Search */}
         <div>
           <label
             htmlFor="search"
@@ -776,12 +688,11 @@ function Products() {
             <input
               id="search"
               type="text"
-              value={searchInput} // Use searchInput for immediate response
-              onChange={handleSearchInputChange} // Use optimized handler
+              value={searchInput}
+              onChange={handleSearchInputChange}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-primary focus:border-primary"
               placeholder="Search products..."
             />
-            {/* Show loading indicator when searching */}
             {searchInput !== searchQuery && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                 <i className="fas fa-spinner fa-spin text-gray-400 text-sm"></i>
@@ -790,7 +701,6 @@ function Products() {
           </div>
         </div>
 
-        {/* Category Filter */}
         <div>
           <label
             htmlFor="category-filter"
@@ -801,7 +711,7 @@ function Products() {
           <select
             id="category-filter"
             value={categoryFilter}
-            onChange={handleCategoryFilterChange} // Use optimized handler
+            onChange={handleCategoryFilterChange}
             className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Categories</option>
@@ -813,7 +723,6 @@ function Products() {
           </select>
         </div>
 
-        {/* Status Filter */}
         <div>
           <label
             htmlFor="status-filter"
@@ -824,7 +733,7 @@ function Products() {
           <select
             id="status-filter"
             value={statusFilter}
-            onChange={handleStatusFilterChange} // Use optimized handler
+            onChange={handleStatusFilterChange}
             className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Status</option>
@@ -834,7 +743,6 @@ function Products() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="bg-white dark:bg-gray-800 rounded-md shadow-sm">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -857,7 +765,6 @@ function Products() {
               itemKey="id"
             />
 
-            {/* Pagination */}
             <Pagination
               page={page}
               rowsPerPage={rowsPerPage}
@@ -870,7 +777,6 @@ function Products() {
         )}
       </div>
 
-      {/* Bulk Actions - show for admin only */}
       {isAdmin && selectedProducts.length > 0 && (
         <BulkActions
           selectedItems={selectedProducts}

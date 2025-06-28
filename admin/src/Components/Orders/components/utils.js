@@ -1,4 +1,3 @@
-// Status badge color mapping
 export const getStatusColor = (status) => {
   switch (status?.toLowerCase()) {
     case 'pending':

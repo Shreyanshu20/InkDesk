@@ -5,7 +5,8 @@ import { toast } from "react-toastify";
 import SubcategoryTable from "./SubcategoryTable";
 import { useAdmin } from "../../../Context/AdminContext";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function CategoryDetails() {
   const { id } = useParams();
@@ -14,7 +15,6 @@ function CategoryDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSubcategoryTable, setShowSubcategoryTable] = useState(false);
 
-  // Add admin context
   const { user, adminData } = useAdmin();
   const isAdmin = adminData?.role === "admin";
 
@@ -30,7 +30,6 @@ function CategoryDetails() {
     try {
       setIsLoading(true);
 
-      // Fetch category details
       const categoryResponse = await axios.get(
         `${API_BASE_URL}/admin/categories/${categoryId}`,
         { withCredentials: true }
@@ -39,16 +38,15 @@ function CategoryDetails() {
       if (categoryResponse.data.success && categoryResponse.data.category) {
         const cat = categoryResponse.data.category;
 
-        // Fetch product count for this category
         let productCount = 0;
         try {
           const productResponse = await axios.get(
-            `${API_BASE_URL}/products?category=${encodeURIComponent(cat.category_name)}&limit=1`
+            `${API_BASE_URL}/products?category=${encodeURIComponent(
+              cat.category_name
+            )}&limit=1`
           );
           productCount = productResponse.data.pagination?.totalProducts || 0;
-          console.log(`📊 Product count for "${cat.category_name}":`, productCount);
         } catch (error) {
-          console.warn(`Failed to get product count for category ${cat.category_name}:`, error);
           productCount = 0;
         }
 
@@ -59,13 +57,12 @@ function CategoryDetails() {
           subcategories: cat.subcategories || [],
           createdAt: cat.createdAt,
           updatedAt: cat.updatedAt,
-          productsCount: productCount, // Use the fetched product count
+          productsCount: productCount,
         });
       } else {
         throw new Error("Category not found");
       }
     } catch (error) {
-      console.error("Error fetching category:", error);
       toast.error("Failed to load category");
       navigate("/admin/categories");
     } finally {
@@ -102,7 +99,6 @@ function CategoryDetails() {
           navigate("/admin/categories");
         }
       } catch (error) {
-        console.error("Error deleting category:", error);
         const message =
           error.response?.data?.message || "Failed to delete category";
         toast.error(message);
@@ -132,7 +128,6 @@ function CategoryDetails() {
 
   return (
     <div className="p-6 bg-background min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <button
@@ -151,7 +146,6 @@ function CategoryDetails() {
           </div>
         </div>
 
-        {/* Action Buttons - Top Right */}
         <div className="flex items-center space-x-3">
           {isAdmin && (
             <>
@@ -174,10 +168,8 @@ function CategoryDetails() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
-          {/* Category Image */}
           <div className="lg:col-span-1">
             {category.image ? (
               <div className="relative">
@@ -197,9 +189,7 @@ function CategoryDetails() {
             )}
           </div>
 
-          {/* Category Information */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Basic Info */}
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
                 {category.name}
@@ -215,7 +205,6 @@ function CategoryDetails() {
               </div>
             </div>
 
-            {/* Stats - Simple inline display */}
             <div className="flex flex-wrap items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
@@ -264,7 +253,6 @@ function CategoryDetails() {
               </div>
             </div>
 
-            {/* Subcategories Section */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
@@ -318,14 +306,12 @@ function CategoryDetails() {
         </div>
       </div>
 
-      {/* Subcategory Management Modal */}
       {showSubcategoryTable && (
         <SubcategoryTable
           categoryId={category.id}
           categoryName={category.name}
           onClose={() => {
             setShowSubcategoryTable(false);
-            // Refresh category data to get updated subcategories
             fetchCategory(id);
           }}
         />
