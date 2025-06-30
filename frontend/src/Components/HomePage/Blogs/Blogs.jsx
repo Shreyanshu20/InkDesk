@@ -108,7 +108,7 @@ function Blogs() {
 
         <div className="text-center">
           <Link
-            to="/blog"
+            to="/blogs"
             className="inline-flex items-center px-4 md:px-6 py-2 md:py-2.5 lg:py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors duration-300 text-sm md:text-base"
           >
             <i className="fas fa-blog mr-2 md:mr-3"></i>
