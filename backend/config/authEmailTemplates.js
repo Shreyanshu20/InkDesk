@@ -9,9 +9,9 @@ module.exports.authEmailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Welcome to InkDesk</title>
           <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
-              .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: white; }
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #222; margin: 0; padding: 0; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+              .header { background: #dc2626; padding: 40px 20px; text-align: center; color: #fff; }
               .logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
               .tagline { font-size: 14px; opacity: 0.9; }
               .content { padding: 40px 30px; }
@@ -30,28 +30,28 @@ module.exports.authEmailTemplates = {
                   font-size: 24px; 
                   font-weight: bold; 
                   background: #dc2626; 
-                  color: white; 
+                  color: #fff; 
                   padding: 12px 20px; 
                   border-radius: 6px; 
                   display: inline-block; 
                   margin: 12px 0; 
               }
               .offer-terms { font-size: 14px; color: #666; }
-              .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
+              .features { display: grid; grid-template-columns: 2fr 2fr; gap: 16px; margin: 30px 0; }
               .feature { text-align: center; padding: 16px; background: #f9f9f9; border-radius: 6px; }
               .feature-icon { font-size: 20px; margin-bottom: 8px; }
               .feature-text { font-size: 14px; font-weight: 600; }
               .cta-button { 
                   display: inline-block; 
                   background: #dc2626; 
-                  color: white; 
+                  color: #fff; 
                   padding: 14px 28px; 
                   border-radius: 6px; 
                   text-decoration: none; 
                   font-weight: 600; 
                   margin: 20px 0; 
               }
-              .footer { background: #333; color: #ccc; text-align: center; padding: 30px 20px; }
+              .footer { background: #222; color: #ccc; text-align: center; padding: 30px 20px; }
               .footer-logo { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
               .footer-links { margin: 20px 0; }
               .footer-links a { color: #ccc; text-decoration: none; margin: 0 12px; }
@@ -69,20 +69,17 @@ module.exports.authEmailTemplates = {
                   <div class="logo">InkDesk</div>
                   <div class="tagline">Premium Stationery & Office Supplies</div>
               </div>
-
               <div class="content">
                   <div class="greeting">Welcome, ${user.first_name || 'User'}!</div>
                   <div class="message">
                       Thank you for joining InkDesk! Your account is now active and ready to use. 
                       Start exploring our premium collection of stationery and office supplies.
                   </div>
-
                   <div class="offer-card">
                       <div class="offer-title">🎉 Welcome Offer</div>
                       <div class="offer-code">WELCOME20</div>
                       <div class="offer-terms">20% off your first order • Valid for 30 days • Min. order ₹99</div>
                   </div>
-
                   <div class="features">
                       <div class="feature">
                           <div class="feature-icon">📝</div>
@@ -101,12 +98,10 @@ module.exports.authEmailTemplates = {
                           <div class="feature-text">Fast Delivery</div>
                       </div>
                   </div>
-
                   <div style="text-align: center;">
                       <a href="${process.env.FRONTEND_URL}/shop" class="cta-button">Start Shopping</a>
                   </div>
               </div>
-
               <div class="footer">
                   <div class="footer-logo">InkDesk</div>
                   <div class="footer-links">
