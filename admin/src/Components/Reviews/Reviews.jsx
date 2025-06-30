@@ -305,7 +305,7 @@ function Reviews() {
                 </p>
               </div>
               <div
-                className={`p-2 rounded-full ${
+                className={`w-10 h-10 flex justify-center items-center rounded-full ${
                   rating === "all"
                     ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                     : parseInt(rating) >= 4
@@ -318,7 +318,7 @@ function Reviews() {
                 {rating === "all" ? (
                   <i className="fas fa-star"></i>
                 ) : (
-                  <span className="text-xs font-bold">{rating}★</span>
+                  <span className="text-sm font-bold">{rating}★</span>
                 )}
               </div>
             </div>

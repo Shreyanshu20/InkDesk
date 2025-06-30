@@ -199,7 +199,7 @@ function Users() {
         return true;
       }
     } catch (error) {
-      toast.error("Failed to delete user");
+      toast.error("Failed to delete user, the user may have active orders");
       return false;
     }
   };
